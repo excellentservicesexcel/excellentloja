@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=8">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
@@ -43,9 +43,13 @@
   </header>
 
   <section class="landing-hero">
+    <span class="landing-eyebrow">Sistema de gestão + loja virtual</span>
     <h1>Excelência em cada venda.</h1>
-    <p id="landing-hero-sub">Sua loja virtual e o painel de gestão do seu negócio, em um só lugar — pedidos, produtos, estoque e financeiro sempre à mão.</p>
-    <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+    <p id="landing-hero-sub">Crie sua loja virtual com um painel completo de gestão — pedidos, produtos, estoque, produção e financeiro, tudo em um só lugar.</p>
+    <div class="landing-hero-ctas">
+      <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+      <a href="#landing-contato" class="btn btn-outline landing-hero-cta">Quero minha loja</a>
+    </div>
   </section>
 
   <section class="landing-lojas" id="landing-lojas-section" style="display:none;">
@@ -54,11 +58,26 @@
     <div class="landing-lojas-grid" id="landing-lojas-grid"></div>
   </section>
 
+  <section class="landing-how">
+    <h2>Como funciona</h2>
+    <div class="landing-how-grid">
+      <div class="landing-how-step"><span>1</span><strong>Sua loja é criada</strong><p>Você recebe um endereço próprio, com painel de administração exclusivo e totalmente separado de outras lojas.</p></div>
+      <div class="landing-how-step"><span>2</span><strong>Configure em minutos</strong><p>Cadastre seus produtos, formas de pagamento, categorias e a identidade visual da sua loja.</p></div>
+      <div class="landing-how-step"><span>3</span><strong>Comece a vender</strong><p>Seus clientes compram pela sua loja virtual e cada pedido chega organizado direto no seu painel.</p></div>
+    </div>
+  </section>
+
   <section class="landing-features">
-    <div class="landing-feature"><i class="fa-solid fa-heart"></i><strong>Feito com cuidado</strong><span>Em cada detalhe</span></div>
-    <div class="landing-feature"><i class="fa-solid fa-award"></i><strong>Produtos selecionados</strong><span>Qualidade que você sente</span></div>
-    <div class="landing-feature"><i class="fa-solid fa-truck"></i><strong>Entrega combinada</strong><span>Direto com a loja</span></div>
-    <div class="landing-feature"><i class="fa-brands fa-whatsapp"></i><strong>Pedido simples</strong><span>Finalize pelo WhatsApp</span></div>
+    <div class="landing-feature"><i class="fa-solid fa-bag-shopping"></i><strong>Pedidos organizados</strong><span>Painel kanban, do pedido à entrega</span></div>
+    <div class="landing-feature"><i class="fa-solid fa-warehouse"></i><strong>Estoque sob controle</strong><span>Baixa automática a cada venda</span></div>
+    <div class="landing-feature"><i class="fa-solid fa-sack-dollar"></i><strong>Financeiro em dia</strong><span>Receitas, despesas e saldo do mês</span></div>
+    <div class="landing-feature"><i class="fa-solid fa-chart-column"></i><strong>Relatórios completos</strong><span>Desempenho de vendas e produtos</span></div>
+  </section>
+
+  <section class="landing-contato" id="landing-contato" style="display:none;">
+    <h2>Quer ter sua própria loja?</h2>
+    <p>Fale com a gente e comece a vender com o seu próprio painel de gestão.</p>
+    <a href="#" id="landing-contato-btn" target="_blank" rel="noopener" class="btn btn-primary landing-hero-cta"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
   </section>
 
   <footer class="landing-footer">
@@ -271,22 +290,22 @@
 
 <div id="toast-wrap"></div>
 
-<script src="js/utils.js?v=5"></script>
-<script src="js/loja.js?v=2"></script>
-<script src="js/auth.js?v=5"></script>
-<script src="js/dashboard.js?v=5"></script>
-<script src="js/clientes.js?v=5"></script>
-<script src="js/produtos.js?v=5"></script>
-<script src="js/cardapio.js?v=5"></script>
-<script src="js/pedidos.js?v=5"></script>
-<script src="js/producao.js?v=5"></script>
-<script src="js/estoque.js?v=5"></script>
-<script src="js/financeiro.js?v=5"></script>
-<script src="js/precificacao.js?v=5"></script>
-<script src="js/relatorios.js?v=5"></script>
-<script src="js/configuracoes.js?v=5"></script>
-<script src="js/onboarding.js?v=5"></script>
-<script src="js/storefront.js?v=5"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/utils.js?v=8"></script>
+<script src="js/loja.js?v=4"></script>
+<script src="js/auth.js?v=8"></script>
+<script src="js/dashboard.js?v=8"></script>
+<script src="js/clientes.js?v=8"></script>
+<script src="js/produtos.js?v=8"></script>
+<script src="js/cardapio.js?v=8"></script>
+<script src="js/pedidos.js?v=8"></script>
+<script src="js/producao.js?v=8"></script>
+<script src="js/estoque.js?v=8"></script>
+<script src="js/financeiro.js?v=8"></script>
+<script src="js/precificacao.js?v=8"></script>
+<script src="js/relatorios.js?v=8"></script>
+<script src="js/configuracoes.js?v=8"></script>
+<script src="js/onboarding.js?v=8"></script>
+<script src="js/storefront.js?v=8"></script>
+<script src="js/app.js?v=8"></script>
 </body>
 </html>
