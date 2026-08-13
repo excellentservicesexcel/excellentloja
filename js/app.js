@@ -5,6 +5,7 @@
 
 const Store = {
     clientes: [], produtos: [], pedidos: [], estoque: [], financeiro: [], producao: [], receitas: [], capas: [], instaCards: [],
+    beneficios: [], equipe: [],
     profile: {},
     config: {
         nomeLoja: 'Excellent Loja',
@@ -69,6 +70,16 @@ function initStoreListeners() {
         Store.emit('instaCards');
     }, err => console.error('instaCards', err)));
 
+    _unsubscribers.push(Loja.col('beneficios').orderBy('criadoEm').onSnapshot(snap => {
+        Store.beneficios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        Store.emit('beneficios');
+    }, err => console.error('beneficios', err)));
+
+    _unsubscribers.push(Loja.col('equipe').orderBy('criadoEm').onSnapshot(snap => {
+        Store.equipe = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        Store.emit('equipe');
+    }, err => console.error('equipe', err)));
+
     _unsubscribers.push(Loja.ref().onSnapshot(snap => {
         if (snap.exists) Store.config = { ...Store.config, ...snap.data() };
         Store.emit('config');
@@ -80,6 +91,7 @@ function teardownStoreListeners() {
     _unsubscribers = [];
     Store.clientes = []; Store.produtos = []; Store.pedidos = []; Store.estoque = [];
     Store.financeiro = []; Store.producao = []; Store.receitas = []; Store.capas = []; Store.instaCards = [];
+    Store.beneficios = []; Store.equipe = [];
 }
 
 let _profileUnsub = null;
@@ -223,6 +235,8 @@ function bindStoreSubscriptions() {
     Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); });
     Store.on('capas', () => Configuracoes.render());
     Store.on('instaCards', () => Configuracoes.render());
+    Store.on('beneficios', () => Configuracoes.render());
+    Store.on('equipe', () => Configuracoes.render());
     Store.on('profile', () => { updateGreeting(); refreshSidebarUser(); Configuracoes.render(); });
     Store.on('*', () => Relatorios.render());
 }
@@ -328,8 +342,8 @@ function bindLanding() {
 function applyLandingBranding() {
     const nome = Store.config.nomeLoja || 'Excellent Loja';
     document.title = `${nome} | Sistema de Gestão`;
-    const heroH1 = document.querySelector('.landing-hero h1');
-    if (heroH1) heroH1.textContent = nome;
+    const eyebrow = document.getElementById('landing-eyebrow-text');
+    if (eyebrow) eyebrow.textContent = Store.config.heroEyebrow || 'Sistema de gestão + loja virtual';
 
     const iconeCustom = Store.config.faviconUrl || Store.config.logoUrl;
     if (!Loja.isRoot && iconeCustom) {
@@ -345,6 +359,17 @@ function applyLandingBranding() {
         hero.style.backgroundImage = Store.config.capaLanding ? `url("${Store.config.capaLanding}")` : '';
     }
     applyLandingTheme();
+
+    const apTitulo = document.getElementById('landing-apresentacao-titulo');
+    if (apTitulo && Store.config.apresentacaoTitulo) apTitulo.textContent = Store.config.apresentacaoTitulo;
+    const apTexto = document.getElementById('landing-apresentacao-texto');
+    if (apTexto && Store.config.apresentacaoTexto) apTexto.textContent = Store.config.apresentacaoTexto;
+    const apMedia = document.getElementById('landing-apresentacao-media');
+    if (apMedia) {
+        apMedia.innerHTML = Store.config.apresentacaoImagem
+            ? `<img src="${Store.config.apresentacaoImagem}" alt="">`
+            : '<i class="fa-solid fa-image"></i>';
+    }
 
     const telDigits = (Store.config.telefone || '').replace(/\D/g, '');
     const telRow = document.getElementById('landing-footer-tel');
@@ -408,8 +433,75 @@ async function loadLandingLojas() {
             card.addEventListener('click', () => { location.href = '/' + card.dataset.slug; });
         });
         section.style.display = 'block';
-        document.getElementById('landing-hero-sub').textContent = 'Escolha uma loja para visitar, ou entre no painel se você administra uma delas.';
     } catch (err) { console.error('landing lojas', err); }
+}
+
+const DEFAULT_BENEFICIOS = [
+    { titulo: 'Pedidos organizados', texto: 'Painel kanban, do pedido à entrega.' },
+    { titulo: 'Estoque sob controle', texto: 'Baixa automática a cada venda.' },
+    { titulo: 'Financeiro em dia', texto: 'Receitas, despesas e saldo do mês.' },
+    { titulo: 'Relatórios completos', texto: 'Desempenho de vendas e produtos.' }
+];
+
+function renderLandingBeneficios(lista) {
+    const grid = document.getElementById('landing-beneficios-grid');
+    if (!grid) return;
+    const itens = (lista && lista.length) ? lista : DEFAULT_BENEFICIOS;
+    grid.innerHTML = itens.map(b => `
+        <div class="landing-beneficio-card landing-shine landing-reveal">
+            <div class="landing-beneficio-img">${b.imagem ? `<img src="${b.imagem}" alt="">` : '<i class="fa-solid fa-image"></i>'}</div>
+            <div class="landing-beneficio-body">
+                <strong>${Utils.escapeHtml(b.titulo || '')}</strong>
+                <span>${Utils.escapeHtml(b.texto || '')}</span>
+            </div>
+        </div>
+    `).join('');
+    observeLandingReveals();
+}
+
+function renderLandingEquipe(lista) {
+    const section = document.getElementById('landing-equipe-section');
+    const grid = document.getElementById('landing-equipe-grid');
+    if (!section || !grid) return;
+    if (!lista || !lista.length) { section.style.display = 'none'; return; }
+    grid.innerHTML = lista.map(m => `
+        <div class="landing-equipe-card landing-shine landing-reveal">
+            <div class="landing-equipe-foto">${m.foto ? `<img src="${m.foto}" alt="">` : '<i class="fa-solid fa-user"></i>'}</div>
+            <div class="landing-equipe-info">
+                <strong>${Utils.escapeHtml(m.nome || '')}</strong>
+                <span>${Utils.escapeHtml(m.descricao || '')}</span>
+            </div>
+        </div>
+    `).join('');
+    section.style.display = 'block';
+    observeLandingReveals();
+}
+
+async function loadLandingExtras() {
+    if (!Loja.isRoot) return;
+    try {
+        const [benSnap, eqSnap] = await Promise.all([
+            Loja.col('beneficios').orderBy('criadoEm').get(),
+            Loja.col('equipe').orderBy('criadoEm').get()
+        ]);
+        renderLandingBeneficios(benSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        renderLandingEquipe(eqSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) { console.error('landing extras', err); }
+}
+
+let _landingObserver = null;
+function observeLandingReveals() {
+    if (!_landingObserver) {
+        _landingObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    _landingObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+    }
+    document.querySelectorAll('#landing-screen .landing-reveal:not(.in-view)').forEach(el => _landingObserver.observe(el));
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -420,6 +512,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     mountAllModules();
     bindStoreSubscriptions();
     loadLandingLojas();
+    loadLandingExtras();
+    observeLandingReveals();
 
     let lojaSnap;
     try { lojaSnap = await Loja.ref().get(); } catch (err) { console.error('loja fetch', err); }

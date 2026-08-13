@@ -20,7 +20,7 @@ const Configuracoes = (() => {
                 <div class="settings-tab" data-tab="categorias">Categorias de produtos</div>
                 <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>
                 <div class="settings-tab" data-tab="pagamento-online"><i class="fa-solid fa-credit-card"></i> Pagamento online</div>`}
-                <div class="settings-tab" data-tab="imagens">${souSuperAdmin ? 'Imagens e cores' : 'Imagens da loja'}</div>
+                <div class="settings-tab" data-tab="imagens">${souSuperAdmin ? 'Página inicial' : 'Imagens da loja'}</div>
                 <div class="settings-tab" data-tab="usuarios">Usuários autorizados</div>
                 <div class="settings-tab" data-tab="conta">Minha conta</div>
                 ${souSuperAdmin ? `<div class="settings-tab" data-tab="lojas"><i class="fa-solid fa-store"></i> Gerenciar lojas</div>` : ''}
@@ -113,9 +113,9 @@ const Configuracoes = (() => {
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Capa da página inicial</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
-                        Imagem de fundo do topo da página inicial (excellentloja.vercel.app), atrás
-                        do título e do texto de apresentação. Use uma foto na horizontal — o sistema
-                        escurece um pouco pra manter o texto legível.
+                        Imagem de fundo do topo da página inicial (excellentloja.vercel.app). Aparece
+                        sem escurecer — se quiser algum texto ou logotipo nela, inclua já na própria
+                        imagem. Use uma foto na horizontal.
                     </p>
                     <div class="capa-grid" id="capalanding-grid"></div>
                     <label class="btn btn-outline btn-sm" style="margin-top:14px;cursor:pointer;display:inline-flex;">
@@ -138,6 +138,58 @@ const Configuracoes = (() => {
                         <label>Cor do texto<input type="color" id="f-cor-landing-texto" value="${Store.config.corTexto || '#1C1A16'}"></label>
                         <button type="button" class="js-loja-cor-reset" id="btn-reset-cor-landing" title="Restaurar cores padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
                     </div>
+                </div>
+
+                <div class="panel" style="max-width:680px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Textos da página inicial</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        O selo aparece recortado no topo da capa. O título e o texto de apresentação
+                        ficam na seção logo abaixo, ao lado da imagem de apresentação.
+                    </p>
+                    <form id="landing-textos-form">
+                        <div class="form-group"><label>Selo no topo da capa</label><input type="text" id="f-landing-eyebrow" maxlength="60" placeholder="Sistema de gestão + loja virtual"></div>
+                        <div class="form-group"><label>Título da apresentação</label><input type="text" id="f-landing-ap-titulo" maxlength="80" placeholder="Sua loja virtual, do seu jeito"></div>
+                        <div class="form-group"><label>Texto da apresentação</label><textarea id="f-landing-ap-texto" rows="3" placeholder="Monte uma loja com a sua cara..."></textarea></div>
+                        <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Salvar textos</button></div>
+                    </form>
+                </div>
+
+                <div class="panel" style="max-width:680px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Imagem da apresentação</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Aparece ao lado do texto de apresentação, logo abaixo da capa.
+                    </p>
+                    <div class="capa-grid" id="apresentacao-grid"></div>
+                    <label class="btn btn-outline btn-sm" style="margin-top:14px;cursor:pointer;display:inline-flex;">
+                        <i class="fa-solid fa-upload"></i> Adicionar/trocar imagem
+                        <input type="file" id="apresentacao-input" accept="image/*" style="display:none;">
+                    </label>
+                    <span id="apresentacao-uploading" style="display:none;margin-left:10px;font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Enviando...</span>
+                </div>
+
+                <div class="panel" style="max-width:820px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Cards de benefícios</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cada card tem uma foto quadrada, um título e um texto curto. Adicione quantos
+                        quiser — aparecem lado a lado (até 5 por linha) na seção "Benefícios".
+                    </p>
+                    <div class="capa-grid" id="beneficio-card-grid"></div>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-add-beneficio-card" style="margin-top:14px;">
+                        <i class="fa-solid fa-plus"></i> Adicionar card
+                    </button>
+                </div>
+
+                <div class="panel" style="max-width:820px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Equipe</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cards maiores (2 por linha) pra apresentar a equipe — foto, nome e uma breve
+                        descrição. Se não adicionar ninguém, a seção "Conheça nossa equipe" fica
+                        escondida na página inicial.
+                    </p>
+                    <div class="capa-grid" id="equipe-card-grid"></div>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-add-equipe-card" style="margin-top:14px;">
+                        <i class="fa-solid fa-plus"></i> Adicionar pessoa
+                    </button>
                 </div>` : `
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Capa da loja (início)</h3>
@@ -311,6 +363,10 @@ const Configuracoes = (() => {
             document.getElementById('f-cor-landing-fundo').addEventListener('change', (e) => salvarCorLanding('corFundo', e.target.value));
             document.getElementById('f-cor-landing-texto').addEventListener('change', (e) => salvarCorLanding('corTexto', e.target.value));
             document.getElementById('btn-reset-cor-landing').addEventListener('click', resetarCorLanding);
+            document.getElementById('landing-textos-form').addEventListener('submit', salvarTextosLanding);
+            document.getElementById('apresentacao-input').addEventListener('change', uploadApresentacaoImagem);
+            document.getElementById('btn-add-beneficio-card').addEventListener('click', () => openBeneficioForm());
+            document.getElementById('btn-add-equipe-card').addEventListener('click', () => openEquipeForm());
         } else {
             document.getElementById('btn-add-categoria').addEventListener('click', () => addChip('categoriasProdutos', 'new-categoria'));
             document.getElementById('btn-add-pagamento').addEventListener('click', () => addChip('formasPagamento', 'new-pagamento'));
@@ -362,6 +418,11 @@ const Configuracoes = (() => {
             const rmCapaLanding = e.target.closest('.js-capalanding-remove');
             const editInsta = e.target.closest('.js-insta-edit');
             const rmInsta = e.target.closest('.js-insta-remove');
+            const rmApresentacao = e.target.closest('.js-apresentacao-remove');
+            const editBeneficio = e.target.closest('.js-beneficio-edit');
+            const rmBeneficio = e.target.closest('.js-beneficio-remove');
+            const editEquipe = e.target.closest('.js-equipe-edit');
+            const rmEquipe = e.target.closest('.js-equipe-remove');
             const rmLoja = e.target.closest('.js-loja-remove');
             const addLojaEmail = e.target.closest('.js-loja-email-add');
             const rmLojaEmail = e.target.closest('.js-loja-email-remove');
@@ -373,6 +434,11 @@ const Configuracoes = (() => {
             if (rmCapaLanding) removeCapaLanding();
             if (editInsta) openInstaCardForm(editInsta.dataset.id);
             if (rmInsta) removeInstaCard(rmInsta.dataset.id);
+            if (rmApresentacao) removeApresentacaoImagem();
+            if (editBeneficio) openBeneficioForm(editBeneficio.dataset.id);
+            if (rmBeneficio) removeBeneficioCard(rmBeneficio.dataset.id);
+            if (editEquipe) openEquipeForm(editEquipe.dataset.id);
+            if (rmEquipe) removeEquipeCard(rmEquipe.dataset.id);
             if (rmLoja) removerLoja(rmLoja.dataset.id, rmLoja.dataset.nome);
             if (addLojaEmail) addAdminToLoja(addLojaEmail.dataset.loja);
             if (rmLojaEmail) removeAdminFromLoja(rmLojaEmail.dataset.loja, rmLojaEmail.dataset.email);
@@ -802,6 +868,244 @@ const Configuracoes = (() => {
         }, 'Restaurar cores padrão', 'Sim, restaurar');
     }
 
+    async function salvarTextosLanding(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+            await Loja.ref().set({
+                heroEyebrow: document.getElementById('f-landing-eyebrow').value.trim(),
+                apresentacaoTitulo: document.getElementById('f-landing-ap-titulo').value.trim(),
+                apresentacaoTexto: document.getElementById('f-landing-ap-texto').value.trim()
+            }, { merge: true });
+            Utils.toast('Textos atualizados.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function uploadApresentacaoImagem(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const status = document.getElementById('apresentacao-uploading');
+        status.style.display = 'inline';
+        try {
+            const apresentacaoImagem = await Utils.compressImageToBase64(file, { maxDim: 1000, maxBytes: 260000 });
+            await Loja.ref().set({ apresentacaoImagem }, { merge: true });
+            Utils.toast('Imagem da apresentação atualizada.', 'success');
+        } catch (err) {
+            Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
+        } finally {
+            status.style.display = 'none';
+            e.target.value = '';
+        }
+    }
+
+    async function removeApresentacaoImagem() {
+        Utils.confirmDialog('Remover a imagem da apresentação?', async () => {
+            try {
+                await Loja.ref().update({ apresentacaoImagem: firebase.firestore.FieldValue.delete() });
+                Utils.closeModal();
+                Utils.toast('Imagem removida.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Remover imagem', 'Sim, remover');
+    }
+
+    function apresentacaoGridHtml(imagem) {
+        if (!imagem) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhuma imagem definida — aparece um espaço reservado no lugar.</span>';
+        return `
+            <div class="capa-thumb">
+                <img src="${imagem}">
+                <button class="js-apresentacao-remove" title="Remover"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+    }
+
+    function openBeneficioForm(id) {
+        const c = id ? Store.beneficios.find(x => x.id === id) : null;
+        let novaImagem = null;
+        Utils.openModal(`
+            <div class="modal-head"><h3>${c ? 'Editar card' : 'Novo card de benefício'}</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <form id="beneficio-card-form">
+                <div class="form-group">
+                    <label>Foto (quadrada) ${c ? '' : '*'}</label>
+                    <div class="insta-form-preview" id="beneficio-card-preview">
+                        ${c && c.imagem ? `<img src="${c.imagem}">` : '<i class="fa-solid fa-image" style="color:var(--text-muted);font-size:1.6rem;"></i>'}
+                    </div>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-flex;">
+                        <i class="fa-solid fa-upload"></i> ${c ? 'Trocar foto' : 'Escolher foto'}
+                        <input type="file" id="beneficio-card-input" accept="image/*" style="display:none;">
+                    </label>
+                </div>
+                <div class="form-group"><label>Título *</label><input type="text" id="f-beneficio-titulo" required maxlength="60" value="${c ? Utils.escapeHtml(c.titulo || '') : ''}" placeholder="Ex: Entrega rápida"></div>
+                <div class="form-group"><label>Texto</label><textarea id="f-beneficio-texto" rows="2" placeholder="Um textinho curto sobre o benefício">${c ? Utils.escapeHtml(c.texto || '') : ''}</textarea></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="beneficio-card-submit"><i class="fa-solid fa-check"></i> Salvar</button>
+                </div>
+            </form>
+        `);
+
+        document.getElementById('beneficio-card-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const preview = document.getElementById('beneficio-card-preview');
+            const original = preview.innerHTML;
+            preview.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            try {
+                novaImagem = await Utils.compressImageToBase64(file, { maxDim: 700, maxBytes: 220000, square: true });
+                preview.innerHTML = `<img src="${novaImagem}">`;
+            } catch (err) {
+                Utils.toast('Não foi possível usar essa imagem: ' + err.message, 'error');
+                preview.innerHTML = original;
+            }
+        });
+
+        document.getElementById('beneficio-card-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!novaImagem && !(c && c.imagem)) { Utils.toast('Escolha uma foto para o card.', 'error'); return; }
+            const btn = document.getElementById('beneficio-card-submit');
+            btn.disabled = true;
+            try {
+                const data = {
+                    titulo: document.getElementById('f-beneficio-titulo').value.trim(),
+                    texto: document.getElementById('f-beneficio-texto').value.trim()
+                };
+                if (novaImagem) data.imagem = novaImagem;
+                if (c) {
+                    await Loja.col('beneficios').doc(c.id).update(data);
+                } else {
+                    data.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+                    await Loja.col('beneficios').add(data);
+                }
+                Utils.closeModal();
+                Utils.toast(c ? 'Card atualizado.' : 'Card adicionado.', 'success');
+            } catch (err) {
+                Utils.toast('Erro ao salvar: ' + err.message, 'error');
+                btn.disabled = false;
+            }
+        });
+    }
+
+    async function removeBeneficioCard(id) {
+        Utils.confirmDialog('Remover este card de benefício?', async () => {
+            try {
+                await Loja.col('beneficios').doc(id).delete();
+                Utils.toast('Card removido.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Remover card', 'Sim, remover');
+    }
+
+    function beneficioCardGridHtml(cards) {
+        if (!cards || !cards.length) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhum card criado ainda — a página inicial mostra 4 cards padrão no lugar.</span>';
+        return cards.map(c => `
+            <div class="insta-card-admin">
+                <div class="insta-card-admin-img">${c.imagem ? `<img src="${c.imagem}">` : ''}</div>
+                <div class="insta-card-admin-body">
+                    <strong>${Utils.escapeHtml(c.titulo || '(sem título)')}</strong>
+                    <span>${Utils.escapeHtml(c.texto || '')}</span>
+                </div>
+                <div class="insta-card-admin-actions">
+                    <button class="js-beneficio-edit" data-id="${c.id}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                    <button class="js-beneficio-remove del" data-id="${c.id}" title="Remover"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openEquipeForm(id) {
+        const c = id ? Store.equipe.find(x => x.id === id) : null;
+        let novaFoto = null;
+        Utils.openModal(`
+            <div class="modal-head"><h3>${c ? 'Editar pessoa' : 'Nova pessoa na equipe'}</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <form id="equipe-card-form">
+                <div class="form-group">
+                    <label>Foto (quadrada)</label>
+                    <div class="insta-form-preview" id="equipe-card-preview">
+                        ${c && c.foto ? `<img src="${c.foto}">` : '<i class="fa-solid fa-user" style="color:var(--text-muted);font-size:1.6rem;"></i>'}
+                    </div>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-flex;">
+                        <i class="fa-solid fa-upload"></i> ${c ? 'Trocar foto' : 'Escolher foto'}
+                        <input type="file" id="equipe-card-input" accept="image/*" style="display:none;">
+                    </label>
+                </div>
+                <div class="form-group"><label>Nome *</label><input type="text" id="f-equipe-nome" required maxlength="60" value="${c ? Utils.escapeHtml(c.nome || '') : ''}" placeholder="Ex: Maria Silva"></div>
+                <div class="form-group"><label>Descrição</label><textarea id="f-equipe-descricao" rows="2" placeholder="Cargo ou uma breve apresentação">${c ? Utils.escapeHtml(c.descricao || '') : ''}</textarea></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="equipe-card-submit"><i class="fa-solid fa-check"></i> Salvar</button>
+                </div>
+            </form>
+        `);
+
+        document.getElementById('equipe-card-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const preview = document.getElementById('equipe-card-preview');
+            const original = preview.innerHTML;
+            preview.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            try {
+                novaFoto = await Utils.compressImageToBase64(file, { maxDim: 600, maxBytes: 200000, square: true });
+                preview.innerHTML = `<img src="${novaFoto}">`;
+            } catch (err) {
+                Utils.toast('Não foi possível usar essa foto: ' + err.message, 'error');
+                preview.innerHTML = original;
+            }
+        });
+
+        document.getElementById('equipe-card-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('equipe-card-submit');
+            btn.disabled = true;
+            try {
+                const data = {
+                    nome: document.getElementById('f-equipe-nome').value.trim(),
+                    descricao: document.getElementById('f-equipe-descricao').value.trim()
+                };
+                if (novaFoto) data.foto = novaFoto;
+                if (c) {
+                    await Loja.col('equipe').doc(c.id).update(data);
+                } else {
+                    data.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+                    await Loja.col('equipe').add(data);
+                }
+                Utils.closeModal();
+                Utils.toast(c ? 'Atualizado.' : 'Adicionado à equipe.', 'success');
+            } catch (err) {
+                Utils.toast('Erro ao salvar: ' + err.message, 'error');
+                btn.disabled = false;
+            }
+        });
+    }
+
+    async function removeEquipeCard(id) {
+        Utils.confirmDialog('Remover esta pessoa da equipe?', async () => {
+            try {
+                await Loja.col('equipe').doc(id).delete();
+                Utils.toast('Removido.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Remover', 'Sim, remover');
+    }
+
+    function equipeCardGridHtml(cards) {
+        if (!cards || !cards.length) return '<span style="font-size:0.82rem;color:var(--text-muted);">Ninguém adicionado ainda — a seção "Conheça nossa equipe" fica escondida na página inicial.</span>';
+        return cards.map(c => `
+            <div class="insta-card-admin">
+                <div class="insta-card-admin-img">${c.foto ? `<img src="${c.foto}">` : ''}</div>
+                <div class="insta-card-admin-body">
+                    <strong>${Utils.escapeHtml(c.nome || '(sem nome)')}</strong>
+                    <span>${Utils.escapeHtml(c.descricao || '')}</span>
+                </div>
+                <div class="insta-card-admin-actions">
+                    <button class="js-equipe-edit" data-id="${c.id}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                    <button class="js-equipe-remove del" data-id="${c.id}" title="Remover"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+
     async function uploadFundoPainel(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1026,11 +1330,17 @@ const Configuracoes = (() => {
         set('chips-pagamento', chipHtml('formasPagamento', c.formasPagamento));
         set('chips-usuarios', chipHtml('usuariosAutorizados', c.usuariosAutorizados));
         set('capalanding-grid', capaLandingGridHtml(c.capaLanding));
+        set('apresentacao-grid', apresentacaoGridHtml(c.apresentacaoImagem));
+        set('beneficio-card-grid', beneficioCardGridHtml(Store.beneficios));
+        set('equipe-card-grid', equipeCardGridHtml(Store.equipe));
 
         const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
         setVal('f-cor-landing-principal', c.corPrincipal || '#C9962B');
         setVal('f-cor-landing-fundo', c.corFundo || '#FAF5EB');
         setVal('f-cor-landing-texto', c.corTexto || '#1C1A16');
+        setVal('f-landing-eyebrow', c.heroEyebrow || '');
+        setVal('f-landing-ap-titulo', c.apresentacaoTitulo || '');
+        setVal('f-landing-ap-texto', c.apresentacaoTexto || '');
 
         const user = Auth.currentUser();
         const contaEmailEl = document.getElementById('conta-email');
