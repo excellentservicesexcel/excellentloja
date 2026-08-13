@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
@@ -42,13 +42,15 @@
     <button class="btn btn-primary" id="btn-landing-login"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
   </header>
 
-  <section class="landing-hero">
-    <span class="landing-eyebrow">Sistema de gestão + loja virtual</span>
-    <h1>Excelência em cada venda.</h1>
-    <p id="landing-hero-sub">Crie sua loja virtual com um painel completo de gestão — pedidos, produtos, estoque, produção e financeiro, tudo em um só lugar.</p>
-    <div class="landing-hero-ctas">
-      <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
-      <a href="#landing-contato" class="btn btn-outline landing-hero-cta">Quero minha loja</a>
+  <section class="landing-hero" id="landing-hero">
+    <div class="landing-hero-inner">
+      <span class="landing-eyebrow">Sistema de gestão + loja virtual</span>
+      <h1>Excelência em cada venda.</h1>
+      <p id="landing-hero-sub">Crie sua loja virtual com um painel completo de gestão — pedidos, produtos, estoque, produção e financeiro, tudo em um só lugar.</p>
+      <div class="landing-hero-ctas">
+        <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+        <a href="#landing-contato" class="btn btn-outline landing-hero-cta">Quero minha loja</a>
+      </div>
     </div>
   </section>
 
@@ -81,7 +83,24 @@
   </section>
 
   <footer class="landing-footer">
-    <p>© <span id="landing-year"></span> Excellent Loja. Todos os direitos reservados.</p>
+    <div class="landing-footer-inner">
+      <div class="landing-footer-brand">
+        <img src="img/logo.png?v=4" alt="Excellent Loja" class="landing-footer-logo">
+        <p>Sistema de gestão completo com loja virtual própria, para quem quer vender online sem complicação.</p>
+      </div>
+      <div class="landing-footer-col">
+        <strong>Plataforma</strong>
+        <a href="#" data-scroll="landing-lojas-section">Nossas lojas</a>
+        <a href="#" data-scroll="landing-how">Como funciona</a>
+        <a href="#landing-contato">Quero minha loja</a>
+      </div>
+      <div class="landing-footer-col" id="landing-footer-contato">
+        <strong>Contato</strong>
+        <span id="landing-footer-tel" style="display:none;"><i class="fa-brands fa-whatsapp"></i> <span></span></span>
+        <span id="landing-footer-insta" style="display:none;"><i class="fa-brands fa-instagram"></i> <span></span></span>
+      </div>
+    </div>
+    <p class="landing-footer-copy">© <span id="landing-year"></span> Excellent Loja. Todos os direitos reservados.</p>
   </footer>
 </div>
 
@@ -215,6 +234,7 @@
         </div>
       </div>
       <div class="topbar-right">
+        <a href="/" class="btn-view-store" id="btn-back-my-panel" title="Voltar ao seu painel" style="display:none;"><i class="fa-solid fa-arrow-left"></i> <span>Meu painel</span></a>
         <button class="btn-view-store" id="btn-view-store" title="Ver a loja virtual"><i class="fa-solid fa-store"></i> <span>Ver loja</span></button>
         <div class="date-pill"><i class="fa-regular fa-calendar"></i> <span id="topbar-date">--</span></div>
         <button class="bell-btn" id="bell-btn"><i class="fa-regular fa-bell"></i><span class="dot" id="bell-dot" style="display:none;"></span></button>
@@ -290,9 +310,9 @@
 
 <div id="toast-wrap"></div>
 
-<script src="js/utils.js?v=9"></script>
+<script src="js/utils.js?v=10"></script>
 <script src="js/loja.js?v=4"></script>
-<script src="js/auth.js?v=8"></script>
+<script src="js/auth.js?v=9"></script>
 <script src="js/dashboard.js?v=8"></script>
 <script src="js/clientes.js?v=8"></script>
 <script src="js/produtos.js?v=8"></script>
@@ -303,9 +323,9 @@
 <script src="js/financeiro.js?v=8"></script>
 <script src="js/precificacao.js?v=8"></script>
 <script src="js/relatorios.js?v=8"></script>
-<script src="js/configuracoes.js?v=9"></script>
+<script src="js/configuracoes.js?v=10"></script>
 <script src="js/onboarding.js?v=8"></script>
-<script src="js/storefront.js?v=10"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/storefront.js?v=11"></script>
+<script src="js/app.js?v=10"></script>
 </body>
 </html>
