@@ -19,12 +19,11 @@ const Storefront = (() => {
     let carouselIndex = 0;
 
     function mount() {
-        if (mounted) { render(); renderAccountArea(); return; }
+        if (mounted) { render(); return; }
         mounted = true;
         const el = document.getElementById('storefront-screen');
         el.innerHTML = shellHtml();
         bindStatic();
-        renderAccountArea();
         listen();
     }
 
@@ -64,10 +63,6 @@ const Storefront = (() => {
                     <div class="store-header-actions">
                         ${previewMode ? `<button class="store-preview-exit" id="store-preview-exit"><i class="fa-solid fa-arrow-left"></i> Voltar ao painel</button>` : ''}
                         <button class="store-icon-btn" id="store-search-btn" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        <div class="store-account-wrap">
-                            <button class="store-icon-btn" id="store-account-btn" title="Minha conta"><i class="fa-regular fa-user"></i></button>
-                            <div class="store-account-pop" id="store-account-pop"></div>
-                        </div>
                         <button class="store-icon-btn" id="store-cart-btn" title="Carrinho">
                             <i class="fa-solid fa-cart-shopping"></i>
                             <span class="store-cart-badge" id="store-cart-badge" style="display:none;">0</span>
@@ -194,12 +189,8 @@ const Storefront = (() => {
         }
         document.getElementById('store-cart-btn').addEventListener('click', () => toggleCart(true));
         document.getElementById('store-cart-close').addEventListener('click', () => toggleCart(false));
-        document.getElementById('store-cart-backdrop').addEventListener('click', () => { toggleCart(false); toggleAccountPop(false); });
+        document.getElementById('store-cart-backdrop').addEventListener('click', () => toggleCart(false));
         document.getElementById('store-cart-checkout').addEventListener('click', checkout);
-        document.getElementById('store-account-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleAccountPop();
-        });
         document.getElementById('store-search-btn').addEventListener('click', () => {
             const bar = document.getElementById('store-search-bar');
             const open = bar.classList.toggle('open');
@@ -227,32 +218,7 @@ const Storefront = (() => {
             if (addBtn) addToCart(addBtn.dataset.id);
             if (qtyBtn) changeQty(qtyBtn.dataset.id, Number(qtyBtn.dataset.delta));
             if (rmBtn) removeFromCart(rmBtn.dataset.id);
-            if (!e.target.closest('.store-account-wrap')) toggleAccountPop(false);
         });
-    }
-
-    function toggleAccountPop(force) {
-        const pop = document.getElementById('store-account-pop');
-        if (force === undefined) pop.classList.toggle('open');
-        else pop.classList.toggle('open', force);
-    }
-
-    function renderAccountArea() {
-        const pop = document.getElementById('store-account-pop');
-        if (!pop) return;
-        const user = Auth.currentUser();
-        if (user && !user.isAnonymous) {
-            pop.innerHTML = `
-                <div class="store-account-email">${Utils.escapeHtml(user.email || '')}</div>
-                <button class="btn btn-outline btn-sm btn-block" id="store-logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
-            `;
-            document.getElementById('store-logout-btn').addEventListener('click', () => {
-                Utils.confirmDialog('Deseja sair da sua conta?', async () => { await Auth.logout(); }, 'Sair', 'Sim, sair');
-            });
-        } else {
-            pop.innerHTML = `<button class="btn btn-primary btn-sm btn-block" id="store-login-btn"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>`;
-            document.getElementById('store-login-btn').addEventListener('click', () => { toggleAccountPop(false); showLogin(); });
-        }
     }
 
     function toggleCart(open) {
@@ -391,12 +357,19 @@ const Storefront = (() => {
         `).join('');
     }
 
+    function normalizarBusca(s) {
+        return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+
     function renderGrid() {
         const grid = document.getElementById('store-grid');
         if (!grid) return;
         let list = produtos;
         if (catFilter) list = list.filter(p => p.categoria === catFilter);
-        if (searchTerm) list = list.filter(p => (p.nome || '').toLowerCase().includes(searchTerm));
+        if (searchTerm) {
+            const termo = normalizarBusca(searchTerm);
+            list = list.filter(p => [p.nome, p.categoria, p.descricao].some(campo => normalizarBusca(campo || '').includes(termo)));
+        }
         if (!list.length) {
             grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fa-solid fa-bag-shopping"></i>Nenhum produto encontrado.</div>`;
             return;
