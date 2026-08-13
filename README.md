@@ -102,6 +102,12 @@ financeiro — nada é compartilhado entre lojas).
 - Cada card de loja em "Gerenciar lojas" tem um botão **"Entrar no painel desta loja"** —
   leva você direto pro painel completo daquela loja, com acesso total (como se você também
   fosse administradora dela), pra dar suporte a quem comprou a loja de você.
+- Cada loja também pode ter **identidade visual própria**: o mesmo logotipo configurado em
+  "Gerenciar lojas" aparece no cabeçalho e rodapé da loja virtual dela (e vira o favicon da
+  aba do navegador nesse endereço), e as 3 cores (principal, fundo e texto) re-pintam a loja
+  virtual inteira — botões, preços, categorias, links. Isso vale só pra loja virtual pública;
+  o painel de gestão continua com a identidade da Excellent Loja para todo mundo. Sem cor
+  definida, a loja usa a paleta padrão dourada/preta.
 - Seu próprio painel (quando você está no endereço principal) só mostra **Configurações** —
   não faz sentido ver Dashboard, Pedidos, Financeiro etc. de uma loja que não existe. Isso
   só se aplica ao endereço principal: dentro de uma loja específica (inclusive via "Entrar
