@@ -10,7 +10,7 @@ const Configuracoes = (() => {
 
     function mount() {
         const el = document.getElementById('view-configuracoes');
-        const souSuperAdmin = Loja.isSuperAdmin(Auth.currentUser() && Auth.currentUser().email);
+        const souSuperAdmin = Loja.isRoot && Loja.isSuperAdmin(Auth.currentUser() && Auth.currentUser().email);
         el.innerHTML = `
             <div class="settings-tabs">
                 <div class="settings-tab active" data-tab="loja">Dados da loja</div>
@@ -329,6 +329,7 @@ const Configuracoes = (() => {
                         <strong>${Utils.escapeHtml(l.nomeLoja || l.id)}</strong>
                         <span class="loja-admin-slug">excellentloja.vercel.app/${Utils.escapeHtml(l.id)}</span>
                     </div>
+                    <a href="/${l.id}" class="js-loja-enter" title="Entrar no painel desta loja"><i class="fa-solid fa-arrow-right-to-bracket"></i></a>
                     <button class="js-loja-remove" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Excluir loja"><i class="fa-solid fa-trash"></i></button>
                 </div>
                 <div class="chip-list">${lojaEmailsHtml(l.id, l.usuariosAutorizados)}</div>

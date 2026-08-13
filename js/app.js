@@ -258,7 +258,18 @@ function showApp() {
     document.getElementById('storefront-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'flex';
     refreshSidebarUser();
-    goToView('dashboard');
+
+    const user = Auth.currentUser();
+    const modoPlataforma = Loja.isRoot && Loja.isSuperAdmin(user && user.email);
+    applyNavMode(modoPlataforma);
+    goToView(modoPlataforma ? 'configuracoes' : 'dashboard');
+}
+
+function applyNavMode(minimal) {
+    document.querySelectorAll('#nav-links .nav-item, #mobile-tabbar .nav-item').forEach(el => {
+        el.style.display = (!minimal || el.dataset.view === 'configuracoes') ? '' : 'none';
+    });
+    document.getElementById('btn-view-store').style.display = minimal ? 'none' : '';
 }
 
 function showLogin() {
@@ -298,7 +309,10 @@ function bindLanding() {
     document.getElementById('landing-year').textContent = new Date().getFullYear();
     document.getElementById('btn-landing-login').addEventListener('click', showLogin);
     document.getElementById('btn-landing-login-2').addEventListener('click', showLogin);
-    document.getElementById('btn-back-landing').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
+    document.getElementById('btn-back-landing').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (Loja.isRoot) showLanding(); else showStorefrontScreen();
+    });
 }
 
 function applyLandingBranding() {
@@ -306,6 +320,14 @@ function applyLandingBranding() {
     document.title = `${nome} | Sistema de Gestão`;
     const heroH1 = document.querySelector('.landing-hero h1');
     if (heroH1) heroH1.textContent = nome;
+
+    if (!Loja.isRoot) return;
+    const tel = (Store.config.telefone || '').replace(/\D/g, '');
+    const contatoSection = document.getElementById('landing-contato');
+    if (!contatoSection) return;
+    if (!tel) { contatoSection.style.display = 'none'; return; }
+    document.getElementById('landing-contato-btn').href = `https://wa.me/55${tel}?text=${encodeURIComponent('Olá! Quero ter minha própria loja na Excellent Loja.')}`;
+    contatoSection.style.display = 'block';
 }
 
 async function loadLandingLojas() {
@@ -380,7 +402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             teardownStoreListeners();
             teardownProfile();
             document.getElementById('app-loading').style.display = 'none';
-            showLanding();
+            if (Loja.isRoot) showLanding(); else showStorefrontScreen();
             return;
         }
 
@@ -408,6 +430,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.auth.signOut();
             Utils.toast('Esse e-mail não administra nenhuma loja aqui. Fale com quem administra a Excellent Loja.', 'error');
             showLanding();
+        } else if (user.isAnonymous) {
+            // clientes nunca fazem login de verdade: a sessão anônima é criada silenciosamente
+            // no checkout, então não faz sentido pedir dados de novo aqui
+            showStorefrontScreen();
         } else {
             Onboarding.start(user, 'cliente', () => showStorefrontScreen());
         }

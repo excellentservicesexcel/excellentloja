@@ -15,18 +15,17 @@ const Storefront = (() => {
     let unsubs = [];
     let mounted = false;
     let previewMode = false;
-    let meuCliente = null;
     let carouselTimer = null;
     let carouselIndex = 0;
 
     function mount() {
-        if (mounted) { render(); return; }
+        if (mounted) { render(); renderAccountArea(); return; }
         mounted = true;
         const el = document.getElementById('storefront-screen');
         el.innerHTML = shellHtml();
         bindStatic();
+        renderAccountArea();
         listen();
-        loadMeuCliente();
     }
 
     function openAdminPreview() {
@@ -41,17 +40,15 @@ const Storefront = (() => {
         document.getElementById('app-shell').style.display = 'flex';
     }
 
-    async function loadMeuCliente() {
-        const user = Auth.currentUser();
-        if (!user) return;
-        try {
-            const snap = await Loja.col('clientes').doc(user.uid).get();
-            meuCliente = snap.exists ? { id: user.uid, ...snap.data() } : null;
-        } catch (err) { console.error('meuCliente', err); }
+    const DADOS_KEY = 'excellentloja_dados_cliente';
+    function dadosSalvos() {
+        try { return JSON.parse(localStorage.getItem(DADOS_KEY) || 'null'); } catch (e) { return null; }
+    }
+    function salvarDados(dados) {
+        try { localStorage.setItem(DADOS_KEY, JSON.stringify(dados)); } catch (e) {}
     }
 
     function shellHtml() {
-        const user = Auth.currentUser();
         return `
         <div class="store-page" id="store-top">
             <header class="store-header">
@@ -69,10 +66,7 @@ const Storefront = (() => {
                         <button class="store-icon-btn" id="store-search-btn" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
                         <div class="store-account-wrap">
                             <button class="store-icon-btn" id="store-account-btn" title="Minha conta"><i class="fa-regular fa-user"></i></button>
-                            <div class="store-account-pop" id="store-account-pop">
-                                <div class="store-account-email">${Utils.escapeHtml(user?.email || '')}</div>
-                                <button class="btn btn-outline btn-sm btn-block" id="store-logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
-                            </div>
+                            <div class="store-account-pop" id="store-account-pop"></div>
                         </div>
                         <button class="store-icon-btn" id="store-cart-btn" title="Carrinho">
                             <i class="fa-solid fa-cart-shopping"></i>
@@ -202,9 +196,6 @@ const Storefront = (() => {
         document.getElementById('store-cart-close').addEventListener('click', () => toggleCart(false));
         document.getElementById('store-cart-backdrop').addEventListener('click', () => { toggleCart(false); toggleAccountPop(false); });
         document.getElementById('store-cart-checkout').addEventListener('click', checkout);
-        document.getElementById('store-logout-btn').addEventListener('click', () => {
-            Utils.confirmDialog('Deseja sair da sua conta?', async () => { await Auth.logout(); }, 'Sair', 'Sim, sair');
-        });
         document.getElementById('store-account-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             toggleAccountPop();
@@ -244,6 +235,24 @@ const Storefront = (() => {
         const pop = document.getElementById('store-account-pop');
         if (force === undefined) pop.classList.toggle('open');
         else pop.classList.toggle('open', force);
+    }
+
+    function renderAccountArea() {
+        const pop = document.getElementById('store-account-pop');
+        if (!pop) return;
+        const user = Auth.currentUser();
+        if (user && !user.isAnonymous) {
+            pop.innerHTML = `
+                <div class="store-account-email">${Utils.escapeHtml(user.email || '')}</div>
+                <button class="btn btn-outline btn-sm btn-block" id="store-logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+            `;
+            document.getElementById('store-logout-btn').addEventListener('click', () => {
+                Utils.confirmDialog('Deseja sair da sua conta?', async () => { await Auth.logout(); }, 'Sair', 'Sim, sair');
+            });
+        } else {
+            pop.innerHTML = `<button class="btn btn-primary btn-sm btn-block" id="store-login-btn"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>`;
+            document.getElementById('store-login-btn').addEventListener('click', () => { toggleAccountPop(false); showLogin(); });
+        }
     }
 
     function toggleCart(open) {
@@ -480,7 +489,7 @@ const Storefront = (() => {
         document.getElementById('store-cart-total').textContent = Utils.formatBRL(cartTotal());
     }
 
-    async function checkout() {
+    function checkout() {
         if (!cart.length) { Utils.toast('Seu carrinho está vazio.', 'error'); return; }
         const tel = (config.telefone || '').replace(/\D/g, '');
         if (!tel) { Utils.toast('A loja ainda não configurou um telefone para pedidos.', 'error'); return; }
@@ -495,59 +504,113 @@ const Storefront = (() => {
             }
         }
 
-        const btn = document.getElementById('store-cart-checkout');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando pedido...';
+        abrirFormularioDados();
+    }
 
-        try {
-            const user = Auth.currentUser();
-            const itens = cart.map(i => ({ produtoId: i.id, nome: i.nome, quantidade: i.qtd, precoUnitario: i.preco, subtotal: i.preco * i.qtd }));
-            const total = cartTotal();
-            const numero = await window.nextPedidoNumero();
+    function abrirFormularioDados() {
+        const d = dadosSalvos() || {};
+        toggleCart(false);
+        Utils.openModal(`
+            <div class="modal-head"><h3>Seus dados para entrega</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin:-8px 0 16px;">
+                ${d.nome ? 'Confira se está tudo certo antes de enviar.' : 'Preenchemos automaticamente na próxima compra — sem precisar criar conta.'}
+            </p>
+            <form id="checkout-dados-form">
+                <div class="form-group"><label>Nome completo *</label><input type="text" id="cf-nome" required value="${Utils.escapeHtml(d.nome || '')}"></div>
+                <div class="form-group"><label>WhatsApp *</label><input type="text" id="cf-whatsapp" required placeholder="(00) 00000-0000" value="${Utils.escapeHtml(d.whatsapp || '')}"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Endereço *</label><input type="text" id="cf-endereco" required placeholder="Rua, bairro" value="${Utils.escapeHtml(d.endereco || '')}"></div>
+                    <div class="form-group" style="max-width:110px;"><label>Número *</label><input type="text" id="cf-numero" required value="${Utils.escapeHtml(d.numero || '')}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Cidade *</label><input type="text" id="cf-cidade" required value="${Utils.escapeHtml(d.cidade || '')}"></div>
+                    <div class="form-group" style="max-width:110px;"><label>Estado *</label><input type="text" id="cf-estado" required maxlength="2" placeholder="SP" value="${Utils.escapeHtml(d.estado || '')}" style="text-transform:uppercase;"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="checkout-dados-submit"><i class="fa-solid fa-check"></i> Confirmar e enviar pedido</button>
+                </div>
+            </form>
+        `);
 
-            const batch = window.db.batch();
-            const pedidoRef = Loja.col('pedidos').doc();
-            const clienteNome = (meuCliente && meuCliente.nome) || user?.displayName || 'Cliente da loja virtual';
-            batch.set(pedidoRef, {
-                numero,
-                clienteId: user ? user.uid : null,
-                clienteNome,
-                clienteTelefone: (meuCliente && meuCliente.telefone) || '',
-                itens, subtotal: total, taxaEntrega: 0, total,
-                formaPagamento: 'A combinar', status: 'aguardando',
-                endereco: (meuCliente && meuCliente.endereco) || '',
-                observacoes: 'Pedido feito pela loja virtual.',
-                dataEntrega: null, origem: 'loja-virtual',
+        document.getElementById('checkout-dados-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dados = {
+                nome: document.getElementById('cf-nome').value.trim(),
+                whatsapp: document.getElementById('cf-whatsapp').value.trim(),
+                endereco: document.getElementById('cf-endereco').value.trim(),
+                numero: document.getElementById('cf-numero').value.trim(),
+                cidade: document.getElementById('cf-cidade').value.trim(),
+                estado: document.getElementById('cf-estado').value.trim().toUpperCase()
+            };
+            salvarDados(dados);
+            const btn = document.getElementById('checkout-dados-submit');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando pedido...';
+            try {
+                await enviarPedido(dados);
+                Utils.closeModal();
+            } catch (err) {
+                Utils.toast('Erro ao enviar pedido: ' + err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    }
+
+    async function enviarPedido(dados) {
+        let user = Auth.currentUser();
+        if (!user) {
+            const cred = await window.auth.signInAnonymously();
+            user = cred.user;
+        }
+
+        const enderecoCompleto = `${dados.endereco}, ${dados.numero} - ${dados.cidade}/${dados.estado}`;
+        await Loja.col('clientes').doc(user.uid).set({
+            nome: dados.nome, telefone: dados.whatsapp, endereco: enderecoCompleto,
+            atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const itens = cart.map(i => ({ produtoId: i.id, nome: i.nome, quantidade: i.qtd, precoUnitario: i.preco, subtotal: i.preco * i.qtd }));
+        const total = cartTotal();
+        const numero = await window.nextPedidoNumero();
+
+        const batch = window.db.batch();
+        const pedidoRef = Loja.col('pedidos').doc();
+        batch.set(pedidoRef, {
+            numero,
+            clienteId: user.uid,
+            clienteNome: dados.nome,
+            clienteTelefone: dados.whatsapp,
+            itens, subtotal: total, taxaEntrega: 0, total,
+            formaPagamento: 'A combinar', status: 'aguardando',
+            endereco: enderecoCompleto,
+            observacoes: 'Pedido feito pela loja virtual.',
+            dataEntrega: null, origem: 'loja-virtual',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        itens.forEach(i => {
+            const prodRef = Loja.col('producao').doc();
+            batch.set(prodRef, {
+                data: new Date(), produtoId: i.produtoId, produtoNome: i.nome,
+                quantidade: i.quantidade, status: 'pendente', pedidoId: pedidoRef.id,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            batch.update(Loja.col('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(-i.quantidade) });
+        });
 
-            itens.forEach(i => {
-                const prodRef = Loja.col('producao').doc();
-                batch.set(prodRef, {
-                    data: new Date(), produtoId: i.produtoId, produtoNome: i.nome,
-                    quantidade: i.quantidade, status: 'pendente', pedidoId: pedidoRef.id,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                batch.update(Loja.col('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(-i.quantidade) });
-            });
+        await batch.commit();
 
-            await batch.commit();
+        const tel = (config.telefone || '').replace(/\D/g, '');
+        const linhas = cart.map(i => `• ${i.qtd}x ${i.nome} — ${Utils.formatBRL(i.preco * i.qtd)}`).join('\n');
+        const texto = `Olá! Acabei de fazer o pedido #${numero} pelo site:\n\n${linhas}\n\n*Total: ${Utils.formatBRL(total)}*\n\nEndereço: ${enderecoCompleto}`;
+        window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`, '_blank');
 
-            const linhas = cart.map(i => `• ${i.qtd}x ${i.nome} — ${Utils.formatBRL(i.preco * i.qtd)}`).join('\n');
-            const texto = `Olá! Acabei de fazer o pedido #${numero} pelo site:\n\n${linhas}\n\n*Total: ${Utils.formatBRL(total)}*`;
-            window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`, '_blank');
-
-            cart = [];
-            renderCart();
-            toggleCart(false);
-            Utils.toast(`Pedido #${numero} enviado à loja!`, 'success');
-        } catch (err) {
-            Utils.toast('Erro ao enviar pedido: ' + err.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
+        cart = [];
+        renderCart();
+        Utils.toast(`Pedido #${numero} enviado à loja!`, 'success');
     }
 
     async function subscribeNewsletter(e) {
