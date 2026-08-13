@@ -1,0 +1,245 @@
+/* ==========================================================================
+   Utilidades compartilhadas — Excellent Loja
+   ========================================================================== */
+
+const Utils = (() => {
+
+    function formatBRL(value) {
+        const n = Number(value) || 0;
+        return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatDateBR(date) {
+        if (!date) return '--';
+        const d = (date instanceof Date) ? date : new Date(date);
+        return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+
+    function formatDateShort(date) {
+        if (!date) return '--';
+        const d = (date instanceof Date) ? date : new Date(date);
+        return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+
+    function formatDateTimeBR(date) {
+        if (!date) return '--';
+        const d = (date instanceof Date) ? date : new Date(date);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function todayKey(date) {
+        const d = date ? new Date(date) : new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function toDate(val) {
+        if (!val) return null;
+        if (val instanceof Date) return val;
+        if (val.toDate) return val.toDate();
+        return new Date(val);
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+    }
+
+    function debounce(fn, wait = 250) {
+        let t;
+        return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+    }
+
+    function uid() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function toast(msg, type = 'info') {
+        const wrap = document.getElementById('toast-wrap');
+        const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${escapeHtml(msg)}</span>`;
+        wrap.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .25s'; setTimeout(() => el.remove(), 260); }, 3200);
+    }
+
+    function openModal(html, opts = {}) {
+        const overlay = document.getElementById('modal-overlay');
+        const box = document.getElementById('modal-box');
+        box.className = 'modal' + (opts.wide ? ' wide' : '');
+        box.innerHTML = html;
+        overlay.classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.remove('open');
+        document.getElementById('modal-box').innerHTML = '';
+    }
+
+    function confirmDialog(message, onConfirm, title = 'Confirmar exclusão', okLabel = 'Sim, excluir') {
+        const overlay = document.getElementById('confirm-overlay');
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-msg').textContent = message;
+        document.getElementById('confirm-ok').textContent = okLabel;
+        overlay.classList.add('open');
+        const okBtn = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
+        const cleanup = () => { overlay.classList.remove('open'); okBtn.onclick = null; cancelBtn.onclick = null; };
+        okBtn.onclick = async () => { cleanup(); await onConfirm(); };
+        cancelBtn.onclick = cleanup;
+    }
+
+    // Fecha modal clicando fora
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') closeModal();
+        });
+        document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'confirm-overlay') e.currentTarget.classList.remove('open');
+        });
+    });
+
+    const STATUS_LABELS = {
+        aguardando: 'Aguardando',
+        producao: 'Em produção',
+        pronto: 'Pronto',
+        entregue: 'Entregue',
+        cancelado: 'Cancelado'
+    };
+
+    function statusBadge(status) {
+        const label = STATUS_LABELS[status] || status;
+        return `<span class="badge badge-${status}">${label}</span>`;
+    }
+
+    /* -------------------------------------------------------------- */
+    /* Select customizado (substitui o <select> nativo em toda a UI)   */
+    /* -------------------------------------------------------------- */
+
+    function selectHtml({ id, className = '', dataAttrs = {}, options = [], value = '', placeholder = 'Selecione...', pill = false }) {
+        const dataStr = Object.entries(dataAttrs).map(([k, v]) => ` data-${k}="${escapeHtml(v)}"`).join('');
+        const selected = options.find(o => String(o.value) === String(value));
+        const label = selected ? selected.label : placeholder;
+        const optsHtml = options.map(o => `<div class="cselect-option ${String(o.value) === String(value) ? 'active' : ''}" data-value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</div>`).join('')
+            || '<div class="cselect-option empty-opt">Nenhuma opção</div>';
+        return `
+        <div class="cselect ${pill ? 'pill' : ''}" data-id="${id}">
+            <input type="hidden" id="${id}" class="${className}"${dataStr} value="${escapeHtml(value ?? '')}">
+            <button type="button" class="cselect-trigger">
+                <span class="cselect-label ${selected ? '' : 'placeholder'}">${escapeHtml(label)}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="cselect-panel">${optsHtml}</div>
+        </div>`;
+    }
+
+    function refreshSelectOptions(id, options = [], placeholder = 'Selecione...') {
+        const wrap = document.querySelector(`.cselect[data-id="${CSS.escape(id)}"]`);
+        const input = document.getElementById(id);
+        if (!wrap || !input) return;
+        const currentValue = input.value;
+        const selected = options.find(o => String(o.value) === String(currentValue));
+        if (!selected) input.value = '';
+        const labelEl = wrap.querySelector('.cselect-label');
+        labelEl.textContent = selected ? selected.label : placeholder;
+        labelEl.classList.toggle('placeholder', !selected);
+        wrap.querySelector('.cselect-panel').innerHTML = options.map(o => `<div class="cselect-option ${selected && String(o.value) === String(currentValue) ? 'active' : ''}" data-value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</div>`).join('')
+            || '<div class="cselect-option empty-opt">Nenhuma opção</div>';
+    }
+
+    function setSelectValue(id, value, placeholder = 'Selecione...') {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.value = value ?? '';
+        const wrap = document.querySelector(`.cselect[data-id="${CSS.escape(id)}"]`);
+        if (!wrap) return;
+        const optionEl = wrap.querySelector(`.cselect-option[data-value="${CSS.escape(String(value ?? ''))}"]`);
+        const labelEl = wrap.querySelector('.cselect-label');
+        labelEl.textContent = optionEl ? optionEl.textContent : placeholder;
+        labelEl.classList.toggle('placeholder', !optionEl);
+        wrap.querySelectorAll('.cselect-option').forEach(o => o.classList.toggle('active', o === optionEl));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('click', (e) => {
+            const trigger = e.target.closest('.cselect-trigger');
+            const option = e.target.closest('.cselect-option');
+
+            if (trigger) {
+                const wrap = trigger.closest('.cselect');
+                const willOpen = !wrap.classList.contains('open');
+                document.querySelectorAll('.cselect.open').forEach(w => w.classList.remove('open', 'drop-up'));
+                if (willOpen) {
+                    wrap.classList.add('open');
+                    const rect = wrap.getBoundingClientRect();
+                    if (window.innerHeight - rect.bottom < 240 && rect.top > 240) wrap.classList.add('drop-up');
+                }
+                return;
+            }
+            if (option && !option.classList.contains('empty-opt')) {
+                const wrap = option.closest('.cselect');
+                const input = document.getElementById(wrap.dataset.id) || wrap.querySelector('input[type="hidden"]');
+                wrap.querySelector('.cselect-label').textContent = option.textContent;
+                wrap.querySelector('.cselect-label').classList.remove('placeholder');
+                wrap.querySelectorAll('.cselect-option').forEach(o => o.classList.toggle('active', o === option));
+                input.value = option.dataset.value;
+                wrap.classList.remove('open', 'drop-up');
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return;
+            }
+            document.querySelectorAll('.cselect.open').forEach(w => w.classList.remove('open', 'drop-up'));
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') document.querySelectorAll('.cselect.open').forEach(w => w.classList.remove('open', 'drop-up'));
+        });
+    });
+
+    // Redimensiona e comprime uma imagem no navegador, retornando um data URL
+    // (base64) pronto para salvar direto num campo do Firestore — evita
+    // depender do Firebase Storage (que em projetos novos exige plano pago).
+    function compressImageToBase64(file, opts = {}) {
+        const maxDim = opts.maxDim || 900;
+        const maxBytes = opts.maxBytes || 400000;
+        const startQuality = opts.quality || 0.8;
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
+                img.onload = () => {
+                    let { width, height } = img;
+                    if (width > maxDim || height > maxDim) {
+                        if (width >= height) { height = Math.round(height * maxDim / width); width = maxDim; }
+                        else { width = Math.round(width * maxDim / height); height = maxDim; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+                    let q = startQuality;
+                    let dataUrl = canvas.toDataURL('image/jpeg', q);
+                    while (dataUrl.length > maxBytes && q > 0.35) {
+                        q -= 0.1;
+                        dataUrl = canvas.toDataURL('image/jpeg', q);
+                    }
+                    resolve(dataUrl);
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    return {
+        formatBRL, formatDateBR, formatDateShort, formatDateTimeBR, todayKey, toDate,
+        escapeHtml, debounce, uid, toast, openModal, closeModal, confirmDialog,
+        statusBadge, STATUS_LABELS,
+        selectHtml, refreshSelectOptions, setSelectValue,
+        compressImageToBase64
+    };
+})();
