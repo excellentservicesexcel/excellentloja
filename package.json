@@ -1,0 +1,10 @@
+{
+  "name": "excellentloja-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Funções serverless (Vercel) da Excellent Loja — integração de pagamento online.",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "mercadopago": "^3.4.0"
+  }
+}

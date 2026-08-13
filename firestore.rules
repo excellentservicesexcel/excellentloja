@@ -90,6 +90,21 @@ service cloud.firestore {
       match /estoque/{id} { allow read, write: if isLojaAdmin(lojaId); }
       match /receitas/{id} { allow read, write: if isLojaAdmin(lojaId); }
 
+      match /config/{id} {
+        // guarda dados sensíveis (ex: chave de API de pagamento) — nunca público,
+        // só quem administra a loja pode ler ou escrever. As funções serverless
+        // em /api leem isso pelo Admin SDK, que ignora estas regras.
+        allow read, write: if isLojaAdmin(lojaId);
+      }
+
+      match /pagamentosPendentes/{id} {
+        // criado e atualizado só pelas funções serverless (Admin SDK, ignora
+        // regras) — o cliente só acompanha o status do próprio pagamento.
+        allow read: if isLojaAdmin(lojaId);
+        allow read: if signedIn() && request.auth.uid == resource.data.uidCliente;
+        allow write: if false;
+      }
+
       match /meta/{id} {
         // contador sequencial de número de pedido daquela loja
         allow read, write: if signedIn();

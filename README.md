@@ -39,6 +39,13 @@ js/onboarding.js            assistente de boas-vindas (primeiro login de um usu�
 js/storefront.js            loja virtual pública (login autenticado mas fora da lista de autorizados)
 firestore.rules            regras de segurança do Firestore
 storage.rules               regras do Storage (não usado hoje — fotos vão em base64 no Firestore)
+package.json                dependências das funções de pagamento (só usado pela Vercel, no /api)
+api/iniciar-pagamento.js    1º passo do pagamento online: recalcula o total, confere estoque
+api/pagar-pix.js            gera o QR Code Pix na Mercado Pago
+api/pagar-cartao.js         efetiva a cobrança de cartão (token já vem tokenizado do navegador)
+api/consultar-pagamento.js  o navegador consulta isso enquanto espera o pagamento confirmar
+api/webhook-mercadopago.js  a Mercado Pago avisa aqui quando o status de um pagamento muda
+api/_lib/                   código interno compartilhado entre as funções acima
 ```
 
 ## Primeiro acesso — passo a passo no Firebase Console
@@ -144,8 +151,9 @@ conta nem fazem login, em lugar nenhum do sistema.
   pra revisar e confirmar. Por trás dos panos, o sistema autentica a pessoa de forma anônima
   no Firebase (sem tela, sem senha) só para poder salvar o pedido com segurança — ela nunca
   vê isso como um "login". Quem *está* na lista de "Usuários autorizados" daquela loja
-  (Configurações → Usuários autorizados) faz login normalmente pelo botão "Entrar" no ícone
-  de conta da loja virtual, e cai no painel de gestão dela em vez da loja pública.
+  (Configurações → Usuários autorizados) faz login normalmente pela tela de login do
+  endereço principal, e cai no painel de gestão dela em vez da loja pública — a loja
+  virtual em si não tem nenhum botão de conta/login, só busca e carrinho.
 
 As regras do Firestore já aplicam essas mesmas restrições no servidor, não só na tela.
 
@@ -167,6 +175,80 @@ A capa da loja (Configurações → Capa da loja) aceita quantas fotos você qui
 um documento na subcoleção `capas` daquela loja, então não há limite de quantidade. Com 2 ou
 mais, elas aparecem na página inicial da loja como um carrossel, avançando sozinho a cada 3
 segundos.
+
+## Pagamento online (Mercado Pago)
+
+Cada loja pode ativar pagamento online — Pix (com QR Code), débito e crédito — direto
+dentro da loja virtual, em vez do fluxo antigo por WhatsApp. Hoje isso funciona só com o
+**Mercado Pago** (não é possível colocar "qualquer" plataforma de pagamento — cada gateway
+precisa de um código de integração próprio; Mercado Pago foi o escolhido por ser o mais
+usado no Brasil e já cobrir Pix + cartão numa API só). O texto abaixo assume que você
+**ainda não tem** conta no Mercado Pago — se já tiver, pule os passos 1 e 2.
+
+### Por que isso precisa de mais do que só o Firebase
+
+Diferente do resto do sistema (que roda 100% no navegador, direto com o Firestore), processar
+pagamento **exige um servidor** — a chave secreta (Access Token) do Mercado Pago nunca pode
+ficar visível no navegador, senão qualquer pessoa poderia usá-la para cobrar em nome da sua
+conta. Por isso essa parte usa **Funções Serverless da própria Vercel** (a pasta `/api` —
+sobem junto com o resto do site, sem custo extra e sem precisar de outro serviço) para
+conversar com o Mercado Pago e confirmar pagamentos com segurança.
+
+### Passo a passo pra ativar numa loja
+
+1. **Crie sua conta no Mercado Pago** (ou use a que já tem): [mercadopago.com.br](https://www.mercadopago.com.br).
+   Recomendo testar primeiro com credenciais de **teste** (existe um botão "Credenciais de
+   teste" no painel de desenvolvedor) antes de usar as credenciais **de produção** (dinheiro
+   de verdade).
+2. No [painel de desenvolvedor do Mercado Pago](https://www.mercadopago.com.br/developers/panel),
+   crie uma aplicação e copie duas chaves: a **Public Key** e o **Access Token**.
+3. **Gere a credencial do Firebase** (o servidor precisa dela pra poder escrever pedido/estoque
+   com segurança): Firebase Console → ⚙️ Configurações do projeto → **Contas de serviço** →
+   **Gerar nova chave privada**. Isso baixa um arquivo `.json` — guarde com cuidado, ele dá
+   acesso total ao banco.
+4. **Configure as variáveis de ambiente na Vercel** (Project Settings → Environment Variables):
+   - `FIREBASE_SERVICE_ACCOUNT` → abra o arquivo `.json` baixado no passo 3, copie **o
+     conteúdo inteiro** e cole aqui como texto.
+   Depois de salvar, faça um novo deploy (qualquer novo envio de arquivo já dispara um; ou
+   use o botão "Redeploy" no painel da Vercel) — variável de ambiente só entra em vigor a
+   partir do próximo deploy.
+5. No painel da Excellent Loja, entre na loja desejada → **Configurações → Pagamento online**
+   → cole a **Public Key** e o **Access Token** do passo 2, marque "Pagamento online ativo" e
+   salve.
+6. Nessa mesma tela aparece uma **URL de webhook** já pronta (com o endereço da sua loja
+   embutido) — copie e cole ela no Mercado Pago, em **Sua aplicação → Webhooks → Configurar
+   notificações**, marcando o evento **"Pagamentos"**. O Mercado Pago vai gerar uma **chave
+   secreta de assinatura**; copie ela de volta e cole no campo "Chave secreta do Webhook" da
+   Excellent Loja (recomendado, mas opcional — sem ela o sistema confirma o pagamento
+   consultando o Mercado Pago mesmo assim, só que sempre por consulta periódica, nunca na hora).
+
+Só depois desses passos o pagamento online realmente ativa. Antes disso — ou em qualquer
+loja que não tiver "Pagamento online ativo" marcado — a loja continua funcionando
+exatamente como hoje, combinando o pedido pelo WhatsApp.
+
+### Como funciona por dentro
+
+- O cliente preenche os dados de entrega normalmente; se a loja tem pagamento online
+  ativo, em vez de abrir o WhatsApp ele vai pra uma tela de pagamento dentro da própria loja,
+  com Pix (QR Code + código "copia e cola") e Cartão (crédito/débito, num formulário seguro
+  do próprio Mercado Pago — o número do cartão nunca passa pelos servidores da Excellent Loja).
+- **O pedido só é criado em "Pedidos" depois que o pagamento é confirmado.** Antes disso,
+  ele existe só como um "pagamento pendente" (`lojas/{id}/pagamentosPendentes`), invisível no
+  painel — não reserva estoque, não aparece no Kanban, não conta em nada.
+- A confirmação acontece de duas formas ao mesmo tempo, pra não depender de uma única coisa
+  funcionar: o **webhook** (o Mercado Pago avisa na hora que o status muda) e uma
+  **consulta automática** que o navegador do cliente faz a cada poucos segundos enquanto
+  espera. Assim que aprovado, a tela de pagamento fecha sozinha e o pedido aparece em Pedidos.
+- O preço cobrado **nunca vem do navegador** — o servidor recalcula o total a partir do preço
+  real de cada produto no Firestore (e confere o estoque) antes de gerar qualquer cobrança,
+  então não tem como alguém adulterar o preço pela tela.
+
+### Sobre valores e responsabilidade
+
+O Mercado Pago cobra uma taxa por transação (consulte as condições atuais na conta de vocês)
+e é quem efetivamente custodia e repassa o dinheiro — a Excellent Loja só orquestra a
+integração. Eu não tenho como testar esse fluxo de ponta a ponta com dinheiro de verdade;
+teste com as credenciais de teste do Mercado Pago antes de ativar em produção.
 
 ## Publicar
 
@@ -204,4 +286,5 @@ próprio precisam de Vercel, Firebase Hosting ou Netlify (que suportam esse redi
   sugere o preço de venda a partir da margem desejada — com um clique aplica o preço ao produto.
 - **Relatórios**: desempenho por período, top produtos, formas de pagamento e top clientes,
   com exportação em CSV.
-- **Configurações**: dados da loja, categorias de produtos, formas de pagamento aceitas e conta.
+- **Configurações**: dados da loja, categorias de produtos, formas de pagamento aceitas,
+  pagamento online (Mercado Pago) e conta.
