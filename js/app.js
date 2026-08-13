@@ -258,6 +258,7 @@ function applyPainelBackground() {
 }
 
 function showApp() {
+    document.getElementById('landing-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'flex';
@@ -266,21 +267,38 @@ function showApp() {
 }
 
 function showLogin() {
+    document.getElementById('landing-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
 }
 
+function showLanding() {
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('storefront-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('landing-screen').style.display = 'block';
+}
+
 function showStorefrontScreen() {
+    document.getElementById('landing-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'none';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'block';
     Storefront.mount();
 }
 
+function bindLanding() {
+    document.getElementById('landing-year').textContent = new Date().getFullYear();
+    document.getElementById('btn-landing-login').addEventListener('click', showLogin);
+    document.getElementById('btn-landing-login-2').addEventListener('click', showLogin);
+    document.getElementById('btn-back-landing').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     updateTopbarDate();
     bindNav();
+    bindLanding();
     Auth.bindLoginForm();
     mountAllModules();
     bindStoreSubscriptions();
@@ -290,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
             teardownStoreListeners();
             teardownProfile();
             document.getElementById('app-loading').style.display = 'none';
-            showLogin();
+            showLanding();
             return;
         }
 
