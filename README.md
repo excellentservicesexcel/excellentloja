@@ -16,12 +16,14 @@ Firestore usado aqui funciona no plano gratuito (Spark).
 ## Estrutura
 
 ```
-index.html              shell da aplicação (login + layout do painel)
+index.html              shell da aplicação (login + landing + layout do painel)
+vercel.json              redireciona qualquer endereço (ex: /bardojoao) para index.html
 css/style.css            paleta e estilos (dourado/preto, identidade Excellent Loja)
 config/firebase-config.js  credenciais do projeto Firebase (separado do restante do código)
 js/utils.js               helpers (formatação, toasts, modais)
+js/loja.js                 resolve qual loja está sendo acessada pela URL (multi-loja)
 js/auth.js                login/logout
-js/app.js                 Store central (dados em tempo real) + navegação
+js/app.js                 Store central (dados em tempo real) + navegação + boot
 js/dashboard.js           aba Dashboard
 js/pedidos.js             aba Pedidos (kanban por status)
 js/clientes.js            aba Clientes
@@ -32,7 +34,7 @@ js/estoque.js               aba Estoque (ingredientes/insumos)
 js/financeiro.js            aba Financeiro
 js/precificacao.js          aba Precificação (ficha técnica de custo)
 js/relatorios.js            aba Relatórios
-js/configuracoes.js         aba Configurações
+js/configuracoes.js         aba Configurações (inclui "Gerenciar lojas" pro dono da plataforma)
 js/onboarding.js            assistente de boas-vindas (primeiro login de um usuário autorizado)
 js/storefront.js            loja virtual pública (login autenticado mas fora da lista de autorizados)
 firestore.rules            regras de segurança do Firestore
@@ -54,43 +56,76 @@ habilitar os dois provedores:
    sistema vai rodar (ex.: `excellentloja.web.app`, ou o domínio do GitHub Pages/Hosting)
    está na lista — senão o login com Google não funciona.
 5. **Firestore Database** → crie o banco (modo produção) caso ainda não exista.
-6. Publique as regras de segurança inclusas neste repositório para restringir o acesso
-   aos dados apenas a usuários autenticados:
+6. **Publique as regras de segurança — passo obrigatório, sem ele nada funciona**:
    ```bash
    npm install -g firebase-tools
    firebase login
    firebase use excellentloja
    firebase deploy --only firestore:rules
    ```
-   (ou cole o conteúdo de `firestore.rules` diretamente no console, em Firestore → Regras).
+   (ou cole o conteúdo de `firestore.rules` diretamente no console, em Firestore → Regras,
+   e clique em "Publicar"). Toda vez que `firestore.rules` mudar neste projeto, esse passo
+   precisa ser refeito manualmente — o arquivo no código não se aplica sozinho.
    Não é preciso mexer no Storage — o app não usa esse serviço (veja a seção "Stack").
-7. Abra `index.html` (ou publique via Firebase Hosting / GitHub Pages) e crie sua conta
-   direto na tela de login ("Cadastrar") ou entre com o Google, usando o e-mail
-   `excellentservices.excel@gmail.com` (já vem liberado por padrão — veja abaixo).
+7. Abra `index.html` (ou publique via Firebase Hosting / GitHub Pages / Vercel) e crie sua
+   conta direto na tela de login ("Cadastrar") ou entre com o Google, usando o e-mail
+   `excellentservices.excel@gmail.com` (já vem liberado por padrão — veja abaixo). Esse
+   primeiro login cria automaticamente a sua loja (a "loja raiz", endereço `/`).
 
 > As chaves em `config/firebase-config.js` são as credenciais **públicas** do app Web —
 > é normal e esperado que fiquem visíveis no navegador. A segurança de verdade vem das
 > regras do Firestore (passo 6) e do login.
 
-### Quem consegue entrar no painel de gestão?
+### Múltiplas lojas
 
-O cadastro (e-mail ou Google) é aberto para qualquer pessoa, mas **só quem está na lista
-de "Usuários autorizados"** (Configurações → Usuários autorizados, dentro do painel) tem
-acesso aos dados do negócio — pedidos, clientes, financeiro, etc. As regras do Firestore
-já aplicam essa mesma restrição no servidor, não só na tela.
+O sistema é multi-loja: um único deploy pode hospedar a sua loja e quantas outras lojas
+você quiser criar, cada uma **totalmente isolada** das demais (produtos, pedidos, clientes,
+estoque, financeiro — nada é compartilhado entre lojas).
 
-Quem faz login com um e-mail fora da lista (Google ou cadastro) não vê o painel: cai
-direto numa **loja virtual pública**, com o catálogo de produtos ativos e um carrinho que
-finaliza o pedido pelo WhatsApp da loja (número configurado em Dados da loja).
+- A sua loja (a "loja raiz", dona da plataforma) fica no endereço principal, ex.:
+  `excellentloja.vercel.app`.
+- Cada loja criada fica em `excellentloja.vercel.app/<endereço-da-loja>`, ex.:
+  `excellentloja.vercel.app/bardojoao`.
+- Só o e-mail `excellentservices.excel@gmail.com` (fixo no código, em `js/loja.js`) vê a
+  aba **Configurações → Gerenciar lojas**, onde dá pra criar uma loja nova (nome + endereço),
+  trocar o logotipo dela (clicando no círculo ao lado do nome) e adicionar o e-mail de quem
+  vai administrá-la. Esse e-mail passa a enxergar *só* o painel daquela loja — sem nenhum
+  acesso à sua loja ou às demais.
+- No Firestore, cada loja é um documento em `lojas/{id}` (o `id` é o próprio endereço/slug,
+  ou `root` para a sua), e todo o resto dos dados dela fica em subcoleções:
+  `lojas/{id}/produtos`, `lojas/{id}/pedidos`, `lojas/{id}/clientes`, etc.
+- Um endereço que não corresponde a nenhuma loja mostra uma página de "Loja não encontrada".
+- A **página inicial** (endereço raiz) mostra um card para cada loja criada, com o logotipo
+  configurado — clicar num card leva direto pra loja daquele endereço.
+
+### Quem consegue entrar?
+
+O comportamento de login **é diferente na página inicial e dentro de cada loja**:
+
+- **Na página inicial** (endereço raiz), o login é restrito: só entra quem administra a sua
+  loja ou alguma das lojas criadas. Um e-mail sem loja cadastrada é barrado (a conta chega a
+  autenticar no Google/Firebase, mas o sistema desloga na hora e mostra um aviso) — a página
+  inicial não é mais uma vitrine de compra pública, é só o diretório de lojas + porta de
+  entrada dos painéis. Se o e-mail que logou administra uma loja diferente da atual, o sistema
+  já redireciona automaticamente pro endereço dela.
+- **Dentro de uma loja específica** (`/algum-endereço`), o cadastro (e-mail ou Google)
+  continua aberto pra qualquer pessoa. Só quem está na lista de "Usuários autorizados"
+  daquela loja (Configurações → Usuários autorizados) vê o painel de gestão dela — pedidos,
+  clientes, financeiro, etc. Quem loga com um e-mail fora da lista não vê o painel: cai
+  direto na **loja virtual pública** daquele endereço, com o catálogo de produtos ativos e
+  um carrinho que finaliza o pedido pelo WhatsApp da loja (número configurado em Dados da
+  loja) — esse fluxo de compra continua igual, só muda a página inicial.
+
+As regras do Firestore já aplicam essas mesmas restrições no servidor, não só na tela.
 
 No primeiro login (autorizado ou não) o sistema pede nome, telefone e foto (opcional) antes
-de continuar. Para e-mails autorizados isso vira o perfil do painel (`usuarios/{uid}`); para
-clientes da loja virtual, vira um cadastro em `clientes/{uid}` — ou seja, cada pessoa que faz
-login na loja já entra automaticamente como cliente no CRM do painel. Ao finalizar uma compra,
-a loja cria um pedido de verdade (mesma coleção `pedidos` usada pelo painel, com o `clienteId`
+de continuar. Para e-mails autorizados isso vira o perfil do painel (`usuarios/{uid}`, global,
+não depende da loja); para clientes da loja virtual, vira um cadastro em
+`lojas/{id}/clientes/{uid}` — cada pessoa que compra numa loja é cliente só daquela loja. Ao
+finalizar uma compra, a loja cria um pedido de verdade (`lojas/{id}/pedidos`, com o `clienteId`
 apontando pra esse cadastro) e itens em Produção — então as compras feitas pela loja aparecem
-no Kanban de Pedidos, nas estatísticas de Clientes e no Dashboard, junto com os pedidos criados
-manualmente pelo painel.
+no Kanban de Pedidos, nas estatísticas de Clientes e no Dashboard daquela loja, junto com os
+pedidos criados manualmente pelo painel dela.
 
 > Criar um pedido (pelo painel ou pela loja virtual) já reserva o estoque na hora — a
 > quantidade comprada é descontada do produto imediatamente, para ninguém conseguir comprar
@@ -100,18 +135,29 @@ manualmente pelo painel.
 > estoque mas ainda não entra nas contas de faturamento.
 
 A capa da loja (Configurações → Capa da loja) aceita quantas fotos você quiser — cada uma vira
-um documento na coleção `capas`, então não há limite de quantidade. Com 2 ou mais, elas aparecem
-na página inicial da loja como um carrossel, avançando sozinho a cada 3 segundos.
+um documento na subcoleção `capas` daquela loja, então não há limite de quantidade. Com 2 ou
+mais, elas aparecem na página inicial da loja como um carrossel, avançando sozinho a cada 3
+segundos.
 
-## Publicar (Firebase Hosting)
+## Publicar
 
+Este projeto já inclui `vercel.json`, então a forma mais simples é publicar direto na
+[Vercel](https://vercel.com) (importe a pasta ou arraste os arquivos) — o `vercel.json` garante
+que endereços como `/bardojoao` carreguem o app corretamente em vez de dar 404.
+
+Para publicar no **Firebase Hosting** em vez da Vercel:
 ```bash
 firebase init hosting   # escolha a pasta atual como "public directory"
+```
+Ao rodar `firebase init hosting`, responda "yes" para "configure as a single-page app" —
+isso cria a mesma regra de redirecionamento que o `vercel.json` já traz para a Vercel. Depois:
+```bash
 firebase deploy --only hosting
 ```
 
-Qualquer outra opção de hospedagem de site estático (GitHub Pages, Netlify, Vercel) também
-funciona, já que não há back-end — tudo fala diretamente com o Firebase pelo navegador.
+No **GitHub Pages** o redirecionamento de endereços como `/bardojoao` não funciona por padrão
+(ele não tem esse tipo de rewrite) — funciona bem para a loja raiz (`/`), mas lojas com endereço
+próprio precisam de Vercel, Firebase Hosting ou Netlify (que suportam esse redirecionamento).
 
 ## Como o sistema funciona
 

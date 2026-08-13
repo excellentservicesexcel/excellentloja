@@ -1,18 +1,24 @@
 rules_version = '2';
 
-// Regras de segurança — Vallê Doces
+// Regras de segurança — Excellent Loja (multi-loja)
 //
+// - Cada loja vive em lojas/{lojaId}, com as configurações da loja (nome,
+//   telefone, categorias, usuários autorizados, etc.) no próprio documento
+//   e todo o resto do negócio (produtos, pedidos, clientes, estoque,
+//   financeiro, produção, fichas técnicas, capas, cards do Instagram,
+//   newsletter) em subcoleções — lojas/{lojaId}/produtos, etc.
+// - Só quem está em usuariosAutorizados daquela loja (ou o super admin,
+//   dono da plataforma) pode gerenciar os dados dela. Uma loja nunca
+//   consegue ler/escrever dados de outra.
+// - Só o super admin pode criar ou excluir lojas; quem já é autorizado
+//   numa loja pode editar as configurações dela (inclusive adicionar
+//   outro e-mail autorizado para a própria loja).
 // - Catálogo de produtos e dados públicos da loja: qualquer pessoa pode ler
-//   (é o que abastece a loja virtual pública).
-// - Todo o resto do sistema de gestão (pedidos, clientes, financeiro,
-//   estoque, produção, fichas técnicas, config avançada): só usuários
-//   autenticados cujo e-mail está na lista `usuariosAutorizados`, guardada
-//   em configuracoes/geral.
-// - Cada usuário só lê/edita o próprio perfil (usuarios/{uid}); admins
-//   também podem ler todos os perfis.
+//   (é o que abastece a loja virtual pública e a página de login/landing).
+// - Cada usuário só lê/edita o próprio perfil (usuarios/{uid}).
 // - Clientes da loja virtual (não admins) têm um cadastro em
-//   clientes/{uid} (mesmo id do login) e podem criar pedidos próprios,
-//   que entram no mesmo fluxo do painel de gestão.
+//   lojas/{lojaId}/clientes/{uid} (mesmo id do login) e podem criar pedidos
+//   próprios, que entram no mesmo fluxo do painel de gestão daquela loja.
 //
 // Publique com: firebase deploy --only firestore:rules
 service cloud.firestore {
@@ -22,78 +28,82 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdmin() {
+    function isSuperAdmin() {
+      return signedIn() && request.auth.token.email == 'excellentservices.excel@gmail.com';
+    }
+
+    function lojaAuthorized(lojaId) {
       return signedIn()
-        && exists(/databases/$(database)/documents/configuracoes/geral)
-        && ('usuariosAutorizados' in get(/databases/$(database)/documents/configuracoes/geral).data)
-        && request.auth.token.email in get(/databases/$(database)/documents/configuracoes/geral).data.usuariosAutorizados;
+        && exists(/databases/$(database)/documents/lojas/$(lojaId))
+        && ('usuariosAutorizados' in get(/databases/$(database)/documents/lojas/$(lojaId)).data)
+        && request.auth.token.email in get(/databases/$(database)/documents/lojas/$(lojaId)).data.usuariosAutorizados;
     }
 
-    match /produtos/{id} {
+    function isLojaAdmin(lojaId) {
+      return lojaAuthorized(lojaId) || isSuperAdmin();
+    }
+
+    match /lojas/{lojaId} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
+      allow create: if isSuperAdmin();
+      allow update: if isLojaAdmin(lojaId);
+      allow delete: if isSuperAdmin();
 
-    match /capas/{id} {
-      // fotos de capa da loja virtual (base64), exibidas no carrossel público
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+      match /produtos/{id} {
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
 
-    match /instaCards/{id} {
-      // cards da seção "Siga nosso Instagram" (imagem, título, texto, link)
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+      match /capas/{id} {
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
 
-    match /configuracoes/geral {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+      match /instaCards/{id} {
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
 
-    match /configuracoes/contadores {
-      // usado para gerar o número sequencial do pedido (admin e loja virtual)
-      allow read, write: if signedIn();
-    }
+      match /clientes/{id} {
+        allow read, write: if isLojaAdmin(lojaId);
+        // cliente da loja virtual cadastra/edita o próprio registro (doc id = uid)
+        allow read, write: if signedIn() && request.auth.uid == id;
+      }
 
-    match /configuracoes/{doc} {
-      allow read, write: if isAdmin();
+      match /pedidos/{id} {
+        allow read, update, delete: if isLojaAdmin(lojaId);
+        // qualquer pessoa logada pode criar seu próprio pedido pela loja virtual
+        allow create: if signedIn();
+        allow read: if signedIn() && resource.data.clienteId == request.auth.uid;
+      }
+
+      match /financeiro/{id} {
+        allow read, update, delete: if isLojaAdmin(lojaId);
+        allow create: if signedIn();
+      }
+
+      match /producao/{id} {
+        allow read, update, delete: if isLojaAdmin(lojaId);
+        allow create: if signedIn();
+      }
+
+      match /estoque/{id} { allow read, write: if isLojaAdmin(lojaId); }
+      match /receitas/{id} { allow read, write: if isLojaAdmin(lojaId); }
+
+      match /meta/{id} {
+        // contador sequencial de número de pedido daquela loja
+        allow read, write: if signedIn();
+      }
+
+      match /newsletter/{id} {
+        allow create: if request.resource.data.email is string;
+        allow read, update, delete: if isLojaAdmin(lojaId);
+      }
     }
 
     match /usuarios/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
-      allow read: if isAdmin();
-    }
-
-    match /clientes/{id} {
-      allow read, write: if isAdmin();
-      // cliente da loja virtual cadastra/edita o próprio registro (doc id = uid)
-      allow read, write: if signedIn() && request.auth.uid == id;
-    }
-
-    match /pedidos/{id} {
-      allow read, update, delete: if isAdmin();
-      // qualquer pessoa logada pode criar seu próprio pedido pela loja virtual
-      allow create: if signedIn();
-      allow read: if signedIn() && resource.data.clienteId == request.auth.uid;
-    }
-
-    match /financeiro/{id} {
-      allow read, update, delete: if isAdmin();
-      allow create: if signedIn();
-    }
-
-    match /producao/{id} {
-      allow read, update, delete: if isAdmin();
-      allow create: if signedIn();
-    }
-
-    match /estoque/{id} { allow read, write: if isAdmin(); }
-    match /receitas/{id} { allow read, write: if isAdmin(); }
-
-    match /newsletter/{id} {
-      allow create: if request.resource.data.email is string;
-      allow read, update, delete: if isAdmin();
+      allow read: if isSuperAdmin();
     }
   }
 }

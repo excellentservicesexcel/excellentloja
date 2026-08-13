@@ -25,6 +25,16 @@
 <!-- Loading -->
 <div id="app-loading"><div class="spinner"></div></div>
 
+<!-- Loja não encontrada -->
+<div id="not-found-screen" style="display:none;">
+  <div class="not-found-card">
+    <i class="fa-solid fa-shop-slash"></i>
+    <h2>Loja não encontrada</h2>
+    <p>Esse endereço não corresponde a nenhuma loja cadastrada. Confira o link com quem administra essa loja.</p>
+    <a href="/" class="btn btn-primary">Ir para a página inicial</a>
+  </div>
+</div>
+
 <!-- Landing (página pública antes do login) -->
 <div id="landing-screen" style="display:none;">
   <header class="landing-header">
@@ -34,8 +44,14 @@
 
   <section class="landing-hero">
     <h1>Excelência em cada venda.</h1>
-    <p>Sua loja virtual e o painel de gestão do seu negócio, em um só lugar — pedidos, produtos, estoque e financeiro sempre à mão.</p>
+    <p id="landing-hero-sub">Sua loja virtual e o painel de gestão do seu negócio, em um só lugar — pedidos, produtos, estoque e financeiro sempre à mão.</p>
     <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+  </section>
+
+  <section class="landing-lojas" id="landing-lojas-section" style="display:none;">
+    <h2>Nossas lojas</h2>
+    <p>Escolha uma loja para visitar.</p>
+    <div class="landing-lojas-grid" id="landing-lojas-grid"></div>
   </section>
 
   <section class="landing-features">
@@ -256,6 +272,7 @@
 <div id="toast-wrap"></div>
 
 <script src="js/utils.js?v=4"></script>
+<script src="js/loja.js?v=1"></script>
 <script src="js/auth.js?v=4"></script>
 <script src="js/dashboard.js?v=4"></script>
 <script src="js/clientes.js?v=4"></script>
