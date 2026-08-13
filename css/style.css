@@ -155,6 +155,18 @@ ul { list-style: none; }
 }
 
 /* ---------------------------------------------------------------------- */
+/* Loja não encontrada                                                    */
+/* ---------------------------------------------------------------------- */
+#not-found-screen {
+    position: fixed; inset: 0; z-index: 9200; display: none; align-items: center; justify-content: center;
+    background: var(--bg); padding: 24px;
+}
+.not-found-card { text-align: center; max-width: 380px; }
+.not-found-card i { font-size: 2.6rem; color: var(--orange-500); margin-bottom: 18px; display: block; }
+.not-found-card h2 { font-family: 'Fredoka', sans-serif; font-size: 1.4rem; color: var(--text-main); margin-bottom: 10px; }
+.not-found-card p { font-size: 0.9rem; color: var(--text-body); line-height: 1.6; margin-bottom: 24px; }
+
+/* ---------------------------------------------------------------------- */
 /* Landing (página pública antes do login)                                */
 /* ---------------------------------------------------------------------- */
 #landing-screen { position: fixed; inset: 0; z-index: 8900; overflow-y: auto; background: var(--bg); }
@@ -169,6 +181,22 @@ ul { list-style: none; }
 .landing-hero h1 { font-family: 'Fredoka', sans-serif; font-size: 2.4rem; color: var(--text-main); margin-bottom: 16px; }
 .landing-hero p { font-size: 1.05rem; color: var(--text-body); line-height: 1.6; margin-bottom: 30px; }
 .landing-hero-cta { padding: 14px 34px; font-size: 1rem; border-radius: 999px; box-shadow: 0 14px 30px rgba(201,150,43,0.32); }
+
+.landing-lojas { max-width: 1100px; margin: 0 auto 70px; padding: 0 24px; text-align: center; }
+.landing-lojas h2 { font-family: 'Fredoka', sans-serif; font-size: 1.5rem; color: var(--text-main); margin-bottom: 6px; }
+.landing-lojas > p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 26px; }
+.landing-lojas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; }
+.landing-loja-card {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+    padding: 26px 16px; text-align: center; cursor: pointer; font: inherit; transition: transform .15s, box-shadow .15s;
+}
+.landing-loja-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--orange-200); }
+.landing-loja-logo {
+    width: 64px; height: 64px; border-radius: 50%; overflow: hidden; margin: 0 auto 14px; display: flex;
+    align-items: center; justify-content: center; background: var(--orange-50); color: var(--orange-500); font-size: 1.4rem;
+}
+.landing-loja-logo img { width: 100%; height: 100%; object-fit: cover; }
+.landing-loja-card strong { display: block; font-size: 0.9rem; color: var(--text-main); }
 
 .landing-features {
     max-width: 1100px; margin: 0 auto 90px; padding: 0 24px;
@@ -612,6 +640,31 @@ input[type="number"] { -moz-appearance: textfield; }
 .chip button:hover { background: var(--orange-200); }
 .add-chip-row { display: flex; gap: 8px; margin-top: 12px; max-width: 360px; }
 .add-chip-row input { flex: 1; }
+
+.slug-input-wrap {
+    display: flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-soft); overflow: hidden;
+}
+.slug-input-wrap span { padding: 0 0 0 12px; font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+.slug-input-wrap input { border: none; background: transparent; flex: 1; padding: 11px 12px 11px 4px; font-size: 0.9rem; outline: none; color: var(--text-main); }
+
+.loja-admin-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 14px; background: var(--surface-soft); }
+.loja-admin-card:last-child { margin-bottom: 0; }
+.loja-admin-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.loja-admin-info { flex: 1; min-width: 0; }
+.loja-admin-head strong { display: block; font-size: 0.92rem; color: var(--text-main); }
+.loja-admin-slug { font-size: 0.78rem; color: var(--text-muted); }
+.loja-admin-logo {
+    width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; cursor: pointer;
+    background: var(--orange-50); color: var(--orange-500); display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; border: 1px solid var(--border);
+}
+.loja-admin-logo img { width: 100%; height: 100%; object-fit: cover; }
+.loja-admin-head button {
+    background: none; border: none; color: var(--text-muted); cursor: pointer; width: 30px; height: 30px;
+    border-radius: 50%; flex-shrink: 0;
+}
+.loja-admin-head button:hover { background: var(--danger-bg); color: var(--danger); }
 
 .capa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .capa-thumb { position: relative; border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 4/3; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
