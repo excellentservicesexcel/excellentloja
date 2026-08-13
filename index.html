@@ -25,6 +25,31 @@
 <!-- Loading -->
 <div id="app-loading"><div class="spinner"></div></div>
 
+<!-- Landing (página pública antes do login) -->
+<div id="landing-screen" style="display:none;">
+  <header class="landing-header">
+    <img src="img/logo.png?v=4" alt="Excellent Loja" class="landing-header-logo">
+    <button class="btn btn-primary" id="btn-landing-login"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+  </header>
+
+  <section class="landing-hero">
+    <h1>Excelência em cada venda.</h1>
+    <p>Sua loja virtual e o painel de gestão do seu negócio, em um só lugar — pedidos, produtos, estoque e financeiro sempre à mão.</p>
+    <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+  </section>
+
+  <section class="landing-features">
+    <div class="landing-feature"><i class="fa-solid fa-heart"></i><strong>Feito com cuidado</strong><span>Em cada detalhe</span></div>
+    <div class="landing-feature"><i class="fa-solid fa-award"></i><strong>Produtos selecionados</strong><span>Qualidade que você sente</span></div>
+    <div class="landing-feature"><i class="fa-solid fa-truck"></i><strong>Entrega combinada</strong><span>Direto com a loja</span></div>
+    <div class="landing-feature"><i class="fa-brands fa-whatsapp"></i><strong>Pedido simples</strong><span>Finalize pelo WhatsApp</span></div>
+  </section>
+
+  <footer class="landing-footer">
+    <p>© <span id="landing-year"></span> Excellent Loja. Todos os direitos reservados.</p>
+  </footer>
+</div>
+
 <!-- Login -->
 <div id="login-screen">
   <div class="login-left">
@@ -36,6 +61,7 @@
 
   <div class="login-right">
     <div class="login-card">
+      <a href="#" class="login-back" id="btn-back-landing"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
 
       <!-- Painel de login -->
       <div class="auth-panel" id="panel-login">
