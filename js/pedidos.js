@@ -102,9 +102,9 @@ const Pedidos = (() => {
         const novo = FLOW[idx + 1];
         try {
             const batch = window.db.batch();
-            batch.update(window.db.collection('pedidos').doc(id), { status: novo });
+            batch.update(Loja.col('pedidos').doc(id), { status: novo });
             if (novo === 'producao') {
-                const finRef = window.db.collection('financeiro').doc();
+                const finRef = Loja.col('financeiro').doc();
                 batch.set(finRef, {
                     tipo: 'receita', categoria: 'Venda de produtos', descricao: `Pedido #${p.numero} — ${p.clienteNome}`,
                     valor: p.total, formaPagamento: p.formaPagamento, data: new Date(),
@@ -113,7 +113,7 @@ const Pedidos = (() => {
             }
             await batch.commit();
             if (novo === 'entregue') {
-                const snap = await window.db.collection('producao').where('pedidoId', '==', id).get();
+                const snap = await Loja.col('producao').where('pedidoId', '==', id).get();
                 const batch2 = window.db.batch();
                 snap.forEach(d => batch2.update(d.ref, { status: 'concluido' }));
                 await batch2.commit();
@@ -129,13 +129,13 @@ const Pedidos = (() => {
         Utils.confirmDialog('Cancelar este pedido? O lançamento financeiro relacionado será removido e o estoque reservado será devolvido.', async () => {
             try {
                 const batch = window.db.batch();
-                batch.update(window.db.collection('pedidos').doc(id), { status: 'cancelado' });
-                const finSnap = await window.db.collection('financeiro').where('pedidoId', '==', id).get();
+                batch.update(Loja.col('pedidos').doc(id), { status: 'cancelado' });
+                const finSnap = await Loja.col('financeiro').where('pedidoId', '==', id).get();
                 finSnap.forEach(d => batch.delete(d.ref));
-                const prodSnap = await window.db.collection('producao').where('pedidoId', '==', id).get();
+                const prodSnap = await Loja.col('producao').where('pedidoId', '==', id).get();
                 prodSnap.forEach(d => batch.update(d.ref, { status: 'cancelado' }));
                 (p?.itens || []).forEach(i => {
-                    batch.update(window.db.collection('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(i.quantidade) });
+                    batch.update(Loja.col('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(i.quantidade) });
                 });
                 await batch.commit();
                 Utils.closeModal();
@@ -151,14 +151,14 @@ const Pedidos = (() => {
         Utils.confirmDialog('Excluir definitivamente este pedido e seus lançamentos relacionados?', async () => {
             try {
                 const batch = window.db.batch();
-                batch.delete(window.db.collection('pedidos').doc(id));
-                const finSnap = await window.db.collection('financeiro').where('pedidoId', '==', id).get();
+                batch.delete(Loja.col('pedidos').doc(id));
+                const finSnap = await Loja.col('financeiro').where('pedidoId', '==', id).get();
                 finSnap.forEach(d => batch.delete(d.ref));
-                const prodSnap = await window.db.collection('producao').where('pedidoId', '==', id).get();
+                const prodSnap = await Loja.col('producao').where('pedidoId', '==', id).get();
                 prodSnap.forEach(d => batch.delete(d.ref));
                 if (p && p.status !== 'cancelado') {
                     (p.itens || []).forEach(i => {
-                        batch.update(window.db.collection('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(i.quantidade) });
+                        batch.update(Loja.col('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(i.quantidade) });
                     });
                 }
                 await batch.commit();
@@ -334,13 +334,13 @@ const Pedidos = (() => {
             };
 
             const batch = window.db.batch();
-            const pedidoRef = window.db.collection('pedidos').doc();
+            const pedidoRef = Loja.col('pedidos').doc();
             batch.set(pedidoRef, data);
 
             itens.forEach(i => {
-                const prodRef = window.db.collection('produtos').doc(i.produtoId);
+                const prodRef = Loja.col('produtos').doc(i.produtoId);
                 batch.update(prodRef, { estoqueAtual: firebase.firestore.FieldValue.increment(-i.quantidade) });
-                const prodItemRef = window.db.collection('producao').doc();
+                const prodItemRef = Loja.col('producao').doc();
                 batch.set(prodItemRef, {
                     data: data.dataEntrega || new Date(), produtoId: i.produtoId, produtoNome: i.nome,
                     quantidade: i.quantidade, status: 'pendente', pedidoId: pedidoRef.id,

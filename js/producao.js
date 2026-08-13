@@ -71,14 +71,14 @@ const Producao = (() => {
         const idx = FLOW.indexOf(item.status);
         if (idx === -1 || idx === FLOW.length - 1) return;
         try {
-            await window.db.collection('producao').doc(id).update({ status: FLOW[idx + 1] });
+            await Loja.col('producao').doc(id).update({ status: FLOW[idx + 1] });
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
     }
 
     function remove(id) {
         Utils.confirmDialog('Remover este item da produção?', async () => {
             try {
-                await window.db.collection('producao').doc(id).delete();
+                await Loja.col('producao').doc(id).delete();
                 Utils.toast('Item removido.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         });
@@ -106,7 +106,7 @@ const Producao = (() => {
             const prod = Store.produtos.find(p => p.id === document.getElementById('f-produto').value);
             if (!prod) { Utils.toast('Selecione um produto.', 'error'); return; }
             try {
-                await window.db.collection('producao').add({
+                await Loja.col('producao').add({
                     data: new Date(document.getElementById('f-data').value + 'T12:00:00'),
                     produtoId: prod.id, produtoNome: prod.nome,
                     quantidade: Number(document.getElementById('f-qtd').value) || 1,

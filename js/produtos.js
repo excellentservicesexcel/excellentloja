@@ -146,16 +146,16 @@ const Produtos = (() => {
             try {
                 let docId = p ? p.id : null;
                 if (p) {
-                    await window.db.collection('produtos').doc(p.id).update(data);
+                    await Loja.col('produtos').doc(p.id).update(data);
                 } else {
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    const ref = await window.db.collection('produtos').add(data);
+                    const ref = await Loja.col('produtos').add(data);
                     docId = ref.id;
                 }
                 const file = document.getElementById('f-foto').files[0];
                 if (file) {
                     const imagemUrl = await Utils.compressImageToBase64(file, { maxDim: 1000, maxBytes: 450000 });
-                    await window.db.collection('produtos').doc(docId).update({ imagemUrl });
+                    await Loja.col('produtos').doc(docId).update({ imagemUrl });
                 }
                 Utils.closeModal();
                 Utils.toast(p ? 'Produto atualizado.' : 'Produto cadastrado.', 'success');
@@ -169,7 +169,7 @@ const Produtos = (() => {
 
     async function toggleAtivo(id, current) {
         try {
-            await window.db.collection('produtos').doc(id).update({ ativo: !current });
+            await Loja.col('produtos').doc(id).update({ ativo: !current });
         } catch (err) {
             Utils.toast('Erro: ' + err.message, 'error');
         }
@@ -179,7 +179,7 @@ const Produtos = (() => {
         const p = Store.produtos.find(x => x.id === id);
         Utils.confirmDialog(`Excluir o produto "${p ? p.nome : ''}"? Esta ação não pode ser desfeita.`, async () => {
             try {
-                await window.db.collection('produtos').doc(id).delete();
+                await Loja.col('produtos').doc(id).delete();
                 Utils.toast('Produto excluído.', 'success');
             } catch (err) {
                 Utils.toast('Erro ao excluir: ' + err.message, 'error');

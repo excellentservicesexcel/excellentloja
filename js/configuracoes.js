@@ -6,9 +6,11 @@ const Configuracoes = (() => {
 
     let activeTab = 'loja';
     let profilePhotoDataUrl = null;
+    let lojasCache = [];
 
     function mount() {
         const el = document.getElementById('view-configuracoes');
+        const souSuperAdmin = Loja.isSuperAdmin(Auth.currentUser() && Auth.currentUser().email);
         el.innerHTML = `
             <div class="settings-tabs">
                 <div class="settings-tab active" data-tab="loja">Dados da loja</div>
@@ -17,6 +19,7 @@ const Configuracoes = (() => {
                 <div class="settings-tab" data-tab="imagens">Imagens da loja</div>
                 <div class="settings-tab" data-tab="usuarios">Usuários autorizados</div>
                 <div class="settings-tab" data-tab="conta">Minha conta</div>
+                ${souSuperAdmin ? `<div class="settings-tab" data-tab="lojas"><i class="fa-solid fa-store"></i> Gerenciar lojas</div>` : ''}
             </div>
 
             <div class="settings-panel active" id="panel-loja">
@@ -171,6 +174,31 @@ const Configuracoes = (() => {
                     <button class="btn btn-danger" id="btn-sair-conta" style="margin-left:10px;"><i class="fa-solid fa-right-from-bracket"></i> Sair do sistema</button>
                 </div>
             </div>
+
+            ${souSuperAdmin ? `
+            <div class="settings-panel" id="panel-lojas">
+                <div class="panel" style="max-width:640px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Criar nova loja</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cada loja criada aqui tem seus próprios produtos, pedidos, clientes e
+                        financeiro — totalmente separados dos seus. Depois de criar, adicione
+                        o e-mail de quem vai administrar essa loja: só esse e-mail (e você) vê
+                        o painel dela.
+                    </p>
+                    <form id="nova-loja-form">
+                        <div class="form-group"><label>Nome da loja</label><input type="text" id="f-nova-loja-nome" placeholder="Ex: Bar do João" required></div>
+                        <div class="form-group">
+                            <label>Endereço da loja</label>
+                            <div class="slug-input-wrap"><span>excellentloja.vercel.app/</span><input type="text" id="f-nova-loja-slug" placeholder="bardojoao"></div>
+                        </div>
+                        <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Criar loja</button></div>
+                    </form>
+                </div>
+                <div class="panel" style="max-width:640px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:14px;">Lojas criadas</h3>
+                    <div id="lojas-list"><span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span></div>
+                </div>
+            </div>` : ''}
         `;
 
         el.querySelectorAll('.settings-tab').forEach(tab => tab.addEventListener('click', () => {
@@ -217,6 +245,9 @@ const Configuracoes = (() => {
             const rmFundoLoja = e.target.closest('.js-fundoloja-remove');
             const editInsta = e.target.closest('.js-insta-edit');
             const rmInsta = e.target.closest('.js-insta-remove');
+            const rmLoja = e.target.closest('.js-loja-remove');
+            const addLojaEmail = e.target.closest('.js-loja-email-add');
+            const rmLojaEmail = e.target.closest('.js-loja-email-remove');
             if (rm) removeChip(rm.dataset.field, rm.dataset.value);
             if (rmCapa) removeCapa(rmCapa.dataset.id);
             if (rmBanner) removeBanner();
@@ -224,6 +255,16 @@ const Configuracoes = (() => {
             if (rmFundoLoja) removeFundoLoja();
             if (editInsta) openInstaCardForm(editInsta.dataset.id);
             if (rmInsta) removeInstaCard(rmInsta.dataset.id);
+            if (rmLoja) removerLoja(rmLoja.dataset.id, rmLoja.dataset.nome);
+            if (addLojaEmail) addAdminToLoja(addLojaEmail.dataset.loja);
+            if (rmLojaEmail) removeAdminFromLoja(rmLojaEmail.dataset.loja, rmLojaEmail.dataset.email);
+        });
+
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.classList.contains('js-loja-email-input')) {
+                e.preventDefault();
+                addAdminToLoja(e.target.dataset.loja);
+            }
         });
 
         document.getElementById('btn-reset-senha').addEventListener('click', async () => {
@@ -235,6 +276,11 @@ const Configuracoes = (() => {
         document.getElementById('btn-sair-conta').addEventListener('click', () => {
             Utils.confirmDialog('Deseja realmente sair do sistema?', async () => { await Auth.logout(); }, 'Sair do sistema', 'Sim, sair');
         });
+
+        if (souSuperAdmin) {
+            document.getElementById('nova-loja-form').addEventListener('submit', criarLoja);
+            loadLojas();
+        }
 
         render();
     }
@@ -249,8 +295,131 @@ const Configuracoes = (() => {
             taxaEntregaPadrao: Number(document.getElementById('f-taxa-padrao').value) || 0
         };
         try {
-            await window.db.collection('configuracoes').doc('geral').set(data, { merge: true });
+            await Loja.ref().set(data, { merge: true });
             Utils.toast('Dados da loja atualizados.', 'success');
+        } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    async function loadLojas() {
+        try {
+            const snap = await window.db.collection('lojas').get();
+            lojasCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.id !== 'root');
+            renderLojasList();
+        } catch (err) {
+            const box = document.getElementById('lojas-list');
+            if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--danger);">Erro ao carregar lojas: ${Utils.escapeHtml(err.message)}</span>`;
+        }
+    }
+
+    function renderLojasList() {
+        const box = document.getElementById('lojas-list');
+        if (!box) return;
+        if (!lojasCache.length) {
+            box.innerHTML = '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhuma loja criada ainda.</span>';
+            return;
+        }
+        box.innerHTML = lojasCache.map(l => `
+            <div class="loja-admin-card">
+                <div class="loja-admin-head">
+                    <label class="loja-admin-logo" title="Trocar logotipo">
+                        ${l.logoUrl ? `<img src="${l.logoUrl}">` : '<i class="fa-solid fa-shop"></i>'}
+                        <input type="file" accept="image/*" class="js-loja-logo-input" data-loja="${l.id}" style="display:none;">
+                    </label>
+                    <div class="loja-admin-info">
+                        <strong>${Utils.escapeHtml(l.nomeLoja || l.id)}</strong>
+                        <span class="loja-admin-slug">excellentloja.vercel.app/${Utils.escapeHtml(l.id)}</span>
+                    </div>
+                    <button class="js-loja-remove" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Excluir loja"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="chip-list">${lojaEmailsHtml(l.id, l.usuariosAutorizados)}</div>
+                <div class="add-chip-row">
+                    <input type="email" class="js-loja-email-input" data-loja="${l.id}" placeholder="email-do-admin@exemplo.com">
+                    <button class="btn btn-primary btn-sm js-loja-email-add" data-loja="${l.id}"><i class="fa-solid fa-plus"></i></button>
+                </div>
+            </div>
+        `).join('');
+        box.querySelectorAll('.js-loja-logo-input').forEach(input => input.addEventListener('change', (e) => uploadLojaLogo(e, input.dataset.loja)));
+    }
+
+    async function uploadLojaLogo(e, lojaId) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const wrap = e.target.closest('.loja-admin-logo');
+        wrap.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        try {
+            const logoUrl = await Utils.compressImageToBase64(file, { maxDim: 300, maxBytes: 150000 });
+            await window.db.collection('lojas').doc(lojaId).update({ logoUrl });
+        } catch (err) {
+            Utils.toast('Não foi possível usar essa imagem: ' + err.message, 'error');
+        }
+        await loadLojas();
+    }
+
+    async function criarLoja(e) {
+        e.preventDefault();
+        const nome = document.getElementById('f-nova-loja-nome').value.trim();
+        const slugInput = document.getElementById('f-nova-loja-slug').value.trim();
+        const slug = Loja.slugify(slugInput || nome);
+        if (!nome) { Utils.toast('Digite o nome da loja.', 'error'); return; }
+        if (!slug || slug === 'root') { Utils.toast('Endereço inválido. Tente outro nome.', 'error'); return; }
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+            const existente = await window.db.collection('lojas').doc(slug).get();
+            if (existente.exists) {
+                Utils.toast(`Já existe uma loja em "/${slug}". Tente outro endereço.`, 'error');
+                return;
+            }
+            await window.db.collection('lojas').doc(slug).set({
+                nomeLoja: nome,
+                categoriasProdutos: ['Geral', 'Novidades', 'Mais vendidos', 'Promoções'],
+                formasPagamento: ['Pix', 'Dinheiro', 'Cartão de Crédito', 'Cartão de Débito'],
+                taxaEntregaPadrao: 0,
+                usuariosAutorizados: [],
+                criadaEm: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('f-nova-loja-nome').value = '';
+            document.getElementById('f-nova-loja-slug').value = '';
+            Utils.toast(`Loja "${nome}" criada! Adicione o e-mail de quem vai administrá-la.`, 'success');
+            await loadLojas();
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function removerLoja(id, nome) {
+        Utils.confirmDialog(`Excluir a loja "${nome}"? Isso não apaga os dados dela no banco, só remove o acesso — fale com o suporte se precisar apagar tudo.`, async () => {
+            try {
+                await window.db.collection('lojas').doc(id).delete();
+                Utils.closeModal();
+                Utils.toast('Loja removida.', 'success');
+                await loadLojas();
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Excluir loja');
+    }
+
+    async function addAdminToLoja(lojaId) {
+        const input = document.querySelector(`.js-loja-email-input[data-loja="${CSS.escape(lojaId)}"]`);
+        const email = input.value.trim().toLowerCase();
+        if (!email) return;
+        try {
+            await window.db.collection('lojas').doc(lojaId).update({
+                usuariosAutorizados: firebase.firestore.FieldValue.arrayUnion(email)
+            });
+            input.value = '';
+            await loadLojas();
+        } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    async function removeAdminFromLoja(lojaId, email) {
+        try {
+            await window.db.collection('lojas').doc(lojaId).update({
+                usuariosAutorizados: firebase.firestore.FieldValue.arrayRemove(email)
+            });
+            await loadLojas();
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
     }
 
@@ -287,7 +456,7 @@ const Configuracoes = (() => {
         status.style.display = 'inline';
         try {
             const imagem = await Utils.compressImageToBase64(file, { maxDim: 1100, maxBytes: 260000 });
-            await window.db.collection('capas').add({
+            await Loja.col('capas').add({
                 imagem,
                 criadoEm: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -303,7 +472,7 @@ const Configuracoes = (() => {
     async function removeCapa(id) {
         Utils.confirmDialog('Remover esta foto da capa da loja?', async () => {
             try {
-                await window.db.collection('capas').doc(id).delete();
+                await Loja.col('capas').doc(id).delete();
                 Utils.toast('Foto removida.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Remover foto', 'Sim, remover');
@@ -326,7 +495,7 @@ const Configuracoes = (() => {
         status.style.display = 'inline';
         try {
             const bannerMeio = await Utils.compressImageToBase64(file, { maxDim: 1100, maxBytes: 260000 });
-            await window.db.collection('configuracoes').doc('geral').set({ bannerMeio }, { merge: true });
+            await Loja.ref().set({ bannerMeio }, { merge: true });
             Utils.toast('Imagem do banner atualizada.', 'success');
         } catch (err) {
             Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
@@ -339,7 +508,7 @@ const Configuracoes = (() => {
     async function removeBanner() {
         Utils.confirmDialog('Remover a imagem do banner do meio?', async () => {
             try {
-                await window.db.collection('configuracoes').doc('geral').update({
+                await Loja.ref().update({
                     bannerMeio: firebase.firestore.FieldValue.delete()
                 });
                 Utils.toast('Imagem removida.', 'success');
@@ -364,7 +533,7 @@ const Configuracoes = (() => {
         status.style.display = 'inline';
         try {
             const fundoPainel = await Utils.compressImageToBase64(file, { maxDim: 1400, maxBytes: 300000 });
-            await window.db.collection('configuracoes').doc('geral').set({ fundoPainel }, { merge: true });
+            await Loja.ref().set({ fundoPainel }, { merge: true });
             Utils.toast('Fundo do painel atualizado.', 'success');
         } catch (err) {
             Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
@@ -377,7 +546,7 @@ const Configuracoes = (() => {
     async function removeFundoPainel() {
         Utils.confirmDialog('Remover o fundo do painel administrativo?', async () => {
             try {
-                await window.db.collection('configuracoes').doc('geral').update({
+                await Loja.ref().update({
                     fundoPainel: firebase.firestore.FieldValue.delete()
                 });
                 Utils.toast('Fundo removido.', 'success');
@@ -402,7 +571,7 @@ const Configuracoes = (() => {
         status.style.display = 'inline';
         try {
             const fundoLoja = await Utils.compressImageToBase64(file, { maxDim: 1400, maxBytes: 300000 });
-            await window.db.collection('configuracoes').doc('geral').set({ fundoLoja }, { merge: true });
+            await Loja.ref().set({ fundoLoja }, { merge: true });
             Utils.toast('Fundo da loja atualizado.', 'success');
         } catch (err) {
             Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
@@ -415,7 +584,7 @@ const Configuracoes = (() => {
     async function removeFundoLoja() {
         Utils.confirmDialog('Remover o fundo da loja virtual?', async () => {
             try {
-                await window.db.collection('configuracoes').doc('geral').update({
+                await Loja.ref().update({
                     fundoLoja: firebase.firestore.FieldValue.delete()
                 });
                 Utils.toast('Fundo removido.', 'success');
@@ -487,10 +656,10 @@ const Configuracoes = (() => {
                 };
                 if (novaImagem) data.imagem = novaImagem;
                 if (c) {
-                    await window.db.collection('instaCards').doc(c.id).update(data);
+                    await Loja.col('instaCards').doc(c.id).update(data);
                 } else {
                     data.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
-                    await window.db.collection('instaCards').add(data);
+                    await Loja.col('instaCards').add(data);
                 }
                 Utils.closeModal();
                 Utils.toast(c ? 'Card atualizado.' : 'Card adicionado.', 'success');
@@ -504,7 +673,7 @@ const Configuracoes = (() => {
     async function removeInstaCard(id) {
         Utils.confirmDialog('Remover este card do Instagram?', async () => {
             try {
-                await window.db.collection('instaCards').doc(id).delete();
+                await Loja.col('instaCards').doc(id).delete();
                 Utils.toast('Card removido.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Remover card', 'Sim, remover');
@@ -533,7 +702,7 @@ const Configuracoes = (() => {
         if (!value) return;
         if (isEmail) value = value.toLowerCase();
         try {
-            await window.db.collection('configuracoes').doc('geral').set({
+            await Loja.ref().set({
                 [field]: firebase.firestore.FieldValue.arrayUnion(value)
             }, { merge: true });
             input.value = '';
@@ -546,7 +715,7 @@ const Configuracoes = (() => {
             return;
         }
         try {
-            await window.db.collection('configuracoes').doc('geral').update({
+            await Loja.ref().update({
                 [field]: firebase.firestore.FieldValue.arrayRemove(value)
             });
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
@@ -555,6 +724,11 @@ const Configuracoes = (() => {
     function chipHtml(field, values) {
         if (!values || !values.length) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhum item cadastrado.</span>';
         return values.map(v => `<span class="chip">${Utils.escapeHtml(v)}<button class="js-chip-remove" data-field="${field}" data-value="${Utils.escapeHtml(v)}"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+    }
+
+    function lojaEmailsHtml(lojaId, values) {
+        if (!values || !values.length) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhum administrador ainda.</span>';
+        return values.map(v => `<span class="chip">${Utils.escapeHtml(v)}<button class="js-loja-email-remove" data-loja="${lojaId}" data-email="${Utils.escapeHtml(v)}"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
     }
 
     function render() {

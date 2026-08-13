@@ -152,7 +152,7 @@ const Financeiro = (() => {
         document.getElementById('fin-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
-                await window.db.collection('financeiro').add({
+                await Loja.col('financeiro').add({
                     tipo: document.getElementById('f-tipo').value,
                     descricao: document.getElementById('f-desc').value.trim(),
                     categoria: document.getElementById('f-cat').value.trim(),
@@ -171,7 +171,7 @@ const Financeiro = (() => {
     function removeTransacao(id) {
         Utils.confirmDialog('Excluir este lançamento financeiro?', async () => {
             try {
-                await window.db.collection('financeiro').doc(id).delete();
+                await Loja.col('financeiro').doc(id).delete();
                 Utils.toast('Lançamento excluído.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         });

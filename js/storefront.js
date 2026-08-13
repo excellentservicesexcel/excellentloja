@@ -45,7 +45,7 @@ const Storefront = (() => {
         const user = Auth.currentUser();
         if (!user) return;
         try {
-            const snap = await window.db.collection('clientes').doc(user.uid).get();
+            const snap = await Loja.col('clientes').doc(user.uid).get();
             meuCliente = snap.exists ? { id: user.uid, ...snap.data() } : null;
         } catch (err) { console.error('meuCliente', err); }
     }
@@ -254,19 +254,19 @@ const Storefront = (() => {
     function listen() {
         unsubs.forEach(u => { try { u(); } catch (e) {} });
         unsubs = [];
-        unsubs.push(window.db.collection('produtos').where('ativo', '==', true).onSnapshot(snap => {
+        unsubs.push(Loja.col('produtos').where('ativo', '==', true).onSnapshot(snap => {
             produtos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             render();
         }, err => console.error('storefront produtos', err)));
-        unsubs.push(window.db.collection('configuracoes').doc('geral').onSnapshot(snap => {
+        unsubs.push(Loja.ref().onSnapshot(snap => {
             config = snap.exists ? snap.data() : {};
             renderFooter();
         }, err => console.error('storefront config', err)));
-        unsubs.push(window.db.collection('capas').orderBy('criadoEm').onSnapshot(snap => {
+        unsubs.push(Loja.col('capas').orderBy('criadoEm').onSnapshot(snap => {
             capas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderHero();
         }, err => console.error('storefront capas', err)));
-        unsubs.push(window.db.collection('instaCards').orderBy('criadoEm').onSnapshot(snap => {
+        unsubs.push(Loja.col('instaCards').orderBy('criadoEm').onSnapshot(snap => {
             instaCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderInstaCards();
         }, err => console.error('storefront instaCards', err)));
@@ -507,7 +507,7 @@ const Storefront = (() => {
             const numero = await window.nextPedidoNumero();
 
             const batch = window.db.batch();
-            const pedidoRef = window.db.collection('pedidos').doc();
+            const pedidoRef = Loja.col('pedidos').doc();
             const clienteNome = (meuCliente && meuCliente.nome) || user?.displayName || 'Cliente da loja virtual';
             batch.set(pedidoRef, {
                 numero,
@@ -523,13 +523,13 @@ const Storefront = (() => {
             });
 
             itens.forEach(i => {
-                const prodRef = window.db.collection('producao').doc();
+                const prodRef = Loja.col('producao').doc();
                 batch.set(prodRef, {
                     data: new Date(), produtoId: i.produtoId, produtoNome: i.nome,
                     quantidade: i.quantidade, status: 'pendente', pedidoId: pedidoRef.id,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                batch.update(window.db.collection('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(-i.quantidade) });
+                batch.update(Loja.col('produtos').doc(i.produtoId), { estoqueAtual: firebase.firestore.FieldValue.increment(-i.quantidade) });
             });
 
             await batch.commit();
@@ -556,7 +556,7 @@ const Storefront = (() => {
         const email = input.value.trim();
         if (!email) return;
         try {
-            await window.db.collection('newsletter').add({ email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            await Loja.col('newsletter').add({ email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
             Utils.toast('Inscrição feita com sucesso!', 'success');
             input.value = '';
         } catch (err) {

@@ -106,10 +106,10 @@ const Clientes = (() => {
             };
             try {
                 if (c) {
-                    await window.db.collection('clientes').doc(c.id).update(data);
+                    await Loja.col('clientes').doc(c.id).update(data);
                 } else {
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    await window.db.collection('clientes').add(data);
+                    await Loja.col('clientes').add(data);
                 }
                 Utils.closeModal();
                 Utils.toast(c ? 'Cliente atualizado.' : 'Cliente cadastrado.', 'success');
@@ -123,7 +123,7 @@ const Clientes = (() => {
         const c = Store.clientes.find(x => x.id === id);
         Utils.confirmDialog(`Excluir o cliente "${c ? c.nome : ''}"? Esta ação não pode ser desfeita.`, async () => {
             try {
-                await window.db.collection('clientes').doc(id).delete();
+                await Loja.col('clientes').doc(id).delete();
                 Utils.toast('Cliente excluído.', 'success');
             } catch (err) {
                 Utils.toast('Erro ao excluir: ' + err.message, 'error');

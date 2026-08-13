@@ -28,7 +28,7 @@ const Cardapio = (() => {
     }
 
     async function toggleDestaque(id, current) {
-        try { await window.db.collection('produtos').doc(id).update({ destaque: !current }); }
+        try { await Loja.col('produtos').doc(id).update({ destaque: !current }); }
         catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
     }
 

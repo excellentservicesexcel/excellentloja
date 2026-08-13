@@ -125,8 +125,8 @@ const Estoque = (() => {
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             try {
-                if (i) await window.db.collection('estoque').doc(i.id).update(data);
-                else await window.db.collection('estoque').add(data);
+                if (i) await Loja.col('estoque').doc(i.id).update(data);
+                else await Loja.col('estoque').add(data);
                 Utils.closeModal();
                 Utils.toast(i ? 'Ingrediente atualizado.' : 'Ingrediente cadastrado.', 'success');
             } catch (err) { Utils.toast('Erro ao salvar: ' + err.message, 'error'); }
@@ -159,7 +159,7 @@ const Estoque = (() => {
             const qtd = Number(document.getElementById('f-qtd-mov').value) || 0;
             const delta = tipo === 'entrada' ? qtd : -qtd;
             try {
-                await window.db.collection('estoque').doc(id).update({
+                await Loja.col('estoque').doc(id).update({
                     quantidadeAtual: firebase.firestore.FieldValue.increment(delta),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -173,7 +173,7 @@ const Estoque = (() => {
         const i = Store.estoque.find(x => x.id === id);
         Utils.confirmDialog(`Excluir o ingrediente "${i ? i.nome : ''}"?`, async () => {
             try {
-                await window.db.collection('estoque').doc(id).delete();
+                await Loja.col('estoque').doc(id).delete();
                 Utils.toast('Ingrediente excluído.', 'success');
             } catch (err) { Utils.toast('Erro ao excluir: ' + err.message, 'error'); }
         });

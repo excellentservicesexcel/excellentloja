@@ -24,59 +24,53 @@ const Store = {
 let _unsubscribers = [];
 
 function initStoreListeners() {
-    const db = window.db;
-
-    _unsubscribers.push(db.collection('clientes').orderBy('nome').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('clientes').orderBy('nome').onSnapshot(snap => {
         Store.clientes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('clientes');
     }, err => console.error('clientes', err)));
 
-    _unsubscribers.push(db.collection('produtos').orderBy('nome').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('produtos').orderBy('nome').onSnapshot(snap => {
         Store.produtos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('produtos');
     }, err => console.error('produtos', err)));
 
-    _unsubscribers.push(db.collection('pedidos').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('pedidos').orderBy('createdAt', 'desc').onSnapshot(snap => {
         Store.pedidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('pedidos');
     }, err => console.error('pedidos', err)));
 
-    _unsubscribers.push(db.collection('estoque').orderBy('nome').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('estoque').orderBy('nome').onSnapshot(snap => {
         Store.estoque = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('estoque');
     }, err => console.error('estoque', err)));
 
-    _unsubscribers.push(db.collection('financeiro').orderBy('data', 'desc').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('financeiro').orderBy('data', 'desc').onSnapshot(snap => {
         Store.financeiro = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('financeiro');
     }, err => console.error('financeiro', err)));
 
-    _unsubscribers.push(db.collection('producao').orderBy('data', 'desc').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('producao').orderBy('data', 'desc').onSnapshot(snap => {
         Store.producao = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('producao');
     }, err => console.error('producao', err)));
 
-    _unsubscribers.push(db.collection('receitas').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('receitas').onSnapshot(snap => {
         Store.receitas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('receitas');
     }, err => console.error('receitas', err)));
 
-    _unsubscribers.push(db.collection('capas').orderBy('criadoEm').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('capas').orderBy('criadoEm').onSnapshot(snap => {
         Store.capas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('capas');
     }, err => console.error('capas', err)));
 
-    _unsubscribers.push(db.collection('instaCards').orderBy('criadoEm').onSnapshot(snap => {
+    _unsubscribers.push(Loja.col('instaCards').orderBy('criadoEm').onSnapshot(snap => {
         Store.instaCards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('instaCards');
     }, err => console.error('instaCards', err)));
 
-    _unsubscribers.push(db.collection('configuracoes').doc('geral').onSnapshot(snap => {
-        if (snap.exists) {
-            Store.config = { ...Store.config, ...snap.data() };
-        } else {
-            db.collection('configuracoes').doc('geral').set(Store.config, { merge: true }).catch(() => {});
-        }
+    _unsubscribers.push(Loja.ref().onSnapshot(snap => {
+        if (snap.exists) Store.config = { ...Store.config, ...snap.data() };
         Store.emit('config');
     }, err => console.error('config', err)));
 }
@@ -109,7 +103,7 @@ function isAuthorizedEmail(email, allowList) {
 
 /* Gera próximo número sequencial de pedido de forma atômica */
 async function nextPedidoNumero() {
-    const ref = window.db.collection('configuracoes').doc('contadores');
+    const ref = Loja.col('meta').doc('contadores');
     return window.db.runTransaction(async (t) => {
         const doc = await t.get(ref);
         const atual = (doc.exists && doc.data().pedidos) ? doc.data().pedidos : 1000;
@@ -258,6 +252,7 @@ function applyPainelBackground() {
 }
 
 function showApp() {
+    document.getElementById('not-found-screen').style.display = 'none';
     document.getElementById('landing-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'none';
@@ -267,6 +262,7 @@ function showApp() {
 }
 
 function showLogin() {
+    document.getElementById('not-found-screen').style.display = 'none';
     document.getElementById('landing-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'none';
@@ -274,13 +270,23 @@ function showLogin() {
 }
 
 function showLanding() {
+    document.getElementById('not-found-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('landing-screen').style.display = 'block';
 }
 
+function showLojaNaoEncontrada() {
+    document.getElementById('landing-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('storefront-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('not-found-screen').style.display = 'flex';
+}
+
 function showStorefrontScreen() {
+    document.getElementById('not-found-screen').style.display = 'none';
     document.getElementById('landing-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'none';
     document.getElementById('login-screen').style.display = 'none';
@@ -295,15 +301,81 @@ function bindLanding() {
     document.getElementById('btn-back-landing').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function applyLandingBranding() {
+    const nome = Store.config.nomeLoja || 'Excellent Loja';
+    document.title = `${nome} | Sistema de Gestão`;
+    const heroH1 = document.querySelector('.landing-hero h1');
+    if (heroH1) heroH1.textContent = nome;
+}
+
+async function loadLandingLojas() {
+    if (!Loja.isRoot) return;
+    try {
+        const snap = await window.db.collection('lojas').get();
+        const lojas = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.id !== 'root' && l.nomeLoja);
+        const section = document.getElementById('landing-lojas-section');
+        const grid = document.getElementById('landing-lojas-grid');
+        if (!lojas.length) { section.style.display = 'none'; return; }
+        grid.innerHTML = lojas.map(l => `
+            <button type="button" class="landing-loja-card" data-slug="${l.id}">
+                <span class="landing-loja-logo">${l.logoUrl ? `<img src="${l.logoUrl}" alt="${Utils.escapeHtml(l.nomeLoja)}">` : '<i class="fa-solid fa-shop"></i>'}</span>
+                <strong>${Utils.escapeHtml(l.nomeLoja)}</strong>
+            </button>
+        `).join('');
+        grid.querySelectorAll('.landing-loja-card').forEach(card => {
+            card.addEventListener('click', () => { location.href = '/' + card.dataset.slug; });
+        });
+        section.style.display = 'block';
+        document.getElementById('landing-hero-sub').textContent = 'Escolha uma loja para visitar, ou entre no painel se você administra uma delas.';
+    } catch (err) { console.error('landing lojas', err); }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
     updateTopbarDate();
     bindNav();
     bindLanding();
     Auth.bindLoginForm();
     mountAllModules();
     bindStoreSubscriptions();
+    loadLandingLojas();
+
+    let lojaSnap;
+    try { lojaSnap = await Loja.ref().get(); } catch (err) { console.error('loja fetch', err); }
+    const lojaExiste = !!(lojaSnap && lojaSnap.exists);
+
+    if (lojaExiste) {
+        Store.config = { ...Store.config, ...lojaSnap.data() };
+        applyLandingBranding();
+    } else if (!Loja.isRoot) {
+        document.getElementById('app-loading').style.display = 'none';
+        showLojaNaoEncontrada();
+        return;
+    }
 
     window.auth.onAuthStateChanged(async user => {
+        if (!lojaExiste) {
+            // só chega aqui quando é a loja "root" (do dono da plataforma) e ela ainda não foi criada
+            if (user && Loja.isSuperAdmin(user.email)) {
+                const dadosIniciais = {
+                    nomeLoja: 'Excellent Loja',
+                    categoriasProdutos: Store.config.categoriasProdutos,
+                    formasPagamento: Store.config.formasPagamento,
+                    taxaEntregaPadrao: 0,
+                    usuariosAutorizados: [Loja.SUPER_ADMIN_EMAIL],
+                    criadaEm: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                try {
+                    await Loja.ref().set(dadosIniciais);
+                    Store.config = { ...Store.config, ...dadosIniciais };
+                    applyLandingBranding();
+                } catch (err) { console.error('bootstrap loja root', err); }
+            } else {
+                document.getElementById('app-loading').style.display = 'none';
+                if (user) showLojaNaoEncontrada(); else showLanding();
+                return;
+            }
+        }
+
         if (!user) {
             teardownStoreListeners();
             teardownProfile();
@@ -312,19 +384,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let cfgData = {};
-        try {
-            const snap = await window.db.collection('configuracoes').doc('geral').get();
-            if (snap.exists) cfgData = snap.data();
-        } catch (err) { console.error('config check', err); }
-        Store.config = { ...Store.config, ...cfgData };
-
         document.getElementById('app-loading').style.display = 'none';
 
-        if (isAuthorizedEmail(user.email, Store.config.usuariosAutorizados)) {
+        const souAutorizadoAqui = isAuthorizedEmail(user.email, Store.config.usuariosAutorizados) || Loja.isSuperAdmin(user.email);
+
+        if (souAutorizadoAqui) {
             initStoreListeners();
             watchProfile(user.uid);
             Onboarding.start(user, 'admin', () => showApp());
+        } else if (Loja.isRoot) {
+            // login na página inicial é só para quem administra alguma loja
+            let outraLoja = null;
+            try {
+                const snap = await window.db.collection('lojas').where('usuariosAutorizados', 'array-contains', user.email).limit(1).get();
+                if (!snap.empty) outraLoja = snap.docs[0].id;
+            } catch (err) { console.error('busca loja do usuario', err); }
+
+            if (outraLoja) {
+                location.href = '/' + outraLoja;
+                return;
+            }
+            await window.auth.signOut();
+            Utils.toast('Esse e-mail não administra nenhuma loja aqui. Fale com quem administra a Excellent Loja.', 'error');
+            showLanding();
         } else {
             Onboarding.start(user, 'cliente', () => showStorefrontScreen());
         }

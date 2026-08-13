@@ -12,7 +12,7 @@ const Onboarding = (() => {
     let mode = 'admin'; // 'admin' -> usuarios/{uid} | 'cliente' -> clientes/{uid}
 
     function targetCollection() {
-        return mode === 'admin' ? 'usuarios' : 'clientes';
+        return mode === 'admin' ? window.db.collection('usuarios') : Loja.col('clientes');
     }
 
     async function start(user, targetMode, cb) {
@@ -20,7 +20,7 @@ const Onboarding = (() => {
         onDone = cb;
         mode = targetMode;
         try {
-            const snap = await window.db.collection(targetCollection()).doc(user.uid).get();
+            const snap = await targetCollection().doc(user.uid).get();
             if (snap.exists) { cb(); return; }
         } catch (err) {
             console.error('onboarding check', err);
@@ -157,7 +157,7 @@ const Onboarding = (() => {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             if (mode === 'cliente') { payload.endereco = ''; payload.observacoes = ''; }
-            await window.db.collection(targetCollection()).doc(currentUser.uid).set(payload, { merge: true });
+            await targetCollection().doc(currentUser.uid).set(payload, { merge: true });
             document.getElementById('onboarding-screen').style.display = 'none';
             document.getElementById('onboarding-screen').innerHTML = '';
             if (onDone) onDone();

@@ -163,8 +163,8 @@ const Precificacao = (() => {
         };
 
         try {
-            if (editingReceitaId) await window.db.collection('receitas').doc(editingReceitaId).update(data);
-            else await window.db.collection('receitas').add(data);
+            if (editingReceitaId) await Loja.col('receitas').doc(editingReceitaId).update(data);
+            else await Loja.col('receitas').add(data);
             Utils.toast('Ficha técnica salva.', 'success');
             resetForm();
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
@@ -179,7 +179,7 @@ const Precificacao = (() => {
         const custoUn = custoTotal / rendimento;
         const preco = custoUn * (1 + margem / 100);
         try {
-            await window.db.collection('produtos').doc(produtoId).update({ custoUnitario: Number(custoUn.toFixed(2)), precoVenda: Number(preco.toFixed(2)) });
+            await Loja.col('produtos').doc(produtoId).update({ custoUnitario: Number(custoUn.toFixed(2)), precoVenda: Number(preco.toFixed(2)) });
             Utils.toast('Preço aplicado ao produto com sucesso!', 'success');
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
     }
@@ -200,7 +200,7 @@ const Precificacao = (() => {
     function removeReceita(id) {
         Utils.confirmDialog('Excluir esta ficha técnica?', async () => {
             try {
-                await window.db.collection('receitas').doc(id).delete();
+                await Loja.col('receitas').doc(id).delete();
                 Utils.toast('Ficha técnica excluída.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         });
