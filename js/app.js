@@ -391,6 +391,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (souAutorizadoAqui) {
             initStoreListeners();
             watchProfile(user.uid);
+            Configuracoes.mount(); // remonta agora que já sabemos quem logou (a aba "Gerenciar lojas" depende disso)
             Onboarding.start(user, 'admin', () => showApp());
         } else if (Loja.isRoot) {
             // login na página inicial é só para quem administra alguma loja
