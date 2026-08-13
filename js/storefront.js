@@ -17,6 +17,8 @@ const Storefront = (() => {
     let previewMode = false;
     let carouselTimer = null;
     let carouselIndex = 0;
+    let mpSdkPromise = null;
+    let pagamento = { pendingId: null, total: 0, publicKey: null, unsub: null, pollTimer: null, brick: null };
 
     function mount() {
         if (mounted) { render(); updatePreviewButton(); return; }
@@ -192,6 +194,21 @@ const Storefront = (() => {
                 <p class="store-cart-note">Você vai finalizar o pedido direto com a loja pelo WhatsApp.</p>
             </div>
         </aside>
+
+        <div class="store-payment-overlay" id="store-payment-overlay">
+            <div class="store-payment-box">
+                <button class="store-payment-close" id="store-payment-close"><i class="fa-solid fa-xmark"></i></button>
+                <div class="store-payment-head">
+                    <h3>Pagamento</h3>
+                    <span class="store-payment-total" id="store-payment-total">R$ 0,00</span>
+                </div>
+                <div class="store-payment-tabs" id="store-payment-tabs">
+                    <button type="button" class="store-payment-tab active" data-tab="pix"><i class="fa-solid fa-qrcode"></i> Pix</button>
+                    <button type="button" class="store-payment-tab" data-tab="cartao"><i class="fa-solid fa-credit-card"></i> Cartão</button>
+                </div>
+                <div class="store-payment-body" id="store-payment-body"></div>
+            </div>
+        </div>
         `;
     }
 
@@ -216,6 +233,14 @@ const Storefront = (() => {
             renderGrid();
         }, 200));
         document.getElementById('store-newsletter-form').addEventListener('submit', subscribeNewsletter);
+        document.getElementById('store-payment-close').addEventListener('click', fecharTelaPagamento);
+        document.getElementById('store-payment-tabs').addEventListener('click', (e) => {
+            const tab = e.target.closest('.store-payment-tab');
+            if (!tab || tab.classList.contains('active')) return;
+            document.querySelectorAll('.store-payment-tab').forEach(t => t.classList.toggle('active', t === tab));
+            desmontarBrick();
+            if (tab.dataset.tab === 'pix') renderAbaPix(); else renderAbaCartao();
+        });
 
         document.getElementById('storefront-screen').addEventListener('click', (e) => {
             const catChip = e.target.closest('.store-cat-chip');
@@ -513,10 +538,16 @@ const Storefront = (() => {
         document.getElementById('store-cart-total').textContent = Utils.formatBRL(cartTotal());
     }
 
+    function pagamentoOnlineAtivo() {
+        return !!(config.pagamentoOnline && config.pagamentoOnline.ativo && config.pagamentoOnline.publicKey);
+    }
+
     function checkout() {
         if (!cart.length) { Utils.toast('Seu carrinho está vazio.', 'error'); return; }
-        const tel = (config.telefone || '').replace(/\D/g, '');
-        if (!tel) { Utils.toast('A loja ainda não configurou um telefone para pedidos.', 'error'); return; }
+        if (!pagamentoOnlineAtivo()) {
+            const tel = (config.telefone || '').replace(/\D/g, '');
+            if (!tel) { Utils.toast('A loja ainda não configurou um telefone para pedidos.', 'error'); return; }
+        }
 
         for (const i of cart) {
             const p = produtos.find(x => x.id === i.id);
@@ -552,7 +583,7 @@ const Storefront = (() => {
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="checkout-dados-submit"><i class="fa-solid fa-check"></i> Confirmar e enviar pedido</button>
+                    <button type="submit" class="btn btn-primary" id="checkout-dados-submit"><i class="fa-solid fa-check"></i> ${pagamentoOnlineAtivo() ? 'Ir para o pagamento' : 'Confirmar e enviar pedido'}</button>
                 </div>
             </form>
         `);
@@ -571,9 +602,10 @@ const Storefront = (() => {
             const btn = document.getElementById('checkout-dados-submit');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando pedido...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + (pagamentoOnlineAtivo() ? 'Preparando pagamento...' : 'Enviando pedido...');
             try {
-                await enviarPedido(dados);
+                if (pagamentoOnlineAtivo()) await iniciarPagamentoOnline(dados);
+                else await enviarPedido(dados);
                 Utils.closeModal();
             } catch (err) {
                 Utils.toast('Erro ao enviar pedido: ' + err.message, 'error');
@@ -635,6 +667,182 @@ const Storefront = (() => {
         cart = [];
         renderCart();
         Utils.toast(`Pedido #${numero} enviado à loja!`, 'success');
+    }
+
+    /* -------------------------------------------------------------- */
+    /* Pagamento online (Pix / cartão via Mercado Pago)                 */
+    /* -------------------------------------------------------------- */
+
+    async function iniciarPagamentoOnline(dados) {
+        let user = Auth.currentUser();
+        if (!user) {
+            const cred = await window.auth.signInAnonymously();
+            user = cred.user;
+        }
+
+        const enderecoCompleto = `${dados.endereco}, ${dados.numero} - ${dados.cidade}/${dados.estado}`;
+        await Loja.col('clientes').doc(user.uid).set({
+            nome: dados.nome, telefone: dados.whatsapp, endereco: enderecoCompleto,
+            atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const itens = cart.map(i => ({ produtoId: i.id, quantidade: i.qtd }));
+        const resp = await fetch(`/api/iniciar-pagamento?loja=${encodeURIComponent(Loja.id)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itens, dadosCliente: dados, uidCliente: user.uid })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.erro || 'Não foi possível iniciar o pagamento.');
+
+        abrirTelaPagamento(data.pendingId, data.total, data.publicKey);
+    }
+
+    function abrirTelaPagamento(pendingId, total, publicKey) {
+        pagamento.pendingId = pendingId;
+        pagamento.total = total;
+        pagamento.publicKey = publicKey;
+        toggleCart(false);
+        document.getElementById('store-payment-total').textContent = Utils.formatBRL(total);
+        document.getElementById('store-payment-tabs').style.display = '';
+        document.querySelectorAll('.store-payment-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'pix'));
+        document.getElementById('store-payment-overlay').classList.add('open');
+        renderAbaPix();
+        monitorarPagamento();
+    }
+
+    function fecharTelaPagamento() {
+        if (pagamento.unsub) { pagamento.unsub(); }
+        if (pagamento.pollTimer) { clearInterval(pagamento.pollTimer); }
+        desmontarBrick();
+        document.getElementById('store-payment-overlay').classList.remove('open');
+        pagamento = { pendingId: null, total: 0, publicKey: null, unsub: null, pollTimer: null, brick: null };
+    }
+
+    function desmontarBrick() {
+        if (pagamento.brick) { try { pagamento.brick.unmount(); } catch (e) {} pagamento.brick = null; }
+    }
+
+    function monitorarPagamento() {
+        const pendingId = pagamento.pendingId;
+        pagamento.unsub = Loja.col('pagamentosPendentes').doc(pendingId).onSnapshot(snap => {
+            if (snap.exists) tratarStatusPagamento(snap.data());
+        });
+        pagamento.pollTimer = setInterval(() => {
+            fetch(`/api/consultar-pagamento?loja=${encodeURIComponent(Loja.id)}&pendingId=${encodeURIComponent(pendingId)}`).catch(() => {});
+        }, 4000);
+    }
+
+    function tratarStatusPagamento(pending) {
+        if (pending.status === 'aprovado') mostrarSucessoPagamento();
+        else if (['rejeitado', 'cancelado', 'expirado'].includes(pending.status)) mostrarFalhaPagamento(pending.status);
+    }
+
+    function mostrarSucessoPagamento() {
+        desmontarBrick();
+        document.getElementById('store-payment-tabs').style.display = 'none';
+        document.getElementById('store-payment-body').innerHTML = `
+            <div class="store-payment-result success">
+                <i class="fa-solid fa-circle-check"></i>
+                <strong>Pagamento aprovado!</strong>
+                <span>Seu pedido já está com a loja.</span>
+            </div>`;
+        cart = [];
+        renderCart();
+        setTimeout(fecharTelaPagamento, 2600);
+    }
+
+    function mostrarFalhaPagamento(status) {
+        const label = status === 'rejeitado' ? 'Pagamento recusado.' : (status === 'expirado' ? 'Código Pix expirado.' : 'Pagamento cancelado.');
+        document.getElementById('store-payment-body').innerHTML = `
+            <div class="store-payment-result error">
+                <i class="fa-solid fa-circle-xmark"></i>
+                <strong>${label}</strong>
+                <button type="button" class="btn btn-outline btn-sm" id="store-payment-retry">Tentar novamente</button>
+            </div>`;
+        document.getElementById('store-payment-retry').addEventListener('click', () => {
+            const abaAtiva = document.querySelector('.store-payment-tab.active');
+            if (abaAtiva && abaAtiva.dataset.tab === 'cartao') renderAbaCartao(); else renderAbaPix();
+        });
+    }
+
+    async function renderAbaPix() {
+        const body = document.getElementById('store-payment-body');
+        body.innerHTML = `<div class="store-payment-loading"><i class="fa-solid fa-spinner fa-spin"></i> Gerando código Pix...</div>`;
+        try {
+            const resp = await fetch(`/api/pagar-pix?loja=${encodeURIComponent(Loja.id)}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pendingId: pagamento.pendingId })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.erro || 'Não foi possível gerar o Pix.');
+            body.innerHTML = `
+                <div class="store-pix-box">
+                    <img src="data:image/png;base64,${data.qrCodeBase64}" class="store-pix-qr" alt="QR Code Pix">
+                    <p class="store-pix-hint">Abra o app do seu banco, escolha pagar com Pix e escaneie o código — ou copie o código abaixo.</p>
+                    <div class="store-pix-code-row">
+                        <input type="text" readonly id="store-pix-code" value="${Utils.escapeHtml(data.qrCode)}">
+                        <button type="button" class="btn btn-outline btn-sm" id="store-pix-copy"><i class="fa-solid fa-copy"></i> Copiar</button>
+                    </div>
+                    <div class="store-payment-waiting"><i class="fa-solid fa-spinner fa-spin"></i> Aguardando confirmação do pagamento...</div>
+                </div>`;
+            document.getElementById('store-pix-copy').addEventListener('click', () => {
+                document.getElementById('store-pix-code').select();
+                (navigator.clipboard ? navigator.clipboard.writeText(data.qrCode) : Promise.reject())
+                    .then(() => Utils.toast('Código copiado!', 'success'))
+                    .catch(() => { try { document.execCommand('copy'); Utils.toast('Código copiado!', 'success'); } catch (e) {} });
+            });
+        } catch (err) {
+            body.innerHTML = `<div class="store-payment-result error"><i class="fa-solid fa-triangle-exclamation"></i><span>${Utils.escapeHtml(err.message)}</span></div>`;
+        }
+    }
+
+    function carregarSdkMercadoPago() {
+        if (window.MercadoPago) return Promise.resolve();
+        if (mpSdkPromise) return mpSdkPromise;
+        mpSdkPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://sdk.mercadopago.com/js/v2';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Não foi possível carregar o Mercado Pago.'));
+            document.head.appendChild(script);
+        });
+        return mpSdkPromise;
+    }
+
+    async function renderAbaCartao() {
+        const body = document.getElementById('store-payment-body');
+        body.innerHTML = `<div class="store-payment-loading"><i class="fa-solid fa-spinner fa-spin"></i> Carregando formulário de cartão...</div>`;
+        try {
+            await carregarSdkMercadoPago();
+            body.innerHTML = `<div id="store-payment-brick-container"></div>`;
+            const mp = new MercadoPago(pagamento.publicKey, { locale: 'pt-BR' });
+            const controller = await mp.bricks().create('payment', 'store-payment-brick-container', {
+                initialization: { amount: pagamento.total },
+                customization: {
+                    paymentMethods: { creditCard: 'all', debitCard: 'all', bankTransfer: [], ticket: [], mercadoPago: [] }
+                },
+                callbacks: {
+                    onReady: () => {},
+                    onError: (err) => { console.error('brick', err); },
+                    onSubmit: ({ formData }) => new Promise((resolve, reject) => {
+                        fetch(`/api/pagar-cartao?loja=${encodeURIComponent(Loja.id)}`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pendingId: pagamento.pendingId, formData })
+                        })
+                            .then(r => r.json().then(data => ({ ok: r.ok, data })))
+                            .then(({ ok, data }) => {
+                                if (!ok) { Utils.toast(data.erro || 'Não foi possível processar o cartão.', 'error'); reject(); return; }
+                                resolve();
+                            })
+                            .catch(() => { Utils.toast('Erro ao processar pagamento.', 'error'); reject(); });
+                    })
+                }
+            });
+            pagamento.brick = controller;
+        } catch (err) {
+            body.innerHTML = `<div class="store-payment-result error"><i class="fa-solid fa-triangle-exclamation"></i><span>${Utils.escapeHtml(err.message)}</span></div>`;
+        }
     }
 
     async function subscribeNewsletter(e) {

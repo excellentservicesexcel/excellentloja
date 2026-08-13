@@ -18,7 +18,8 @@ const Configuracoes = (() => {
                 <div class="settings-tab active" data-tab="loja">Dados da loja</div>
                 ${souSuperAdmin ? '' : `
                 <div class="settings-tab" data-tab="categorias">Categorias de produtos</div>
-                <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>`}
+                <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>
+                <div class="settings-tab" data-tab="pagamento-online"><i class="fa-solid fa-credit-card"></i> Pagamento online</div>`}
                 <div class="settings-tab" data-tab="imagens">${souSuperAdmin ? 'Imagens e cores' : 'Imagens da loja'}</div>
                 <div class="settings-tab" data-tab="usuarios">Usuários autorizados</div>
                 <div class="settings-tab" data-tab="conta">Minha conta</div>
@@ -59,6 +60,50 @@ const Configuracoes = (() => {
                     <div class="add-chip-row">
                         <input type="text" id="new-pagamento" placeholder="Nova forma (ex: Boleto)">
                         <button class="btn btn-primary btn-sm" id="btn-add-pagamento"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-panel" id="panel-pagamento-online">
+                <div class="panel" style="max-width:640px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Pagamento online <span class="pgto-status-chip" id="pgto-status-chip">Não configurado</span></h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                        Hoje a Excellent Loja processa pagamento online integrado com o <strong>Mercado Pago</strong>
+                        (Pix, débito e crédito). Com isso ativado, quem compra na sua loja virtual paga direto
+                        dentro do site — numa tela própria, com QR Code do Pix ou cartão — e o pedido só aparece
+                        aqui no painel, em "Pedidos", depois que o pagamento for confirmado. Sem isso ativado,
+                        a loja continua funcionando como hoje (o pedido é combinado direto pelo WhatsApp).
+                    </p>
+                    <form id="pagamento-online-form">
+                        <div class="form-group">
+                            <label>Public Key do Mercado Pago</label>
+                            <input type="text" id="f-pgto-public-key" placeholder="APP_USR-...">
+                        </div>
+                        <div class="form-group">
+                            <label>Access Token do Mercado Pago</label>
+                            <input type="text" id="f-pgto-access-token" placeholder="APP_USR-...">
+                        </div>
+                        <div class="form-group">
+                            <label>Chave secreta do Webhook <span style="font-weight:400;color:var(--text-muted);">(opcional, mas recomendado)</span></label>
+                            <input type="text" id="f-pgto-webhook-secret" placeholder="Gerada ao cadastrar o webhook no Mercado Pago">
+                        </div>
+                        <label class="pgto-toggle-row">
+                            <input type="checkbox" id="f-pgto-ativo">
+                            <span>Pagamento online ativo nesta loja</span>
+                        </label>
+                        <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                    </form>
+                </div>
+                <div class="panel" style="max-width:640px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">URL para cadastrar no Mercado Pago</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:10px;">
+                        Cole esta URL nas notificações (webhooks) do seu aplicativo, no painel de
+                        desenvolvedor do Mercado Pago, marcando o evento "Pagamentos". É assim que o
+                        sistema fica sabendo na hora que alguém pagou.
+                    </p>
+                    <div class="add-chip-row">
+                        <input type="text" id="pgto-webhook-url" readonly>
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-copiar-webhook"><i class="fa-solid fa-copy"></i> Copiar</button>
                     </div>
                 </div>
             </div>`}
@@ -275,6 +320,10 @@ const Configuracoes = (() => {
             document.getElementById('banner-input').addEventListener('change', uploadBanner);
             document.getElementById('fundoloja-input').addEventListener('change', uploadFundoLoja);
             document.getElementById('btn-add-insta-card').addEventListener('click', () => openInstaCardForm());
+            document.getElementById('pagamento-online-form').addEventListener('submit', salvarPagamentoConfig);
+            document.getElementById('pgto-webhook-url').value = `${location.origin}/api/webhook-mercadopago?loja=${encodeURIComponent(Loja.id)}`;
+            document.getElementById('btn-copiar-webhook').addEventListener('click', copiarWebhookUrl);
+            carregarPagamentoConfig();
         }
 
         if (!souSuporteAcesso) {
@@ -357,6 +406,67 @@ const Configuracoes = (() => {
             await Loja.ref().set(data, { merge: true });
             Utils.toast('Dados da loja atualizados.', 'success');
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    async function carregarPagamentoConfig() {
+        const chip = document.getElementById('pgto-status-chip');
+        try {
+            const snap = await Loja.col('config').doc('pagamento').get();
+            const c = snap.exists ? snap.data() : {};
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+            setVal('f-pgto-public-key', c.publicKey);
+            setVal('f-pgto-access-token', c.accessToken);
+            setVal('f-pgto-webhook-secret', c.webhookSecret);
+            const ativoInput = document.getElementById('f-pgto-ativo');
+            if (ativoInput) ativoInput.checked = !!c.ativo;
+            if (chip) {
+                chip.textContent = c.ativo ? 'Ativo' : (c.publicKey || c.accessToken ? 'Configurado, mas inativo' : 'Não configurado');
+                chip.classList.toggle('on', !!c.ativo);
+            }
+        } catch (err) {
+            if (chip) chip.textContent = 'Erro ao carregar';
+        }
+    }
+
+    async function salvarPagamentoConfig(e) {
+        e.preventDefault();
+        const publicKey = document.getElementById('f-pgto-public-key').value.trim();
+        const accessToken = document.getElementById('f-pgto-access-token').value.trim();
+        const webhookSecret = document.getElementById('f-pgto-webhook-secret').value.trim();
+        const ativo = document.getElementById('f-pgto-ativo').checked;
+        if (ativo && (!publicKey || !accessToken)) {
+            Utils.toast('Preencha a Public Key e o Access Token antes de ativar.', 'error');
+            return;
+        }
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+            const batch = window.db.batch();
+            batch.set(Loja.col('config').doc('pagamento'), {
+                publicKey, accessToken, webhookSecret, ativo,
+                atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            // espelha só o que é seguro no doc público da loja (nunca o Access Token/segredo),
+            // pra loja virtual saber se deve mostrar a tela de pagamento — sem poder ler a chave.
+            batch.set(Loja.ref(), {
+                pagamentoOnline: { ativo, publicKey: ativo ? publicKey : '' }
+            }, { merge: true });
+            await batch.commit();
+            Utils.toast('Configuração de pagamento salva.', 'success');
+            await carregarPagamentoConfig();
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function copiarWebhookUrl() {
+        const input = document.getElementById('pgto-webhook-url');
+        input.select();
+        (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject())
+            .then(() => Utils.toast('URL copiada!', 'success'))
+            .catch(() => { try { document.execCommand('copy'); Utils.toast('URL copiada!', 'success'); } catch (e) { Utils.toast('Não foi possível copiar.', 'error'); } });
     }
 
     async function loadLojas() {
