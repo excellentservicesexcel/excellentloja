@@ -10,13 +10,16 @@ const Configuracoes = (() => {
 
     function mount() {
         const el = document.getElementById('view-configuracoes');
-        const souSuperAdmin = Loja.isRoot && Loja.isSuperAdmin(Auth.currentUser() && Auth.currentUser().email);
+        const emailAtual = Auth.currentUser() && Auth.currentUser().email;
+        const souSuperAdmin = Loja.isRoot && Loja.isSuperAdmin(emailAtual);
+        const souSuporteAcesso = !Loja.isRoot && Loja.isSuperAdmin(emailAtual);
         el.innerHTML = `
             <div class="settings-tabs">
                 <div class="settings-tab active" data-tab="loja">Dados da loja</div>
+                ${souSuperAdmin ? '' : `
                 <div class="settings-tab" data-tab="categorias">Categorias de produtos</div>
-                <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>
-                <div class="settings-tab" data-tab="imagens">Imagens da loja</div>
+                <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>`}
+                <div class="settings-tab" data-tab="imagens">${souSuperAdmin ? 'Imagens e cores' : 'Imagens da loja'}</div>
                 <div class="settings-tab" data-tab="usuarios">Usuários autorizados</div>
                 <div class="settings-tab" data-tab="conta">Minha conta</div>
                 ${souSuperAdmin ? `<div class="settings-tab" data-tab="lojas"><i class="fa-solid fa-store"></i> Gerenciar lojas</div>` : ''}
@@ -37,6 +40,7 @@ const Configuracoes = (() => {
                 </div>
             </div>
 
+            ${souSuperAdmin ? '' : `
             <div class="settings-panel" id="panel-categorias">
                 <div class="panel" style="max-width:560px;">
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:6px;">Categorias usadas em Produtos e Cardápio.</p>
@@ -57,9 +61,39 @@ const Configuracoes = (() => {
                         <button class="btn btn-primary btn-sm" id="btn-add-pagamento"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
-            </div>
+            </div>`}
 
             <div class="settings-panel" id="panel-imagens">
+                ${souSuperAdmin ? `
+                <div class="panel" style="max-width:680px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Capa da página inicial</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Imagem de fundo do topo da página inicial (excellentloja.vercel.app), atrás
+                        do título e do texto de apresentação. Use uma foto na horizontal — o sistema
+                        escurece um pouco pra manter o texto legível.
+                    </p>
+                    <div class="capa-grid" id="capalanding-grid"></div>
+                    <label class="btn btn-outline btn-sm" style="margin-top:14px;cursor:pointer;display:inline-flex;">
+                        <i class="fa-solid fa-upload"></i> Adicionar/trocar imagem
+                        <input type="file" id="capalanding-input" accept="image/*" style="display:none;">
+                    </label>
+                    <span id="capalanding-uploading" style="display:none;margin-left:10px;font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Enviando...</span>
+                </div>
+
+                <div class="panel" style="max-width:680px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Cores da página inicial</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Paleta usada só na página inicial (excellentloja.vercel.app) — não afeta o
+                        painel de gestão nem as lojas criadas, que têm suas próprias cores em
+                        Gerenciar lojas.
+                    </p>
+                    <div class="loja-admin-cores" style="margin:0;">
+                        <label>Cor principal<input type="color" id="f-cor-landing-principal" value="${Store.config.corPrincipal || '#C9962B'}"></label>
+                        <label>Cor de fundo<input type="color" id="f-cor-landing-fundo" value="${Store.config.corFundo || '#FAF5EB'}"></label>
+                        <label>Cor do texto<input type="color" id="f-cor-landing-texto" value="${Store.config.corTexto || '#1C1A16'}"></label>
+                        <button type="button" class="js-loja-cor-reset" id="btn-reset-cor-landing" title="Restaurar cores padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                    </div>
+                </div>` : `
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Capa da loja (início)</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
@@ -103,7 +137,7 @@ const Configuracoes = (() => {
                         <input type="file" id="fundoloja-input" accept="image/*" style="display:none;">
                     </label>
                     <span id="fundoloja-uploading" style="display:none;margin-left:10px;font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Enviando...</span>
-                </div>
+                </div>`}
 
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Fundo do painel administrativo</h3>
@@ -119,6 +153,7 @@ const Configuracoes = (() => {
                     <span id="fundo-uploading" style="display:none;margin-left:10px;font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Enviando...</span>
                 </div>
 
+                ${souSuperAdmin ? '' : `
                 <div class="panel" style="max-width:680px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Cards do Instagram</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
@@ -130,7 +165,7 @@ const Configuracoes = (() => {
                     <button type="button" class="btn btn-outline btn-sm" id="btn-add-insta-card" style="margin-top:14px;">
                         <i class="fa-solid fa-plus"></i> Adicionar card
                     </button>
-                </div>
+                </div>`}
             </div>
 
             <div class="settings-panel" id="panel-usuarios">
@@ -148,6 +183,18 @@ const Configuracoes = (() => {
             </div>
 
             <div class="settings-panel" id="panel-conta">
+                ${souSuporteAcesso ? `
+                <div class="panel" style="max-width:560px;">
+                    <p style="font-size:0.85rem;color:var(--text-body);line-height:1.6;">
+                        Você está com acesso de suporte a esta loja. O nome, telefone e foto de
+                        "Minha conta" pertencem a quem administra ela — não a você — por isso não
+                        aparecem aqui. Para editar o seu próprio perfil, volte ao seu painel.
+                    </p>
+                    <div class="form-actions" style="margin-top:16px;">
+                        <a href="/" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Voltar ao meu painel</a>
+                    </div>
+                </div>
+                ` : `
                 <div class="panel" style="max-width:560px;">
                     <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;">
                         <div class="avatar" style="width:64px;height:64px;font-size:1.5rem;overflow:hidden;" id="conta-avatar">A</div>
@@ -173,6 +220,7 @@ const Configuracoes = (() => {
                     <button class="btn btn-outline" id="btn-reset-senha"><i class="fa-solid fa-key"></i> Enviar e-mail de redefinição de senha</button>
                     <button class="btn btn-danger" id="btn-sair-conta" style="margin-left:10px;"><i class="fa-solid fa-right-from-bracket"></i> Sair do sistema</button>
                 </div>
+                `}
             </div>
 
             ${souSuperAdmin ? `
@@ -208,34 +256,53 @@ const Configuracoes = (() => {
         }));
 
         document.getElementById('loja-form').addEventListener('submit', saveLoja);
-        document.getElementById('perfil-form').addEventListener('submit', saveProfile);
-        document.getElementById('btn-add-categoria').addEventListener('click', () => addChip('categoriasProdutos', 'new-categoria'));
-        document.getElementById('btn-add-pagamento').addEventListener('click', () => addChip('formasPagamento', 'new-pagamento'));
         document.getElementById('btn-add-usuario').addEventListener('click', () => addChip('usuariosAutorizados', 'new-usuario', true));
-        document.getElementById('new-categoria').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('categoriasProdutos', 'new-categoria'); } });
-        document.getElementById('new-pagamento').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('formasPagamento', 'new-pagamento'); } });
         document.getElementById('new-usuario').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('usuariosAutorizados', 'new-usuario', true); } });
-
-        document.getElementById('capa-input').addEventListener('change', uploadCapa);
-        document.getElementById('banner-input').addEventListener('change', uploadBanner);
         document.getElementById('fundo-input').addEventListener('change', uploadFundoPainel);
-        document.getElementById('fundoloja-input').addEventListener('change', uploadFundoLoja);
-        document.getElementById('btn-add-insta-card').addEventListener('click', () => openInstaCardForm());
 
-        document.getElementById('conta-foto-input').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const avatar = document.getElementById('conta-avatar');
-            const original = avatar.innerHTML;
-            avatar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            try {
-                profilePhotoDataUrl = await Utils.compressImageToBase64(file, { maxDim: 500, maxBytes: 350000 });
-                avatar.innerHTML = `<img src="${profilePhotoDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
-            } catch (err) {
-                Utils.toast('Não foi possível usar essa foto: ' + err.message, 'error');
-                avatar.innerHTML = original;
-            }
-        });
+        if (souSuperAdmin) {
+            document.getElementById('capalanding-input').addEventListener('change', uploadCapaLanding);
+            document.getElementById('f-cor-landing-principal').addEventListener('change', (e) => salvarCorLanding('corPrincipal', e.target.value));
+            document.getElementById('f-cor-landing-fundo').addEventListener('change', (e) => salvarCorLanding('corFundo', e.target.value));
+            document.getElementById('f-cor-landing-texto').addEventListener('change', (e) => salvarCorLanding('corTexto', e.target.value));
+            document.getElementById('btn-reset-cor-landing').addEventListener('click', resetarCorLanding);
+        } else {
+            document.getElementById('btn-add-categoria').addEventListener('click', () => addChip('categoriasProdutos', 'new-categoria'));
+            document.getElementById('btn-add-pagamento').addEventListener('click', () => addChip('formasPagamento', 'new-pagamento'));
+            document.getElementById('new-categoria').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('categoriasProdutos', 'new-categoria'); } });
+            document.getElementById('new-pagamento').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('formasPagamento', 'new-pagamento'); } });
+            document.getElementById('capa-input').addEventListener('change', uploadCapa);
+            document.getElementById('banner-input').addEventListener('change', uploadBanner);
+            document.getElementById('fundoloja-input').addEventListener('change', uploadFundoLoja);
+            document.getElementById('btn-add-insta-card').addEventListener('click', () => openInstaCardForm());
+        }
+
+        if (!souSuporteAcesso) {
+            document.getElementById('perfil-form').addEventListener('submit', saveProfile);
+            document.getElementById('conta-foto-input').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const avatar = document.getElementById('conta-avatar');
+                const original = avatar.innerHTML;
+                avatar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                try {
+                    profilePhotoDataUrl = await Utils.compressImageToBase64(file, { maxDim: 500, maxBytes: 350000 });
+                    avatar.innerHTML = `<img src="${profilePhotoDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+                } catch (err) {
+                    Utils.toast('Não foi possível usar essa foto: ' + err.message, 'error');
+                    avatar.innerHTML = original;
+                }
+            });
+            document.getElementById('btn-reset-senha').addEventListener('click', async () => {
+                try {
+                    await window.auth.sendPasswordResetEmail(Auth.currentUser().email);
+                    Utils.toast('E-mail de redefinição enviado.', 'success');
+                } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+            });
+            document.getElementById('btn-sair-conta').addEventListener('click', () => {
+                Utils.confirmDialog('Deseja realmente sair do sistema?', async () => { await Auth.logout(); }, 'Sair do sistema', 'Sim, sair');
+            });
+        }
 
         el.addEventListener('click', (e) => {
             const rm = e.target.closest('.js-chip-remove');
@@ -243,6 +310,7 @@ const Configuracoes = (() => {
             const rmBanner = e.target.closest('.js-banner-remove');
             const rmFundo = e.target.closest('.js-fundo-remove');
             const rmFundoLoja = e.target.closest('.js-fundoloja-remove');
+            const rmCapaLanding = e.target.closest('.js-capalanding-remove');
             const editInsta = e.target.closest('.js-insta-edit');
             const rmInsta = e.target.closest('.js-insta-remove');
             const rmLoja = e.target.closest('.js-loja-remove');
@@ -253,6 +321,7 @@ const Configuracoes = (() => {
             if (rmBanner) removeBanner();
             if (rmFundo) removeFundoPainel();
             if (rmFundoLoja) removeFundoLoja();
+            if (rmCapaLanding) removeCapaLanding();
             if (editInsta) openInstaCardForm(editInsta.dataset.id);
             if (rmInsta) removeInstaCard(rmInsta.dataset.id);
             if (rmLoja) removerLoja(rmLoja.dataset.id, rmLoja.dataset.nome);
@@ -265,16 +334,6 @@ const Configuracoes = (() => {
                 e.preventDefault();
                 addAdminToLoja(e.target.dataset.loja);
             }
-        });
-
-        document.getElementById('btn-reset-senha').addEventListener('click', async () => {
-            try {
-                await window.auth.sendPasswordResetEmail(Auth.currentUser().email);
-                Utils.toast('E-mail de redefinição enviado.', 'success');
-            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
-        });
-        document.getElementById('btn-sair-conta').addEventListener('click', () => {
-            Utils.confirmDialog('Deseja realmente sair do sistema?', async () => { await Auth.logout(); }, 'Sair do sistema', 'Sim, sair');
         });
 
         if (souSuperAdmin) {
@@ -321,10 +380,16 @@ const Configuracoes = (() => {
         box.innerHTML = lojasCache.map(l => `
             <div class="loja-admin-card">
                 <div class="loja-admin-head">
-                    <label class="loja-admin-logo" title="Trocar logotipo">
-                        ${l.logoUrl ? `<img src="${l.logoUrl}">` : '<i class="fa-solid fa-shop"></i>'}
-                        <input type="file" accept="image/*" class="js-loja-logo-input" data-loja="${l.id}" style="display:none;">
-                    </label>
+                    <div class="loja-admin-logos">
+                        <label class="loja-admin-logo" title="Trocar logotipo (cabeçalho e rodapé)">
+                            ${l.logoUrl ? `<img src="${l.logoUrl}">` : '<i class="fa-solid fa-shop"></i>'}
+                            <input type="file" accept="image/*" class="js-loja-logo-input" data-loja="${l.id}" style="display:none;">
+                        </label>
+                        <label class="loja-admin-favicon" title="Trocar ícone da aba (favicon)">
+                            ${l.faviconUrl ? `<img src="${l.faviconUrl}">` : (l.logoUrl ? `<img src="${l.logoUrl}">` : '<i class="fa-solid fa-icons"></i>')}
+                            <input type="file" accept="image/*" class="js-loja-favicon-input" data-loja="${l.id}" style="display:none;">
+                        </label>
+                    </div>
                     <div class="loja-admin-info">
                         <strong>${Utils.escapeHtml(l.nomeLoja || l.id)}</strong>
                         <span class="loja-admin-slug">excellentloja.vercel.app/${Utils.escapeHtml(l.id)}</span>
@@ -346,8 +411,23 @@ const Configuracoes = (() => {
             </div>
         `).join('');
         box.querySelectorAll('.js-loja-logo-input').forEach(input => input.addEventListener('change', (e) => uploadLojaLogo(e, input.dataset.loja)));
+        box.querySelectorAll('.js-loja-favicon-input').forEach(input => input.addEventListener('change', (e) => uploadLojaFavicon(e, input.dataset.loja)));
         box.querySelectorAll('.js-loja-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, input.dataset.campo, input.value)));
         box.querySelectorAll('.js-loja-cor-reset').forEach(btn => btn.addEventListener('click', () => resetarCoresLoja(btn.dataset.loja)));
+    }
+
+    async function uploadLojaFavicon(e, lojaId) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const wrap = e.target.closest('.loja-admin-favicon');
+        wrap.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        try {
+            const faviconUrl = await Utils.compressImageToBase64(file, { maxDim: 128, maxBytes: 60000, square: true });
+            await window.db.collection('lojas').doc(lojaId).update({ faviconUrl });
+        } catch (err) {
+            Utils.toast('Não foi possível usar essa imagem: ' + err.message, 'error');
+        }
+        await loadLojas();
     }
 
     async function salvarCorLoja(lojaId, campo, valor) {
@@ -555,6 +635,61 @@ const Configuracoes = (() => {
                 <button class="js-banner-remove" title="Remover"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
+    }
+
+    async function uploadCapaLanding(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const status = document.getElementById('capalanding-uploading');
+        status.style.display = 'inline';
+        try {
+            const capaLanding = await Utils.compressImageToBase64(file, { maxDim: 1400, maxBytes: 320000 });
+            await Loja.ref().set({ capaLanding }, { merge: true });
+            Utils.toast('Capa da página inicial atualizada.', 'success');
+        } catch (err) {
+            Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
+        } finally {
+            status.style.display = 'none';
+            e.target.value = '';
+        }
+    }
+
+    async function removeCapaLanding() {
+        Utils.confirmDialog('Remover a capa da página inicial?', async () => {
+            try {
+                await Loja.ref().update({ capaLanding: firebase.firestore.FieldValue.delete() });
+                Utils.closeModal();
+                Utils.toast('Imagem removida.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Remover imagem', 'Sim, remover');
+    }
+
+    function capaLandingGridHtml(capaLanding) {
+        if (!capaLanding) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhuma imagem definida — o topo mostra um fundo padrão.</span>';
+        return `
+            <div class="capa-thumb">
+                <img src="${capaLanding}">
+                <button class="js-capalanding-remove" title="Remover"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+    }
+
+    async function salvarCorLanding(campo, valor) {
+        try { await Loja.ref().update({ [campo]: valor }); } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    function resetarCorLanding() {
+        Utils.confirmDialog('Restaurar as cores padrão da página inicial?', async () => {
+            try {
+                await Loja.ref().update({
+                    corPrincipal: firebase.firestore.FieldValue.delete(),
+                    corFundo: firebase.firestore.FieldValue.delete(),
+                    corTexto: firebase.firestore.FieldValue.delete()
+                });
+                Utils.closeModal();
+                Utils.toast('Cores restauradas.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Restaurar cores padrão', 'Sim, restaurar');
     }
 
     async function uploadFundoPainel(e) {
@@ -771,21 +906,29 @@ const Configuracoes = (() => {
         document.getElementById('f-endereco-loja').value = c.endereco || '';
         document.getElementById('f-taxa-padrao').value = c.taxaEntregaPadrao || 0;
 
-        document.getElementById('capa-grid').innerHTML = capaGridHtml(Store.capas);
-        document.getElementById('banner-grid').innerHTML = bannerGridHtml(c.bannerMeio);
-        document.getElementById('fundo-grid').innerHTML = fundoGridHtml(c.fundoPainel);
-        document.getElementById('fundoloja-grid').innerHTML = fundoLojaGridHtml(c.fundoLoja);
-        document.getElementById('insta-card-grid').innerHTML = instaCardGridHtml(Store.instaCards);
-        document.getElementById('chips-categorias').innerHTML = chipHtml('categoriasProdutos', c.categoriasProdutos);
-        document.getElementById('chips-pagamento').innerHTML = chipHtml('formasPagamento', c.formasPagamento);
-        document.getElementById('chips-usuarios').innerHTML = chipHtml('usuariosAutorizados', c.usuariosAutorizados);
+        const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+        set('capa-grid', capaGridHtml(Store.capas));
+        set('banner-grid', bannerGridHtml(c.bannerMeio));
+        set('fundo-grid', fundoGridHtml(c.fundoPainel));
+        set('fundoloja-grid', fundoLojaGridHtml(c.fundoLoja));
+        set('insta-card-grid', instaCardGridHtml(Store.instaCards));
+        set('chips-categorias', chipHtml('categoriasProdutos', c.categoriasProdutos));
+        set('chips-pagamento', chipHtml('formasPagamento', c.formasPagamento));
+        set('chips-usuarios', chipHtml('usuariosAutorizados', c.usuariosAutorizados));
+        set('capalanding-grid', capaLandingGridHtml(c.capaLanding));
+
+        const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        setVal('f-cor-landing-principal', c.corPrincipal || '#C9962B');
+        setVal('f-cor-landing-fundo', c.corFundo || '#FAF5EB');
+        setVal('f-cor-landing-texto', c.corTexto || '#1C1A16');
 
         const user = Auth.currentUser();
-        if (user) document.getElementById('conta-email').textContent = user.email;
+        const contaEmailEl = document.getElementById('conta-email');
+        if (user && contaEmailEl) contaEmailEl.textContent = user.email;
 
         const p = Store.profile || {};
-        document.getElementById('f-perfil-nome').value = p.nome || '';
-        document.getElementById('f-perfil-telefone').value = p.telefone || '';
+        setVal('f-perfil-nome', p.nome || '');
+        setVal('f-perfil-telefone', p.telefone || '');
         const avatarEl = document.getElementById('conta-avatar');
         if (avatarEl) {
             avatarEl.innerHTML = p.fotoUrl

@@ -19,11 +19,12 @@ const Storefront = (() => {
     let carouselIndex = 0;
 
     function mount() {
-        if (mounted) { render(); return; }
+        if (mounted) { render(); updatePreviewButton(); return; }
         mounted = true;
         const el = document.getElementById('storefront-screen');
         el.innerHTML = shellHtml();
         bindStatic();
+        updatePreviewButton();
         listen();
     }
 
@@ -32,11 +33,22 @@ const Storefront = (() => {
         document.getElementById('app-shell').style.display = 'none';
         document.getElementById('storefront-screen').style.display = 'block';
         mount();
+        updatePreviewButton();
     }
 
     function closeAdminPreview() {
         document.getElementById('storefront-screen').style.display = 'none';
         document.getElementById('app-shell').style.display = 'flex';
+    }
+
+    function exitPreviewMode() {
+        previewMode = false;
+        updatePreviewButton();
+    }
+
+    function updatePreviewButton() {
+        const btn = document.getElementById('store-preview-exit');
+        if (btn) btn.style.display = previewMode ? 'flex' : 'none';
     }
 
     const DADOS_KEY = 'excellentloja_dados_cliente';
@@ -54,14 +66,14 @@ const Storefront = (() => {
                 <div class="store-header-inner">
                     <img src="img/logo.png?v=3" alt="Excellent Loja" class="store-logo-img" id="store-header-logo">
                     <nav class="store-nav">
-                        <a href="#store-top">Início</a>
-                        <a href="#store-produtos">Catálogo</a>
-                        <a href="#store-kits">Ofertas</a>
-                        <a href="#store-sobre">Quem somos</a>
-                        <a href="#store-contato">Contato</a>
+                        <a href="#" data-scroll="store-top">Início</a>
+                        <a href="#" data-scroll="store-produtos">Catálogo</a>
+                        <a href="#" data-scroll="store-kits">Ofertas</a>
+                        <a href="#" data-scroll="store-sobre">Quem somos</a>
+                        <a href="#" data-scroll="store-contato">Contato</a>
                     </nav>
                     <div class="store-header-actions">
-                        ${previewMode ? `<button class="store-preview-exit" id="store-preview-exit"><i class="fa-solid fa-arrow-left"></i> Voltar ao painel</button>` : ''}
+                        <button class="store-preview-exit" id="store-preview-exit" style="display:none;"><i class="fa-solid fa-arrow-left"></i> Voltar ao painel</button>
                         <button class="store-icon-btn" id="store-search-btn" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
                         <button class="store-icon-btn" id="store-cart-btn" title="Carrinho">
                             <i class="fa-solid fa-cart-shopping"></i>
@@ -184,9 +196,7 @@ const Storefront = (() => {
     }
 
     function bindStatic() {
-        if (previewMode) {
-            document.getElementById('store-preview-exit').addEventListener('click', closeAdminPreview);
-        }
+        document.getElementById('store-preview-exit').addEventListener('click', closeAdminPreview);
         document.getElementById('store-cart-btn').addEventListener('click', () => toggleCart(true));
         document.getElementById('store-cart-close').addEventListener('click', () => toggleCart(false));
         document.getElementById('store-cart-backdrop').addEventListener('click', () => toggleCart(false));
@@ -213,11 +223,16 @@ const Storefront = (() => {
             const addBtn = e.target.closest('.js-add-cart');
             const qtyBtn = e.target.closest('.js-cart-qty');
             const rmBtn = e.target.closest('.js-cart-remove');
+            const scrollLink = e.target.closest('[data-scroll]');
             if (catChip) { catFilter = catChip.dataset.cat; renderCats(); renderGrid(); }
             if (catReset) { catFilter = ''; renderCats(); renderGrid(); document.getElementById('store-produtos').scrollIntoView({ behavior: 'smooth' }); }
             if (addBtn) addToCart(addBtn.dataset.id);
             if (qtyBtn) changeQty(qtyBtn.dataset.id, Number(qtyBtn.dataset.delta));
             if (rmBtn) removeFromCart(rmBtn.dataset.id);
+            if (scrollLink) {
+                e.preventDefault();
+                document.getElementById(scrollLink.dataset.scroll)?.scrollIntoView({ behavior: 'smooth' });
+            }
         });
     }
 
@@ -278,8 +293,10 @@ const Storefront = (() => {
     }
 
     function aplicarTema() {
-        const page = document.querySelector('.store-page');
-        if (!page) return;
+        // aplicado no elemento raiz (não só .store-page) pra alcançar também o carrinho lateral,
+        // que fica fora de .store-page no DOM (mesma stacking context do fundo escurecido)
+        const raiz = document.getElementById('storefront-screen');
+        if (!raiz) return;
         const accent = config.corPrincipal || '#C9962B';
         const bg = config.corFundo || '#FAF5EB';
         const text = config.corTexto || '#1C1A16';
@@ -293,11 +310,12 @@ const Storefront = (() => {
             '--bg': bg,
             '--surface-soft': Utils.lightenColor(bg, 0.3),
             '--border': Utils.darkenColor(bg, 0.08),
+            '--footer-bg': Utils.darkenColor(accent, 0.85),
             '--text-main': text,
             '--text-body': Utils.lightenColor(text, 0.30),
             '--text-muted': Utils.lightenColor(text, 0.55)
         };
-        Object.entries(tema).forEach(([k, v]) => page.style.setProperty(k, v));
+        Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
     }
 
     function applyFundoLoja() {
@@ -333,7 +351,7 @@ const Storefront = (() => {
     function renderHero() {
         const wrap = document.getElementById('store-hero-art-wrap');
         if (!wrap) return;
-        const cta = `<div class="store-hero-cta"><a href="#store-produtos" class="btn btn-primary store-hero-btn">Comprar agora</a></div>`;
+        const cta = `<div class="store-hero-cta"><a href="#" data-scroll="store-produtos" class="btn btn-primary store-hero-btn">Comprar agora</a></div>`;
         if (!capas.length) {
             stopCarousel();
             wrap.innerHTML = `<div class="store-hero-placeholder"><i class="fa-solid fa-box"></i></div>${cta}`;
@@ -354,7 +372,7 @@ const Storefront = (() => {
     function renderBanner() {
         const wrap = document.getElementById('store-banner-media');
         if (!wrap) return;
-        const cta = `<div class="store-banner-cta"><a href="#store-produtos" class="btn btn-primary">Conferir ofertas</a></div>`;
+        const cta = `<div class="store-banner-cta"><a href="#" data-scroll="store-produtos" class="btn btn-primary">Conferir ofertas</a></div>`;
         const media = config.bannerMeio ? `<img src="${config.bannerMeio}" alt="">` : `<i class="fa-solid fa-gift"></i>`;
         wrap.innerHTML = media + cta;
     }
@@ -633,5 +651,5 @@ const Storefront = (() => {
         }
     }
 
-    return { mount, openAdminPreview, closeAdminPreview };
+    return { mount, openAdminPreview, closeAdminPreview, exitPreviewMode };
 })();

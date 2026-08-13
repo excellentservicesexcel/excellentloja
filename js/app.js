@@ -260,8 +260,10 @@ function showApp() {
     refreshSidebarUser();
 
     const user = Auth.currentUser();
-    const modoPlataforma = Loja.isRoot && Loja.isSuperAdmin(user && user.email);
+    const souSuperAdmin = Loja.isSuperAdmin(user && user.email);
+    const modoPlataforma = Loja.isRoot && souSuperAdmin;
     applyNavMode(modoPlataforma);
+    document.getElementById('btn-back-my-panel').style.display = (souSuperAdmin && !Loja.isRoot) ? 'flex' : 'none';
     goToView(modoPlataforma ? 'configuracoes' : 'dashboard');
 }
 
@@ -302,6 +304,7 @@ function showStorefrontScreen() {
     document.getElementById('app-shell').style.display = 'none';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('storefront-screen').style.display = 'block';
+    Storefront.exitPreviewMode();
     Storefront.mount();
 }
 
@@ -313,6 +316,13 @@ function bindLanding() {
         e.preventDefault();
         if (Loja.isRoot) showLanding(); else showStorefrontScreen();
     });
+    document.getElementById('landing-screen').addEventListener('click', (e) => {
+        const scrollLink = e.target.closest('[data-scroll]');
+        if (scrollLink) {
+            e.preventDefault();
+            document.getElementById(scrollLink.dataset.scroll)?.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
 }
 
 function applyLandingBranding() {
@@ -321,18 +331,63 @@ function applyLandingBranding() {
     const heroH1 = document.querySelector('.landing-hero h1');
     if (heroH1) heroH1.textContent = nome;
 
-    if (!Loja.isRoot && Store.config.logoUrl) {
+    const iconeCustom = Store.config.faviconUrl || Store.config.logoUrl;
+    if (!Loja.isRoot && iconeCustom) {
         const favicon = document.querySelector('link[rel="icon"]');
-        if (favicon) favicon.href = Store.config.logoUrl;
+        if (favicon) favicon.href = iconeCustom;
     }
 
     if (!Loja.isRoot) return;
-    const tel = (Store.config.telefone || '').replace(/\D/g, '');
+
+    const hero = document.getElementById('landing-hero');
+    if (hero) {
+        hero.classList.toggle('has-capa', !!Store.config.capaLanding);
+        hero.style.backgroundImage = Store.config.capaLanding ? `url("${Store.config.capaLanding}")` : '';
+    }
+    applyLandingTheme();
+
+    const telDigits = (Store.config.telefone || '').replace(/\D/g, '');
+    const telRow = document.getElementById('landing-footer-tel');
+    if (telRow) {
+        telRow.style.display = Store.config.telefone ? 'flex' : 'none';
+        telRow.querySelector('span').textContent = Store.config.telefone || '';
+    }
+    const instaRow = document.getElementById('landing-footer-insta');
+    if (instaRow) {
+        instaRow.style.display = Store.config.instagram ? 'flex' : 'none';
+        instaRow.querySelector('span').textContent = Store.config.instagram || '';
+    }
+
+    const tel = telDigits;
     const contatoSection = document.getElementById('landing-contato');
     if (!contatoSection) return;
     if (!tel) { contatoSection.style.display = 'none'; return; }
     document.getElementById('landing-contato-btn').href = `https://wa.me/55${tel}?text=${encodeURIComponent('Olá! Quero ter minha própria loja na Excellent Loja.')}`;
     contatoSection.style.display = 'block';
+}
+
+function applyLandingTheme() {
+    const raiz = document.getElementById('landing-screen');
+    if (!raiz) return;
+    const accent = Store.config.corPrincipal || '#C9962B';
+    const bg = Store.config.corFundo || '#FAF5EB';
+    const text = Store.config.corTexto || '#1C1A16';
+    const tema = {
+        '--orange-50': Utils.lightenColor(accent, 0.90),
+        '--orange-100': Utils.lightenColor(accent, 0.75),
+        '--orange-200': Utils.lightenColor(accent, 0.55),
+        '--orange-500': accent,
+        '--orange-600': Utils.darkenColor(accent, 0.15),
+        '--orange-700': Utils.darkenColor(accent, 0.30),
+        '--bg': bg,
+        '--surface-soft': Utils.lightenColor(bg, 0.3),
+        '--border': Utils.darkenColor(bg, 0.08),
+        '--footer-bg': Utils.darkenColor(accent, 0.85),
+        '--text-main': text,
+        '--text-body': Utils.lightenColor(text, 0.30),
+        '--text-muted': Utils.lightenColor(text, 0.55)
+    };
+    Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
 }
 
 async function loadLandingLojas() {

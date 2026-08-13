@@ -203,6 +203,7 @@ const Utils = (() => {
         const maxDim = opts.maxDim || 900;
         const maxBytes = opts.maxBytes || 400000;
         const startQuality = opts.quality || 0.8;
+        const square = !!opts.square;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
@@ -210,17 +211,23 @@ const Utils = (() => {
                 const img = new Image();
                 img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
                 img.onload = () => {
-                    let { width, height } = img;
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+                    if (square) {
+                        // recorta o centro pra um quadrado, evitando favicon esticado
+                        const side = Math.min(sw, sh);
+                        sx = (sw - side) / 2; sy = (sh - side) / 2; sw = side; sh = side;
+                    }
+                    let width = sw, height = sh;
                     if (width > maxDim || height > maxDim) {
                         if (width >= height) { height = Math.round(height * maxDim / width); width = maxDim; }
                         else { width = Math.round(width * maxDim / height); height = maxDim; }
                     }
-                    const canvas = document.createElement('canvas');
                     canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
                     ctx.fillStyle = '#fff';
                     ctx.fillRect(0, 0, width, height);
-                    ctx.drawImage(img, 0, 0, width, height);
+                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
                     let q = startQuality;
                     let dataUrl = canvas.toDataURL('image/jpeg', q);
                     while (dataUrl.length > maxBytes && q > 0.35) {

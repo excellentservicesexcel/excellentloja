@@ -125,6 +125,7 @@ const Auth = (() => {
         document.getElementById('btn-logout').addEventListener('click', () => {
             Utils.confirmDialog('Deseja realmente sair do sistema?', async () => {
                 await logout();
+                if (!Loja.isRoot) location.href = '/';
             }, 'Sair do sistema', 'Sim, sair');
         });
     }
