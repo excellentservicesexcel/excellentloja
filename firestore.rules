@@ -64,6 +64,18 @@ service cloud.firestore {
         allow write: if isLojaAdmin(lojaId);
       }
 
+      match /beneficios/{id} {
+        // cards de benefícios da página inicial (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /equipe/{id} {
+        // cards "Conheça nossa equipe" da página inicial (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
       match /clientes/{id} {
         allow read, write: if isLojaAdmin(lojaId);
         // cliente da loja virtual cadastra/edita o próprio registro (doc id = uid)

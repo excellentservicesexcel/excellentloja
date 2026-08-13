@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
@@ -43,15 +43,19 @@
   </header>
 
   <section class="landing-hero" id="landing-hero">
-    <div class="landing-hero-inner">
-      <span class="landing-eyebrow">Sistema de gestão + loja virtual</span>
-      <h1>Excelência em cada venda.</h1>
-      <p id="landing-hero-sub">Crie sua loja virtual com um painel completo de gestão — pedidos, produtos, estoque, produção e financeiro, tudo em um só lugar.</p>
-      <div class="landing-hero-ctas">
-        <button class="btn btn-primary landing-hero-cta" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
-        <a href="#landing-contato" class="btn btn-outline landing-hero-cta">Quero minha loja</a>
-      </div>
+    <span class="landing-eyebrow" id="landing-eyebrow-text">Sistema de gestão + loja virtual</span>
+    <div class="landing-hero-ctas">
+      <button class="btn btn-primary landing-hero-cta landing-shine" id="btn-landing-login-2"><i class="fa-solid fa-right-to-bracket"></i> Fazer Login</button>
+      <a href="#landing-contato" class="btn btn-outline landing-hero-cta landing-shine">Quero minha loja</a>
     </div>
+  </section>
+
+  <section class="landing-apresentacao" id="landing-apresentacao">
+    <div class="landing-apresentacao-text landing-reveal">
+      <h2 id="landing-apresentacao-titulo">Sua loja virtual, do seu jeito</h2>
+      <p id="landing-apresentacao-texto">Monte uma loja com a sua cara — cores, logotipo e catálogo — enquanto o painel cuida de pedidos, estoque, produção e financeiro por trás dos panos.</p>
+    </div>
+    <div class="landing-apresentacao-media landing-reveal" id="landing-apresentacao-media"></div>
   </section>
 
   <section class="landing-lojas" id="landing-lojas-section" style="display:none;">
@@ -60,26 +64,29 @@
     <div class="landing-lojas-grid" id="landing-lojas-grid"></div>
   </section>
 
+  <section class="landing-beneficios">
+    <h2>Benefícios</h2>
+    <div class="landing-beneficios-grid" id="landing-beneficios-grid"></div>
+  </section>
+
   <section class="landing-how">
     <h2>Como funciona</h2>
     <div class="landing-how-grid">
-      <div class="landing-how-step"><span>1</span><strong>Sua loja é criada</strong><p>Você recebe um endereço próprio, com painel de administração exclusivo e totalmente separado de outras lojas.</p></div>
-      <div class="landing-how-step"><span>2</span><strong>Configure em minutos</strong><p>Cadastre seus produtos, formas de pagamento, categorias e a identidade visual da sua loja.</p></div>
-      <div class="landing-how-step"><span>3</span><strong>Comece a vender</strong><p>Seus clientes compram pela sua loja virtual e cada pedido chega organizado direto no seu painel.</p></div>
+      <div class="landing-how-step landing-reveal"><span>1</span><strong>Sua loja é criada</strong><p>Você recebe um endereço próprio, com painel de administração exclusivo e totalmente separado de outras lojas.</p></div>
+      <div class="landing-how-step landing-reveal"><span>2</span><strong>Configure em minutos</strong><p>Cadastre seus produtos, formas de pagamento, categorias e a identidade visual da sua loja.</p></div>
+      <div class="landing-how-step landing-reveal"><span>3</span><strong>Comece a vender</strong><p>Seus clientes compram pela sua loja virtual e cada pedido chega organizado direto no seu painel.</p></div>
     </div>
   </section>
 
-  <section class="landing-features">
-    <div class="landing-feature"><i class="fa-solid fa-bag-shopping"></i><strong>Pedidos organizados</strong><span>Painel kanban, do pedido à entrega</span></div>
-    <div class="landing-feature"><i class="fa-solid fa-warehouse"></i><strong>Estoque sob controle</strong><span>Baixa automática a cada venda</span></div>
-    <div class="landing-feature"><i class="fa-solid fa-sack-dollar"></i><strong>Financeiro em dia</strong><span>Receitas, despesas e saldo do mês</span></div>
-    <div class="landing-feature"><i class="fa-solid fa-chart-column"></i><strong>Relatórios completos</strong><span>Desempenho de vendas e produtos</span></div>
+  <section class="landing-equipe" id="landing-equipe-section" style="display:none;">
+    <h2>Conheça nossa equipe</h2>
+    <div class="landing-equipe-grid" id="landing-equipe-grid"></div>
   </section>
 
   <section class="landing-contato" id="landing-contato" style="display:none;">
     <h2>Quer ter sua própria loja?</h2>
     <p>Fale com a gente e comece a vender com o seu próprio painel de gestão.</p>
-    <a href="#" id="landing-contato-btn" target="_blank" rel="noopener" class="btn btn-primary landing-hero-cta"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
+    <a href="#" id="landing-contato-btn" target="_blank" rel="noopener" class="btn btn-primary landing-hero-cta landing-shine"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp</a>
   </section>
 
   <footer class="landing-footer">
@@ -323,9 +330,9 @@
 <script src="js/financeiro.js?v=8"></script>
 <script src="js/precificacao.js?v=8"></script>
 <script src="js/relatorios.js?v=8"></script>
-<script src="js/configuracoes.js?v=11"></script>
+<script src="js/configuracoes.js?v=12"></script>
 <script src="js/onboarding.js?v=8"></script>
 <script src="js/storefront.js?v=12"></script>
-<script src="js/app.js?v=10"></script>
+<script src="js/app.js?v=11"></script>
 </body>
 </html>

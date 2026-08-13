@@ -117,9 +117,15 @@ financeiro — nada é compartilhado entre lojas).
   categorias, links. Isso vale só pra loja virtual pública; o painel de gestão continua com a
   identidade da Excellent Loja para todo mundo. Sem cor definida, a loja usa a paleta padrão
   dourada/preta.
-- A **página inicial** (endereço principal) também aceita capa e cores próprias — em
-  Configurações → Imagens e cores. É uma paleta separada da de cada loja: não afeta o painel
-  nem nenhuma loja criada.
+- A **página inicial** (endereço principal) é totalmente customizável em
+  Configurações → Página inicial: capa (sem escurecer — o selo "Sistema de gestão + loja
+  virtual" aparece recortado no topo da imagem, e os botões de login/cadastro ficam no canto
+  inferior direito, ambos editáveis), cores próprias (paleta separada da de cada loja, não
+  afeta o painel nem nenhuma loja criada), textos e imagem da seção de apresentação, cards de
+  "Benefícios" (foto quadrada + título + texto, quantos você quiser) e cards de "Conheça
+  nossa equipe" (foto + nome + descrição, 2 por linha — a seção some se não adicionar
+  ninguém). Cards e textos surgem com uma animação suave ao rolar a página, e têm um brilho
+  ao passar o mouse.
 - Seu próprio painel (quando você está no endereço principal) só mostra **Configurações** —
   não faz sentido ver Dashboard, Pedidos, Financeiro etc. de uma loja que não existe. Isso
   só se aplica ao endereço principal: dentro de uma loja específica (inclusive via "Entrar
