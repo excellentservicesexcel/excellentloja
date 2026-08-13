@@ -52,7 +52,7 @@ const Storefront = (() => {
         <div class="store-page" id="store-top">
             <header class="store-header">
                 <div class="store-header-inner">
-                    <img src="img/logo.png?v=3" alt="Excellent Loja" class="store-logo-img">
+                    <img src="img/logo.png?v=3" alt="Excellent Loja" class="store-logo-img" id="store-header-logo">
                     <nav class="store-nav">
                         <a href="#store-top">Início</a>
                         <a href="#store-produtos">Catálogo</a>
@@ -137,7 +137,7 @@ const Storefront = (() => {
             <footer class="store-footer" id="store-contato">
                 <div class="store-footer-inner">
                     <div class="store-footer-col store-footer-brand">
-                        <img src="img/logo.png?v=3" alt="Excellent Loja" class="store-logo-img">
+                        <img src="img/logo.png?v=3" alt="Excellent Loja" class="store-logo-img" id="store-footer-logo">
                         <p>Excelência em cada compra, do início ao fim.</p>
                     </div>
                     <div class="store-footer-col">
@@ -262,9 +262,42 @@ const Storefront = (() => {
         if (insta) insta.innerHTML = `<i class="fa-brands fa-instagram"></i> ${Utils.escapeHtml(config.instagram || '@excellentloja')}`;
         if (end) end.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${Utils.escapeHtml(config.endereco || 'Consulte a loja')}`;
         if (handle) handle.textContent = config.instagram || '@excellentloja';
+        aplicarLogo();
+        aplicarTema();
         renderHero();
         renderBanner();
         applyFundoLoja();
+    }
+
+    function aplicarLogo() {
+        if (!config.logoUrl) return;
+        const headerLogo = document.getElementById('store-header-logo');
+        const footerLogo = document.getElementById('store-footer-logo');
+        if (headerLogo) headerLogo.src = config.logoUrl;
+        if (footerLogo) footerLogo.src = config.logoUrl;
+    }
+
+    function aplicarTema() {
+        const page = document.querySelector('.store-page');
+        if (!page) return;
+        const accent = config.corPrincipal || '#C9962B';
+        const bg = config.corFundo || '#FAF5EB';
+        const text = config.corTexto || '#1C1A16';
+        const tema = {
+            '--orange-50': Utils.lightenColor(accent, 0.90),
+            '--orange-100': Utils.lightenColor(accent, 0.75),
+            '--orange-200': Utils.lightenColor(accent, 0.55),
+            '--orange-500': accent,
+            '--orange-600': Utils.darkenColor(accent, 0.15),
+            '--orange-700': Utils.darkenColor(accent, 0.30),
+            '--bg': bg,
+            '--surface-soft': Utils.lightenColor(bg, 0.3),
+            '--border': Utils.darkenColor(bg, 0.08),
+            '--text-main': text,
+            '--text-body': Utils.lightenColor(text, 0.30),
+            '--text-muted': Utils.lightenColor(text, 0.55)
+        };
+        Object.entries(tema).forEach(([k, v]) => page.style.setProperty(k, v));
     }
 
     function applyFundoLoja() {

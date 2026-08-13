@@ -332,6 +332,12 @@ const Configuracoes = (() => {
                     <a href="/${l.id}" class="js-loja-enter" title="Entrar no painel desta loja"><i class="fa-solid fa-arrow-right-to-bracket"></i></a>
                     <button class="js-loja-remove" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Excluir loja"><i class="fa-solid fa-trash"></i></button>
                 </div>
+                <div class="loja-admin-cores">
+                    <label>Cor principal<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corPrincipal" value="${l.corPrincipal || '#C9962B'}"></label>
+                    <label>Cor de fundo<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corFundo" value="${l.corFundo || '#FAF5EB'}"></label>
+                    <label>Cor do texto<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corTexto" value="${l.corTexto || '#1C1A16'}"></label>
+                    <button type="button" class="js-loja-cor-reset" data-loja="${l.id}" title="Restaurar cores padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                </div>
                 <div class="chip-list">${lojaEmailsHtml(l.id, l.usuariosAutorizados)}</div>
                 <div class="add-chip-row">
                     <input type="email" class="js-loja-email-input" data-loja="${l.id}" placeholder="email-do-admin@exemplo.com">
@@ -340,6 +346,30 @@ const Configuracoes = (() => {
             </div>
         `).join('');
         box.querySelectorAll('.js-loja-logo-input').forEach(input => input.addEventListener('change', (e) => uploadLojaLogo(e, input.dataset.loja)));
+        box.querySelectorAll('.js-loja-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, input.dataset.campo, input.value)));
+        box.querySelectorAll('.js-loja-cor-reset').forEach(btn => btn.addEventListener('click', () => resetarCoresLoja(btn.dataset.loja)));
+    }
+
+    async function salvarCorLoja(lojaId, campo, valor) {
+        try {
+            await window.db.collection('lojas').doc(lojaId).update({ [campo]: valor });
+            const l = lojasCache.find(x => x.id === lojaId);
+            if (l) l[campo] = valor;
+        } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    function resetarCoresLoja(lojaId) {
+        Utils.confirmDialog('Restaurar as cores padrão dessa loja?', async () => {
+            try {
+                await window.db.collection('lojas').doc(lojaId).update({
+                    corPrincipal: firebase.firestore.FieldValue.delete(),
+                    corFundo: firebase.firestore.FieldValue.delete(),
+                    corTexto: firebase.firestore.FieldValue.delete()
+                });
+                Utils.closeModal();
+                await loadLojas();
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Restaurar cores padrão', 'Sim, restaurar');
     }
 
     async function uploadLojaLogo(e, lojaId) {

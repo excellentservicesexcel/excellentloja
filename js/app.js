@@ -321,6 +321,11 @@ function applyLandingBranding() {
     const heroH1 = document.querySelector('.landing-hero h1');
     if (heroH1) heroH1.textContent = nome;
 
+    if (!Loja.isRoot && Store.config.logoUrl) {
+        const favicon = document.querySelector('link[rel="icon"]');
+        if (favicon) favicon.href = Store.config.logoUrl;
+    }
+
     if (!Loja.isRoot) return;
     const tel = (Store.config.telefone || '').replace(/\D/g, '');
     const contatoSection = document.getElementById('landing-contato');

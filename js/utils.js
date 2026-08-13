@@ -235,11 +235,23 @@ const Utils = (() => {
         });
     }
 
+    function mixColor(hex, target, amount) {
+        const c = (hex || '#000000').replace('#', '');
+        const t = (target || '#ffffff').replace('#', '');
+        const r = parseInt(c.substring(0, 2), 16) || 0, g = parseInt(c.substring(2, 4), 16) || 0, b = parseInt(c.substring(4, 6), 16) || 0;
+        const tr = parseInt(t.substring(0, 2), 16) || 0, tg = parseInt(t.substring(2, 4), 16) || 0, tb = parseInt(t.substring(4, 6), 16) || 0;
+        const mix = (a, z) => Math.round(a + (z - a) * amount).toString(16).padStart(2, '0');
+        return `#${mix(r, tr)}${mix(g, tg)}${mix(b, tb)}`;
+    }
+    function lightenColor(hex, amount) { return mixColor(hex, '#ffffff', amount); }
+    function darkenColor(hex, amount) { return mixColor(hex, '#000000', amount); }
+
     return {
         formatBRL, formatDateBR, formatDateShort, formatDateTimeBR, todayKey, toDate,
         escapeHtml, debounce, uid, toast, openModal, closeModal, confirmDialog,
         statusBadge, STATUS_LABELS,
         selectHtml, refreshSelectOptions, setSelectValue,
-        compressImageToBase64
+        compressImageToBase64,
+        mixColor, lightenColor, darkenColor
     };
 })();
