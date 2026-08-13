@@ -783,8 +783,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .store-page.has-fundo .store-insta,
 .store-page.has-fundo .store-card,
 .store-page.has-fundo .store-newsletter,
-.store-page.has-fundo .store-cart-drawer,
-.store-page.has-fundo .store-account-pop {
+.store-page.has-fundo .store-cart-drawer {
     --text-main: #1C1A16; --text-body: #4A4136; --text-muted: #8C8275;
 }
 
@@ -813,14 +812,6 @@ input[type="number"] { -moz-appearance: textfield; }
 .store-search-bar i:first-child { color: var(--text-muted); }
 .store-search-bar input { flex: 1; border: none; background: transparent; font-size: 0.9rem; outline: none; color: var(--text-main); }
 .store-search-bar button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; }
-
-.store-account-wrap { position: relative; }
-.store-account-pop {
-    display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 220px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 14px; z-index: 60;
-}
-.store-account-pop.open { display: block; animation: pop 0.15s ease; }
-.store-account-email { font-size: 0.8rem; color: var(--text-body); margin-bottom: 10px; word-break: break-all; }
 
 .store-hero { width: 100%; }
 .store-hero-btn { padding: 14px 30px; font-size: 0.95rem; border-radius: 999px; box-shadow: 0 10px 24px rgba(0,0,0,0.28); }
@@ -1027,5 +1018,4 @@ input[type="number"] { -moz-appearance: textfield; }
     .store-footer { padding: 28px 16px 0; }
     .store-footer-inner { grid-template-columns: 1fr; gap: 22px; }
     .store-insta-grid { grid-template-columns: repeat(2, 1fr); }
-    .store-account-pop { right: -60px; }
 }
