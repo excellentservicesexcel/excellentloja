@@ -176,11 +176,39 @@ ul { list-style: none; }
 }
 .landing-header-logo { height: 42px; width: auto; }
 .landing-hero {
-    text-align: center; max-width: 720px; margin: 0 auto; padding: 80px 24px 56px;
+    text-align: center; max-width: 720px; margin: 0 auto; padding: 72px 24px 56px;
+}
+.landing-eyebrow {
+    display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--orange-600); background: var(--orange-50); border: 1px solid var(--orange-200);
+    padding: 6px 16px; border-radius: 999px; margin-bottom: 18px;
 }
 .landing-hero h1 { font-family: 'Fredoka', sans-serif; font-size: 2.4rem; color: var(--text-main); margin-bottom: 16px; }
 .landing-hero p { font-size: 1.05rem; color: var(--text-body); line-height: 1.6; margin-bottom: 30px; }
-.landing-hero-cta { padding: 14px 34px; font-size: 1rem; border-radius: 999px; box-shadow: 0 14px 30px rgba(201,150,43,0.32); }
+.landing-hero-ctas { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.landing-hero-cta { padding: 14px 34px; font-size: 1rem; border-radius: 999px; }
+.btn-primary.landing-hero-cta { box-shadow: 0 14px 30px rgba(201,150,43,0.32); }
+
+.landing-how { max-width: 1100px; margin: 0 auto 80px; padding: 0 24px; text-align: center; }
+.landing-how h2 { font-family: 'Fredoka', sans-serif; font-size: 1.5rem; color: var(--text-main); margin-bottom: 34px; }
+.landing-how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.landing-how-step {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+    padding: 30px 22px; text-align: left; position: relative;
+}
+.landing-how-step span {
+    display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--orange-500); color: #fff; font-family: 'Fredoka', sans-serif; font-weight: 600; margin-bottom: 16px;
+}
+.landing-how-step strong { display: block; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; }
+.landing-how-step p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.55; margin: 0; }
+
+.landing-contato {
+    max-width: 640px; margin: 0 auto 90px; padding: 46px 24px; text-align: center; background: var(--orange-50);
+    border-radius: var(--radius); border: 1px solid var(--orange-200);
+}
+.landing-contato h2 { font-family: 'Fredoka', sans-serif; font-size: 1.4rem; color: var(--text-main); margin-bottom: 8px; }
+.landing-contato p { font-size: 0.92rem; color: var(--text-body); margin-bottom: 22px; }
 
 .landing-lojas { max-width: 1100px; margin: 0 auto 70px; padding: 0 24px; text-align: center; }
 .landing-lojas h2 { font-family: 'Fredoka', sans-serif; font-size: 1.5rem; color: var(--text-main); margin-bottom: 6px; }
@@ -217,6 +245,7 @@ ul { list-style: none; }
     .landing-hero { padding: 56px 20px 40px; }
     .landing-hero h1 { font-size: 1.7rem; }
     .landing-features { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .landing-how-grid { grid-template-columns: 1fr; }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -660,11 +689,12 @@ input[type="number"] { -moz-appearance: textfield; }
     font-size: 1rem; border: 1px solid var(--border);
 }
 .loja-admin-logo img { width: 100%; height: 100%; object-fit: cover; }
-.loja-admin-head button {
+.loja-admin-head button, .loja-admin-head a {
     background: none; border: none; color: var(--text-muted); cursor: pointer; width: 30px; height: 30px;
-    border-radius: 50%; flex-shrink: 0;
+    border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; text-decoration: none;
 }
 .loja-admin-head button:hover { background: var(--danger-bg); color: var(--danger); }
+.loja-admin-head a.js-loja-enter:hover { background: var(--orange-50); color: var(--orange-500); }
 
 .capa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .capa-thumb { position: relative; border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 4/3; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
