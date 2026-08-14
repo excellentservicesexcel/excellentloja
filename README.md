@@ -148,6 +148,14 @@ financeiro — nada é compartilhado entre lojas).
   quadrada + título + texto, quantos você quiser) e cards de "Conheça nossa equipe" (foto +
   nome + descrição, 2 por linha — a seção some se não adicionar ninguém). Os cards de loja
   ("Nossas lojas") seguem o mesmo estilo dos cards de Benefícios, só que um pouco menores.
+  Ao clicar em "Quero minha loja" (no topo ou no rodapé), a pessoa é levada direto pra seção
+  **Planos**, com cards no estilo bronze, prata e ouro (Básico, Profissional e Empresarial por
+  padrão). Cada plano tem nome, preço (aparece na parte de baixo do card), uma cor de destaque
+  própria e uma lista de itens marcados como incluídos (com ✓) ou não incluídos (com ✗, num
+  tom mais apagado) — tudo isso editável em Configurações → Página inicial → Planos: dá pra
+  criar quantos planos quiser, editar ou apagar qualquer um, reordenar os itens de cada um e
+  marcar/desmarcar o que está incluído. Sem nenhum plano criado, aparecem os 3 de exemplo. O
+  botão "Quero esse plano" de cada card leva até a seção de contato, pra fechar por WhatsApp.
   Cards e textos surgem com uma animação suave ao rolar a página, e têm um brilho ao passar
   o mouse.
 - Seu próprio painel (quando você está no endereço principal) só mostra **Configurações** —
