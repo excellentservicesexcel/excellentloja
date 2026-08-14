@@ -123,9 +123,22 @@ financeiro — nada é compartilhado entre lojas).
   pra escolher a **fonte das letras** entre 14 opções (sem serifa, serifada/elegante,
   arredondada/divertida e manuscrita) — se não escolher nenhuma, continua no padrão
   (Inter + Fredoka nos títulos). Tudo isso é configurado em Configurações → Gerenciar lojas,
-  no card de cada loja. Isso vale só pra loja virtual pública; o painel de gestão continua com
-  a identidade da Excellent Loja para todo mundo. Sem cor definida, a loja usa a paleta padrão
-  dourada/preta.
+  no card de cada loja. Sem cor definida, a loja usa a paleta padrão dourada/preta.
+- O **painel administrativo** de cada loja (a tela que quem administra usa pra gerenciar
+  pedidos, produtos, etc. — diferente da loja virtual pública) também pode ter identidade
+  própria, configurada separadamente logo abaixo das cores da loja virtual, no mesmo card em
+  Configurações → Gerenciar lojas: a logo que aparece no canto do painel é a mesma logo
+  configurada pra loja (cabeçalho/rodapé), só que um pouco maior pra ficar bem ajustada ali;
+  se a loja não tiver logo própria, o painel mostra a logo padrão da Excellent Loja. Além
+  disso dá pra escolher 10 cores independentes só pro painel — principal, fundo, texto, barra
+  lateral, cabeçalho, rodapé (menu mobile), botões, texto dos botões, cards e texto dos
+  cards —, cada uma com seu próprio botão "Padrão" pra restaurar tudo de uma vez. Essa
+  paleta do painel é **totalmente separada** da paleta da loja virtual (mudar uma não afeta a
+  outra) — a fonte das letras, porém, é a mesma escolhida pra loja virtual (não tem um
+  seletor de fonte duplicado). Isso tudo vale só pra quem administra aquela loja específica;
+  **o seu próprio painel** (quando você está logada no endereço principal) nunca muda —
+  continua sempre com a identidade padrão da Excellent Loja, mesmo que você entre no painel
+  de outra loja pra dar suporte.
 - A **página inicial** (endereço principal) é totalmente customizável em
   Configurações → Página inicial: capa (sem escurecer — o selo "Sistema de gestão + loja
   virtual" aparece recortado no topo da imagem, e os botões de login/cadastro ficam no canto
