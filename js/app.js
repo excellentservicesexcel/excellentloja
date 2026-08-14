@@ -80,6 +80,11 @@ function initStoreListeners() {
         Store.emit('equipe');
     }, err => console.error('equipe', err)));
 
+    _unsubscribers.push(Loja.col('planos').orderBy('criadoEm').onSnapshot(snap => {
+        Store.planos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        Store.emit('planos');
+    }, err => console.error('planos', err)));
+
     _unsubscribers.push(Loja.ref().onSnapshot(snap => {
         if (snap.exists) Store.config = { ...Store.config, ...snap.data() };
         Store.emit('config');
@@ -91,7 +96,7 @@ function teardownStoreListeners() {
     _unsubscribers = [];
     Store.clientes = []; Store.produtos = []; Store.pedidos = []; Store.estoque = [];
     Store.financeiro = []; Store.producao = []; Store.receitas = []; Store.capas = []; Store.instaCards = [];
-    Store.beneficios = []; Store.equipe = [];
+    Store.beneficios = []; Store.equipe = []; Store.planos = [];
 }
 
 let _profileUnsub = null;
@@ -237,6 +242,7 @@ function bindStoreSubscriptions() {
     Store.on('instaCards', () => Configuracoes.render());
     Store.on('beneficios', () => Configuracoes.render());
     Store.on('equipe', () => Configuracoes.render());
+    Store.on('planos', () => Configuracoes.render());
     Store.on('profile', () => { updateGreeting(); refreshSidebarUser(); Configuracoes.render(); });
     Store.on('*', () => Relatorios.render());
 }
@@ -534,15 +540,75 @@ function renderLandingEquipe(lista) {
     observeLandingReveals();
 }
 
+const DEFAULT_PLANOS = [
+    {
+        nome: 'Básico', valor: 'R$ 47/mês', cor: '#CD7F32',
+        itens: [
+            { texto: 'Loja virtual completa', incluido: true },
+            { texto: 'Painel de pedidos, estoque e financeiro', incluido: true },
+            { texto: 'Até 50 produtos cadastrados', incluido: true },
+            { texto: 'Pagamento online direto na loja', incluido: false },
+            { texto: 'Cores e fonte personalizadas', incluido: false }
+        ]
+    },
+    {
+        nome: 'Profissional', valor: 'R$ 97/mês', cor: '#B9BBBE',
+        itens: [
+            { texto: 'Tudo do plano Básico', incluido: true },
+            { texto: 'Produtos ilimitados', incluido: true },
+            { texto: 'Pagamento online direto na loja', incluido: true },
+            { texto: 'Cores e fonte personalizadas', incluido: true },
+            { texto: 'Múltiplos administradores', incluido: false }
+        ]
+    },
+    {
+        nome: 'Empresarial', valor: 'R$ 187/mês', cor: '#D4AF37',
+        itens: [
+            { texto: 'Tudo do plano Profissional', incluido: true },
+            { texto: 'Múltiplos administradores', incluido: true },
+            { texto: 'Suporte prioritário', incluido: true },
+            { texto: 'Consultoria de configuração inicial', incluido: true }
+        ]
+    }
+];
+
+function renderLandingPlanos(lista) {
+    const grid = document.getElementById('landing-planos-grid');
+    if (!grid) return;
+    const planos = (lista && lista.length) ? lista : DEFAULT_PLANOS;
+    grid.innerHTML = planos.map(p => {
+        const cor = p.cor || '#C9962B';
+        const corClara = Utils.lightenColor(cor, 0.6);
+        const itens = (p.itens || []).map(it => `
+            <li class="${it.incluido ? 'incluido' : 'nao-incluido'}">
+                <i class="fa-solid ${it.incluido ? 'fa-check' : 'fa-xmark'}"></i>
+                <span>${Utils.escapeHtml(it.texto || '')}</span>
+            </li>
+        `).join('');
+        return `
+            <div class="landing-plano-card landing-shine landing-reveal" style="--plano-cor:${cor};--plano-cor-clara:${corClara};">
+                <div class="landing-plano-faixa"></div>
+                <div class="landing-plano-nome"><i class="fa-solid fa-medal"></i> ${Utils.escapeHtml(p.nome || '')}</div>
+                <ul class="landing-plano-itens">${itens}</ul>
+                <div class="landing-plano-preco">${Utils.escapeHtml(p.valor || '')}</div>
+                <div class="landing-plano-cta"><a href="#" data-scroll="landing-contato" class="btn btn-primary landing-shine">Quero esse plano</a></div>
+            </div>
+        `;
+    }).join('');
+    observeLandingReveals();
+}
+
 async function loadLandingExtras() {
     if (!Loja.isRoot) return;
     try {
-        const [benSnap, eqSnap] = await Promise.all([
+        const [benSnap, eqSnap, planSnap] = await Promise.all([
             Loja.col('beneficios').orderBy('criadoEm').get(),
-            Loja.col('equipe').orderBy('criadoEm').get()
+            Loja.col('equipe').orderBy('criadoEm').get(),
+            Loja.col('planos').orderBy('criadoEm').get()
         ]);
         renderLandingBeneficios(benSnap.docs.map(d => ({ id: d.id, ...d.data() })));
         renderLandingEquipe(eqSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        renderLandingPlanos(planSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) { console.error('landing extras', err); }
 }
 

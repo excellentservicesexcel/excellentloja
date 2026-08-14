@@ -177,6 +177,20 @@ const Configuracoes = (() => {
                     <button type="button" class="btn btn-outline btn-sm" id="btn-add-equipe-card" style="margin-top:14px;">
                         <i class="fa-solid fa-plus"></i> Adicionar pessoa
                     </button>
+                </div>
+
+                <div class="panel" style="max-width:820px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Planos</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cards de planos exibidos quando alguém clica em "Quero minha loja". Cada plano
+                        tem nome, preço, cor de destaque e uma lista de itens que você marca como
+                        incluídos ou não. Sem nenhum plano criado, aparecem 3 planos de exemplo
+                        (Básico, Profissional e Empresarial).
+                    </p>
+                    <div class="plano-admin-grid" id="plano-card-grid"></div>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-add-plano-card" style="margin-top:14px;">
+                        <i class="fa-solid fa-plus"></i> Adicionar plano
+                    </button>
                 </div>` : `
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Capa da loja (início)</h3>
@@ -361,6 +375,7 @@ const Configuracoes = (() => {
             document.getElementById('apresentacao-input').addEventListener('change', uploadApresentacaoImagem);
             document.getElementById('btn-add-beneficio-card').addEventListener('click', () => openBeneficioForm());
             document.getElementById('btn-add-equipe-card').addEventListener('click', () => openEquipeForm());
+            document.getElementById('btn-add-plano-card').addEventListener('click', () => openPlanoForm());
         } else {
             document.getElementById('btn-add-categoria').addEventListener('click', () => addChip('categoriasProdutos', 'new-categoria'));
             document.getElementById('btn-add-pagamento').addEventListener('click', () => addChip('formasPagamento', 'new-pagamento'));
@@ -415,6 +430,8 @@ const Configuracoes = (() => {
             const rmBeneficio = e.target.closest('.js-beneficio-remove');
             const editEquipe = e.target.closest('.js-equipe-edit');
             const rmEquipe = e.target.closest('.js-equipe-remove');
+            const editPlano = e.target.closest('.js-plano-edit');
+            const rmPlano = e.target.closest('.js-plano-remove');
             const rmLoja = e.target.closest('.js-loja-remove');
             const apisLoja = e.target.closest('.js-loja-apis');
             const addLojaEmail = e.target.closest('.js-loja-email-add');
@@ -432,6 +449,8 @@ const Configuracoes = (() => {
             if (rmBeneficio) removeBeneficioCard(rmBeneficio.dataset.id);
             if (editEquipe) openEquipeForm(editEquipe.dataset.id);
             if (rmEquipe) removeEquipeCard(rmEquipe.dataset.id);
+            if (editPlano) openPlanoForm(editPlano.dataset.id);
+            if (rmPlano) removePlanoCard(rmPlano.dataset.id);
             if (rmLoja) removerLoja(rmLoja.dataset.id, rmLoja.dataset.nome);
             if (apisLoja) abrirApisLoja(apisLoja.dataset.id, apisLoja.dataset.nome);
             if (addLojaEmail) addAdminToLoja(addLojaEmail.dataset.loja);
@@ -1255,6 +1274,122 @@ const Configuracoes = (() => {
         `).join('');
     }
 
+    function openPlanoForm(id) {
+        const c = id ? Store.planos.find(x => x.id === id) : null;
+        let itensAtual = (c && c.itens && c.itens.length) ? c.itens.map(it => ({ ...it })) : [{ texto: '', incluido: true }];
+
+        function renderItensRows() {
+            const list = document.getElementById('plano-itens-form-list');
+            if (!list) return;
+            list.innerHTML = itensAtual.map((it, i) => `
+                <div class="plano-item-row" data-i="${i}">
+                    <input type="text" class="js-plano-item-texto" placeholder="Ex: Produtos ilimitados" maxlength="80" value="${Utils.escapeHtml(it.texto || '')}">
+                    <label class="plano-item-incluido"><input type="checkbox" class="js-plano-item-incluido" ${it.incluido ? 'checked' : ''}> Incluído</label>
+                    <button type="button" class="js-plano-item-remove" title="Remover item"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            `).join('');
+            list.querySelectorAll('.js-plano-item-texto').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    itensAtual[Number(e.target.closest('.plano-item-row').dataset.i)].texto = e.target.value;
+                });
+            });
+            list.querySelectorAll('.js-plano-item-incluido').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    itensAtual[Number(e.target.closest('.plano-item-row').dataset.i)].incluido = e.target.checked;
+                });
+            });
+            list.querySelectorAll('.js-plano-item-remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    itensAtual.splice(Number(e.target.closest('.plano-item-row').dataset.i), 1);
+                    renderItensRows();
+                });
+            });
+        }
+
+        Utils.openModal(`
+            <div class="modal-head"><h3>${c ? 'Editar plano' : 'Novo plano'}</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <form id="plano-form">
+                <div class="form-row">
+                    <div class="form-group"><label>Nome do plano *</label><input type="text" id="f-plano-nome" required maxlength="40" value="${c ? Utils.escapeHtml(c.nome || '') : ''}" placeholder="Ex: Profissional"></div>
+                    <div class="form-group"><label>Preço *</label><input type="text" id="f-plano-valor" required maxlength="30" value="${c ? Utils.escapeHtml(c.valor || '') : ''}" placeholder="Ex: R$ 97/mês"></div>
+                </div>
+                <div class="loja-admin-cores" style="margin:0 0 14px;">
+                    <label>Cor de destaque<input type="color" id="f-plano-cor" value="${c && c.cor ? c.cor : '#C9962B'}"></label>
+                </div>
+                <div class="form-group">
+                    <label>Itens do plano</label>
+                    <div id="plano-itens-form-list" class="plano-itens-form-list"></div>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-add-plano-item"><i class="fa-solid fa-plus"></i> Adicionar item</button>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="plano-form-submit"><i class="fa-solid fa-check"></i> Salvar</button>
+                </div>
+            </form>
+        `);
+
+        renderItensRows();
+
+        document.getElementById('btn-add-plano-item').addEventListener('click', () => {
+            itensAtual.push({ texto: '', incluido: true });
+            renderItensRows();
+        });
+
+        document.getElementById('plano-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const itens = itensAtual.map(it => ({ texto: (it.texto || '').trim(), incluido: !!it.incluido })).filter(it => it.texto);
+            if (!itens.length) { Utils.toast('Adicione ao menos um item ao plano.', 'error'); return; }
+            const btn = document.getElementById('plano-form-submit');
+            btn.disabled = true;
+            try {
+                const data = {
+                    nome: document.getElementById('f-plano-nome').value.trim(),
+                    valor: document.getElementById('f-plano-valor').value.trim(),
+                    cor: document.getElementById('f-plano-cor').value,
+                    itens
+                };
+                if (c) {
+                    await Loja.col('planos').doc(c.id).update(data);
+                } else {
+                    data.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+                    await Loja.col('planos').add(data);
+                }
+                Utils.closeModal();
+                Utils.toast(c ? 'Plano atualizado.' : 'Plano adicionado.', 'success');
+            } catch (err) {
+                Utils.toast('Erro ao salvar: ' + err.message, 'error');
+                btn.disabled = false;
+            }
+        });
+    }
+
+    async function removePlanoCard(id) {
+        Utils.confirmDialog('Remover este plano?', async () => {
+            try {
+                await Loja.col('planos').doc(id).delete();
+                Utils.toast('Plano removido.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Remover plano', 'Sim, remover');
+    }
+
+    function planoCardGridHtml(cards) {
+        if (!cards || !cards.length) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhum plano criado ainda — a seção "Planos" mostra 3 planos de exemplo no lugar.</span>';
+        return cards.map(c => `
+            <div class="plano-card-admin" style="--plano-cor:${c.cor || '#C9962B'}">
+                <div class="plano-card-admin-faixa"></div>
+                <div class="plano-card-admin-body">
+                    <strong>${Utils.escapeHtml(c.nome || '(sem nome)')}</strong>
+                    <span>${Utils.escapeHtml(c.valor || '')}</span>
+                    <em>${(c.itens || []).length} ${(c.itens || []).length === 1 ? 'item' : 'itens'}</em>
+                </div>
+                <div class="plano-card-admin-actions">
+                    <button class="js-plano-edit" data-id="${c.id}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                    <button class="js-plano-remove del" data-id="${c.id}" title="Remover"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+
     async function uploadFundoPainel(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1482,6 +1617,7 @@ const Configuracoes = (() => {
         set('apresentacao-grid', apresentacaoGridHtml(c.apresentacaoImagem));
         set('beneficio-card-grid', beneficioCardGridHtml(Store.beneficios));
         set('equipe-card-grid', equipeCardGridHtml(Store.equipe));
+        set('plano-card-grid', planoCardGridHtml(Store.planos));
 
         const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
         setVal('f-cor-landing-principal', c.corPrincipal || '#C9962B');
