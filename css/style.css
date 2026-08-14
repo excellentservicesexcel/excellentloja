@@ -238,10 +238,10 @@ ul { list-style: none; }
 }
 .landing-loja-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--orange-200); }
 .landing-loja-logo {
-    width: 64px; height: 64px; border-radius: 50%; overflow: hidden; margin: 0 auto 14px; display: flex;
-    align-items: center; justify-content: center; background: var(--orange-50); color: var(--orange-500); font-size: 1.4rem;
+    width: 88px; height: 88px; border-radius: 18px; overflow: hidden; margin: 0 auto 14px; display: flex;
+    align-items: center; justify-content: center; background: var(--orange-50); color: var(--orange-500); font-size: 1.4rem; padding: 8px;
 }
-.landing-loja-logo img { width: 100%; height: 100%; object-fit: cover; }
+.landing-loja-logo img { width: 100%; height: 100%; object-fit: contain; }
 .landing-loja-card strong { display: block; font-size: 0.9rem; color: var(--text-main); }
 
 .landing-beneficios { max-width: 1180px; margin: 0 auto 90px; padding: 0 24px; text-align: center; }
@@ -263,16 +263,17 @@ ul { list-style: none; }
 .landing-equipe-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px; }
 .landing-equipe-card {
     background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border);
-    padding: 30px; display: flex; align-items: center; gap: 22px; text-align: left; transition: transform .2s, box-shadow .2s;
+    overflow: hidden; text-align: left; transition: transform .2s, box-shadow .2s;
 }
 .landing-equipe-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .landing-equipe-foto {
-    width: 96px; height: 96px; min-width: 96px; border-radius: 50%; overflow: hidden; background: var(--orange-50);
-    display: flex; align-items: center; justify-content: center; color: var(--orange-200); font-size: 1.8rem;
+    aspect-ratio: 1/1; background: var(--orange-50);
+    display: flex; align-items: center; justify-content: center; color: var(--orange-200); font-size: 3.4rem; overflow: hidden;
 }
 .landing-equipe-foto img { width: 100%; height: 100%; object-fit: cover; }
-.landing-equipe-info strong { display: block; font-size: 1.1rem; color: var(--text-main); margin-bottom: 6px; font-family: 'Fredoka', sans-serif; }
-.landing-equipe-info span { font-size: 0.86rem; color: var(--text-muted); line-height: 1.6; display: block; }
+.landing-equipe-info { padding: 22px 24px 26px; }
+.landing-equipe-info strong { display: block; font-size: 1.2rem; color: var(--text-main); margin-bottom: 6px; font-family: 'Fredoka', sans-serif; }
+.landing-equipe-info span { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; display: block; }
 
 .landing-footer { width: 100%; margin-top: 20px; padding: 44px 24px 0; background: var(--footer-bg); }
 .landing-footer-inner {
@@ -329,7 +330,6 @@ ul { list-style: none; }
 }
 @media (max-width: 480px) {
     .landing-beneficios-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .landing-equipe-card { flex-direction: column; text-align: center; }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -792,6 +792,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .loja-admin-head button:hover { background: var(--danger-bg); color: var(--danger); }
 .loja-admin-head a.js-loja-enter:hover { background: var(--orange-50); color: var(--orange-500); }
+.loja-admin-head button.js-loja-apis:hover { background: var(--orange-50); color: var(--orange-500); }
 
 .loja-admin-cores { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 12px 0; padding: 10px 12px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); }
 .loja-admin-cores label { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-muted); cursor: pointer; }
