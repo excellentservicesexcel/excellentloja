@@ -204,6 +204,8 @@ const Utils = (() => {
         const maxBytes = opts.maxBytes || 400000;
         const startQuality = opts.quality || 0.8;
         const square = !!opts.square;
+        // logos/ícones: mantém o fundo transparente do PNG em vez de "chapar" de branco
+        const transparent = !!opts.transparent;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
@@ -225,9 +227,17 @@ const Utils = (() => {
                         else { width = Math.round(width * maxDim / height); height = maxDim; }
                     }
                     canvas.width = width; canvas.height = height;
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(0, 0, width, height);
+                    if (!transparent) {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(0, 0, width, height);
+                    }
                     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+                    if (transparent) {
+                        // PNG não tem controle de qualidade/tamanho como o JPEG — o maxDim já
+                        // mantém o arquivo pequeno, já que logo/ícone costuma ser um gráfico simples
+                        resolve(canvas.toDataURL('image/png'));
+                        return;
+                    }
                     let q = startQuality;
                     let dataUrl = canvas.toDataURL('image/jpeg', q);
                     while (dataUrl.length > maxBytes && q > 0.35) {

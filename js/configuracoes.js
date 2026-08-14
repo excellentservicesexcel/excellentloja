@@ -730,7 +730,7 @@ const Configuracoes = (() => {
         const wrap = e.target.closest('.loja-admin-favicon');
         wrap.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         try {
-            const faviconUrl = await Utils.compressImageToBase64(file, { maxDim: 128, maxBytes: 60000, square: true });
+            const faviconUrl = await Utils.compressImageToBase64(file, { maxDim: 128, maxBytes: 60000, square: true, transparent: true });
             await window.db.collection('lojas').doc(lojaId).update({ faviconUrl });
         } catch (err) {
             Utils.toast('Não foi possível usar essa imagem: ' + err.message, 'error');
@@ -795,7 +795,7 @@ const Configuracoes = (() => {
         const wrap = e.target.closest('.loja-admin-logo');
         wrap.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         try {
-            const logoUrl = await Utils.compressImageToBase64(file, { maxDim: 300, maxBytes: 150000 });
+            const logoUrl = await Utils.compressImageToBase64(file, { maxDim: 300, maxBytes: 150000, transparent: true });
             await window.db.collection('lojas').doc(lojaId).update({ logoUrl });
         } catch (err) {
             Utils.toast('Não foi possível usar essa imagem: ' + err.message, 'error');
@@ -1060,7 +1060,7 @@ const Configuracoes = (() => {
         const status = document.getElementById('apresentacao-uploading');
         status.style.display = 'inline';
         try {
-            const apresentacaoImagem = await Utils.compressImageToBase64(file, { maxDim: 1000, maxBytes: 260000 });
+            const apresentacaoImagem = await Utils.compressImageToBase64(file, { maxDim: 1000, maxBytes: 260000, transparent: true });
             await Loja.ref().set({ apresentacaoImagem }, { merge: true });
             Utils.toast('Imagem da apresentação atualizada.', 'success');
         } catch (err) {

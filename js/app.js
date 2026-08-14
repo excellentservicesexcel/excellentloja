@@ -416,6 +416,7 @@ function applyLandingBranding() {
     if (apTexto && Store.config.apresentacaoTexto) apTexto.textContent = Store.config.apresentacaoTexto;
     const apMedia = document.getElementById('landing-apresentacao-media');
     if (apMedia) {
+        apMedia.classList.toggle('has-media', !!Store.config.apresentacaoImagem);
         apMedia.innerHTML = Store.config.apresentacaoImagem
             ? `<img src="${Store.config.apresentacaoImagem}" alt="">`
             : '<i class="fa-solid fa-image"></i>';
