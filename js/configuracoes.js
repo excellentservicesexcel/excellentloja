@@ -548,6 +548,7 @@ const Configuracoes = (() => {
                     <a href="/${l.id}" class="js-loja-enter" title="Entrar no painel desta loja"><i class="fa-solid fa-arrow-right-to-bracket"></i></a>
                     <button class="js-loja-remove" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Excluir loja"><i class="fa-solid fa-trash"></i></button>
                 </div>
+                <span class="loja-admin-grupo-label"><i class="fa-solid fa-shop"></i> Loja virtual</span>
                 <div class="loja-admin-cores">
                     <label>Cor principal<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corPrincipal" value="${l.corPrincipal || '#C9962B'}"></label>
                     <label>Cor de fundo<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corFundo" value="${l.corFundo || '#FAF5EB'}"></label>
@@ -562,7 +563,23 @@ const Configuracoes = (() => {
                     <label>Cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCard" value="${l.corCard || '#FFFFFF'}"></label>
                     <label>Texto dos cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCardTexto" value="${l.corCardTexto || l.corTexto || '#1C1A16'}"></label>
                     <label title="Textura de grade fixa no fundo da loja"><input type="checkbox" class="js-loja-textura" data-loja="${l.id}" ${l.texturaGrade ? 'checked' : ''}> Textura de grade</label>
-                    <label>Fonte<select class="js-loja-fonte" data-loja="${l.id}" style="width:auto;">${Utils.fontSelectOptionsHtml(l.fonteId)}</select></label>
+                    <label>Fonte (loja e painel)<select class="js-loja-fonte" data-loja="${l.id}" style="width:auto;">${Utils.fontSelectOptionsHtml(l.fonteId)}</select></label>
+                </div>
+                <span class="loja-admin-grupo-label"><i class="fa-solid fa-gauge"></i> Painel administrativo (de quem gerencia esta loja)</span>
+                <div class="loja-admin-cores">
+                    <label>Cor principal<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorPrincipal" value="${l.painelCorPrincipal || '#C9962B'}"></label>
+                    <label>Cor de fundo<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorFundo" value="${l.painelCorFundo || '#FAF5EB'}"></label>
+                    <label>Cor do texto<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorTexto" value="${l.painelCorTexto || '#1C1A16'}"></label>
+                    <button type="button" class="js-loja-cor-reset-painel" data-loja="${l.id}" title="Restaurar cores padrão do painel"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                </div>
+                <div class="loja-admin-cores">
+                    <label>Barra lateral<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorSidebar" value="${l.painelCorSidebar || '#FFFFFF'}"></label>
+                    <label>Cabeçalho<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorCabecalho" value="${l.painelCorCabecalho || '#FFFFFF'}"></label>
+                    <label>Rodapé (menu mobile)<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorRodape" value="${l.painelCorRodape || '#FFFFFF'}"></label>
+                    <label>Botão<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorBotao" value="${l.painelCorBotao || l.painelCorPrincipal || '#C9962B'}"></label>
+                    <label>Texto do botão<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorBotaoTexto" value="${l.painelCorBotaoTexto || '#FFFFFF'}"></label>
+                    <label>Cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorCard" value="${l.painelCorCard || '#FFFFFF'}"></label>
+                    <label>Texto dos cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="painelCorCardTexto" value="${l.painelCorCardTexto || l.painelCorTexto || '#1C1A16'}"></label>
                 </div>
                 <div class="chip-list">${lojaEmailsHtml(l.id, l.usuariosAutorizados)}</div>
                 <div class="add-chip-row">
@@ -575,6 +592,7 @@ const Configuracoes = (() => {
         box.querySelectorAll('.js-loja-favicon-input').forEach(input => input.addEventListener('change', (e) => uploadLojaFavicon(e, input.dataset.loja)));
         box.querySelectorAll('.js-loja-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, input.dataset.campo, input.value)));
         box.querySelectorAll('.js-loja-cor-reset').forEach(btn => btn.addEventListener('click', () => resetarCoresLoja(btn.dataset.loja)));
+        box.querySelectorAll('.js-loja-cor-reset-painel').forEach(btn => btn.addEventListener('click', () => resetarCoresPainelLoja(btn.dataset.loja)));
         box.querySelectorAll('.js-loja-textura').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, 'texturaGrade', e.target.checked)));
         box.querySelectorAll('.js-loja-fonte').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, 'fonteId', e.target.value)));
     }
@@ -729,6 +747,27 @@ const Configuracoes = (() => {
                 await loadLojas();
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Restaurar cores padrão', 'Sim, restaurar');
+    }
+
+    function resetarCoresPainelLoja(lojaId) {
+        Utils.confirmDialog('Restaurar as cores padrão do painel administrativo dessa loja?', async () => {
+            try {
+                await window.db.collection('lojas').doc(lojaId).update({
+                    painelCorPrincipal: firebase.firestore.FieldValue.delete(),
+                    painelCorFundo: firebase.firestore.FieldValue.delete(),
+                    painelCorTexto: firebase.firestore.FieldValue.delete(),
+                    painelCorSidebar: firebase.firestore.FieldValue.delete(),
+                    painelCorCabecalho: firebase.firestore.FieldValue.delete(),
+                    painelCorRodape: firebase.firestore.FieldValue.delete(),
+                    painelCorBotao: firebase.firestore.FieldValue.delete(),
+                    painelCorBotaoTexto: firebase.firestore.FieldValue.delete(),
+                    painelCorCard: firebase.firestore.FieldValue.delete(),
+                    painelCorCardTexto: firebase.firestore.FieldValue.delete()
+                });
+                Utils.closeModal();
+                await loadLojas();
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Restaurar cores do painel', 'Sim, restaurar');
     }
 
     async function uploadLojaLogo(e, lojaId) {

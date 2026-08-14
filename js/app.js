@@ -232,7 +232,7 @@ function bindStoreSubscriptions() {
     Store.on('financeiro', () => Financeiro.render());
     Store.on('producao', () => Producao.render());
     Store.on('receitas', () => Precificacao.render());
-    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); });
+    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); });
     Store.on('capas', () => Configuracoes.render());
     Store.on('instaCards', () => Configuracoes.render());
     Store.on('beneficios', () => Configuracoes.render());
@@ -263,6 +263,50 @@ function applyPainelBackground() {
     } else {
         view.style.backgroundImage = '';
     }
+}
+
+function applyPainelBranding() {
+    const img = document.getElementById('sidebar-brand-img');
+    if (!img) return;
+    img.src = (!Loja.isRoot && Store.config.logoUrl) ? Store.config.logoUrl : 'img/logo.png?v=4';
+}
+
+function applyPainelTema() {
+    const raiz = document.getElementById('app-shell');
+    if (!raiz) return;
+    const c = Store.config;
+    const accent = c.painelCorPrincipal || '#C9962B';
+    const bg = c.painelCorFundo || '#FAF5EB';
+    const text = c.painelCorTexto || '#1C1A16';
+    const card = c.painelCorCard || '#FFFFFF';
+    const botao = c.painelCorBotao || accent;
+    const tema = {
+        '--orange-50': Utils.lightenColor(accent, 0.90),
+        '--orange-100': Utils.lightenColor(accent, 0.75),
+        '--orange-200': Utils.lightenColor(accent, 0.55),
+        '--orange-500': accent,
+        '--orange-600': Utils.darkenColor(accent, 0.15),
+        '--orange-700': Utils.darkenColor(accent, 0.30),
+        '--bg': bg,
+        '--surface': card,
+        '--surface-soft': Utils.lightenColor(bg, 0.3),
+        '--border': Utils.darkenColor(bg, 0.08),
+        '--text-main': text,
+        '--text-body': Utils.lightenColor(text, 0.30),
+        '--text-muted': Utils.lightenColor(text, 0.55),
+        '--painel-sidebar-bg': c.painelCorSidebar || '#FFFFFF',
+        '--painel-topbar-bg': c.painelCorCabecalho || '#FFFFFF',
+        '--painel-tabbar-bg': c.painelCorRodape || '#FFFFFF',
+        '--painel-btn-bg': botao,
+        '--painel-btn-bg-hover': Utils.darkenColor(botao, 0.15),
+        '--painel-btn-text': c.painelCorBotaoTexto || '#ffffff',
+        '--painel-card-text': c.painelCorCardTexto || text
+    };
+    Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
+
+    const fontFamily = Utils.fontFamilyById(c.fonteId);
+    if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
+    else raiz.style.removeProperty('--font-family');
 }
 
 function showApp() {
@@ -517,7 +561,13 @@ function observeLandingReveals() {
     document.querySelectorAll('#landing-screen .landing-reveal:not(.in-view)').forEach(el => _landingObserver.observe(el));
 }
 
+function stripUrlHash() {
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+}
+window.addEventListener('hashchange', stripUrlHash);
+
 document.addEventListener('DOMContentLoaded', async () => {
+    stripUrlHash();
     updateTopbarDate();
     bindNav();
     bindLanding();
