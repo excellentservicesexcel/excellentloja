@@ -114,18 +114,29 @@ financeiro — nada é compartilhado entre lojas).
   útil porque o logotipo costuma ser retangular e o favicon precisa ser quadrado (o sistema
   recorta o centro da imagem automaticamente pra não esticar). As 3 cores (principal, fundo e
   texto) re-pintam a loja virtual inteira — cabeçalho, botões, rodapé, carrinho lateral,
-  categorias, links. Isso vale só pra loja virtual pública; o painel de gestão continua com a
-  identidade da Excellent Loja para todo mundo. Sem cor definida, a loja usa a paleta padrão
+  categorias, links. Além delas, dá pra ajustar 6 cores específicas, uma a uma, sem depender da
+  paleta geral: cor do cabeçalho, do rodapé, dos botões, do texto dos botões, dos cards de
+  produto e do texto dos cards — cada uma some e volta a seguir a paleta principal se você
+  limpar o campo (o botão "Padrão" restaura tudo de uma vez, incluindo essas 6). Tem também a
+  opção de **textura de grade** no fundo da loja — um padrão sutil de linhas que fica fixo (não
+  rola junto com a página) — com um interruptor pra ligar/desligar quando quiser. Também dá
+  pra escolher a **fonte das letras** entre 14 opções (sem serifa, serifada/elegante,
+  arredondada/divertida e manuscrita) — se não escolher nenhuma, continua no padrão
+  (Inter + Fredoka nos títulos). Tudo isso é configurado em Configurações → Gerenciar lojas,
+  no card de cada loja. Isso vale só pra loja virtual pública; o painel de gestão continua com
+  a identidade da Excellent Loja para todo mundo. Sem cor definida, a loja usa a paleta padrão
   dourada/preta.
 - A **página inicial** (endereço principal) é totalmente customizável em
   Configurações → Página inicial: capa (sem escurecer — o selo "Sistema de gestão + loja
   virtual" aparece recortado no topo da imagem, e os botões de login/cadastro ficam no canto
-  inferior direito, ambos editáveis), cores próprias (paleta separada da de cada loja, não
-  afeta o painel nem nenhuma loja criada), textos e imagem da seção de apresentação, cards de
-  "Benefícios" (foto quadrada + título + texto, quantos você quiser) e cards de "Conheça
-  nossa equipe" (foto + nome + descrição, 2 por linha — a seção some se não adicionar
-  ninguém). Cards e textos surgem com uma animação suave ao rolar a página, e têm um brilho
-  ao passar o mouse.
+  inferior direito, ambos editáveis), a mesma paleta completa de 9 cores da loja virtual (e a
+  mesma escolha de fonte) — paleta separada da de cada loja, não afeta o painel nem nenhuma
+  loja criada —, textos e imagem da seção de apresentação, cards de "Benefícios" (foto
+  quadrada + título + texto, quantos você quiser) e cards de "Conheça nossa equipe" (foto +
+  nome + descrição, 2 por linha — a seção some se não adicionar ninguém). Os cards de loja
+  ("Nossas lojas") seguem o mesmo estilo dos cards de Benefícios, só que um pouco menores.
+  Cards e textos surgem com uma animação suave ao rolar a página, e têm um brilho ao passar
+  o mouse.
 - Seu próprio painel (quando você está no endereço principal) só mostra **Configurações** —
   não faz sentido ver Dashboard, Pedidos, Financeiro etc. de uma loja que não existe. Isso
   só se aplica ao endereço principal: dentro de uma loja específica (inclusive via "Entrar
@@ -191,6 +202,19 @@ precisa de um código de integração próprio; Mercado Pago foi o escolhido por
 usado no Brasil e já cobrir Pix + cartão numa API só). O texto abaixo assume que você
 **ainda não tem** conta no Mercado Pago — se já tiver, pule os passos 1 e 2.
 
+### Quem controla o quê
+
+As chaves (Public Key, Access Token, chave do webhook) ficam **só com você**
+(`excellentservices.excel@gmail.com`), em Configurações → **Gerenciar lojas** → ícone de
+tomada (<i>plug</i>) no card da loja. Quem administra a loja nunca vê nem edita essas
+chaves — ela só ganha um interruptor simples ("Usar pagamento online") em Configurações →
+Pagamento online, que só aparece depois que você libera. Assim funciona o fluxo completo:
+
+1. Você libera e configura o Mercado Pago pra uma loja específica (passos abaixo).
+2. Quem administra aquela loja vê o interruptor aparecer no painel dela e decide se quer
+   usar ou não — desligado, a loja continua no fluxo por WhatsApp de sempre; ligado, passa
+   a usar a tela de pagamento própria.
+
 ### Por que isso precisa de mais do que só o Firebase
 
 Diferente do resto do sistema (que roda 100% no navegador, direto com o Firestore), processar
@@ -218,19 +242,21 @@ conversar com o Mercado Pago e confirmar pagamentos com segurança.
    Depois de salvar, faça um novo deploy (qualquer novo envio de arquivo já dispara um; ou
    use o botão "Redeploy" no painel da Vercel) — variável de ambiente só entra em vigor a
    partir do próximo deploy.
-5. No painel da Excellent Loja, entre na loja desejada → **Configurações → Pagamento online**
-   → cole a **Public Key** e o **Access Token** do passo 2, marque "Pagamento online ativo" e
-   salve.
-6. Nessa mesma tela aparece uma **URL de webhook** já pronta (com o endereço da sua loja
+5. No seu painel (endereço principal) → Configurações → **Gerenciar lojas** → clique no
+   ícone de tomada no card da loja desejada. Marque "Liberado pra essa loja", cole a
+   **Public Key** e o **Access Token** do passo 2, e salve.
+6. Nessa mesma janela aparece uma **URL de webhook** já pronta (com o endereço daquela loja
    embutido) — copie e cole ela no Mercado Pago, em **Sua aplicação → Webhooks → Configurar
    notificações**, marcando o evento **"Pagamentos"**. O Mercado Pago vai gerar uma **chave
-   secreta de assinatura**; copie ela de volta e cole no campo "Chave secreta do Webhook" da
-   Excellent Loja (recomendado, mas opcional — sem ela o sistema confirma o pagamento
-   consultando o Mercado Pago mesmo assim, só que sempre por consulta periódica, nunca na hora).
+   secreta de assinatura**; copie ela de volta e cole no campo "Chave secreta do Webhook"
+   (recomendado, mas opcional — sem ela o sistema confirma o pagamento consultando o Mercado
+   Pago mesmo assim, só que sempre por consulta periódica, nunca na hora).
+7. Avise quem administra aquela loja — o interruptor "Usar pagamento online" já apareceu no
+   painel dela (Configurações → Pagamento online), pra ela ligar quando quiser.
 
-Só depois desses passos o pagamento online realmente ativa. Antes disso — ou em qualquer
-loja que não tiver "Pagamento online ativo" marcado — a loja continua funcionando
-exatamente como hoje, combinando o pedido pelo WhatsApp.
+Só depois desses passos o pagamento online realmente ativa — e só se, além de você liberar,
+a própria loja também ligar o interruptor dela. Sem isso — em qualquer uma das duas pontas —
+a loja continua funcionando exatamente como hoje, combinando o pedido pelo WhatsApp.
 
 ### Como funciona por dentro
 
