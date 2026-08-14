@@ -397,6 +397,8 @@ function applyLandingTheme() {
     const accent = Store.config.corPrincipal || '#C9962B';
     const bg = Store.config.corFundo || '#FAF5EB';
     const text = Store.config.corTexto || '#1C1A16';
+    const corBotao = Store.config.corBotao || accent;
+    const corCardTexto = Store.config.corCardTexto || text;
     const tema = {
         '--orange-50': Utils.lightenColor(accent, 0.90),
         '--orange-100': Utils.lightenColor(accent, 0.75),
@@ -407,12 +409,22 @@ function applyLandingTheme() {
         '--bg': bg,
         '--surface-soft': Utils.lightenColor(bg, 0.3),
         '--border': Utils.darkenColor(bg, 0.08),
-        '--footer-bg': Utils.darkenColor(accent, 0.85),
+        '--footer-bg': Store.config.corRodape || Utils.darkenColor(accent, 0.85),
         '--text-main': text,
         '--text-body': Utils.lightenColor(text, 0.30),
-        '--text-muted': Utils.lightenColor(text, 0.55)
+        '--text-muted': Utils.lightenColor(text, 0.55),
+        '--landing-header-bg': Store.config.corCabecalho || 'rgba(255,255,255,0.92)',
+        '--landing-btn-bg': corBotao,
+        '--landing-btn-bg-hover': Utils.darkenColor(corBotao, 0.15),
+        '--landing-btn-text': Store.config.corBotaoTexto || '#ffffff',
+        '--landing-card-bg': Store.config.corCard || '#ffffff',
+        '--landing-card-text': corCardTexto
     };
     Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
+
+    const fontFamily = Utils.fontFamilyById(Store.config.fonteId);
+    if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
+    else raiz.style.removeProperty('--font-family');
 }
 
 async function loadLandingLojas() {
@@ -424,15 +436,16 @@ async function loadLandingLojas() {
         const grid = document.getElementById('landing-lojas-grid');
         if (!lojas.length) { section.style.display = 'none'; return; }
         grid.innerHTML = lojas.map(l => `
-            <button type="button" class="landing-loja-card" data-slug="${l.id}">
-                <span class="landing-loja-logo">${l.logoUrl ? `<img src="${l.logoUrl}" alt="${Utils.escapeHtml(l.nomeLoja)}">` : '<i class="fa-solid fa-shop"></i>'}</span>
-                <strong>${Utils.escapeHtml(l.nomeLoja)}</strong>
+            <button type="button" class="landing-loja-card landing-shine landing-reveal" data-slug="${l.id}">
+                <span class="landing-loja-img">${l.logoUrl ? `<img src="${l.logoUrl}" alt="${Utils.escapeHtml(l.nomeLoja)}">` : '<i class="fa-solid fa-shop"></i>'}</span>
+                <span class="landing-loja-body"><strong>${Utils.escapeHtml(l.nomeLoja)}</strong></span>
             </button>
         `).join('');
         grid.querySelectorAll('.landing-loja-card').forEach(card => {
             card.addEventListener('click', () => { location.href = '/' + card.dataset.slug; });
         });
         section.style.display = 'block';
+        observeLandingReveals();
     } catch (err) { console.error('landing lojas', err); }
 }
 

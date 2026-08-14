@@ -101,17 +101,29 @@ const Configuracoes = (() => {
                 </div>
 
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
-                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Cores da página inicial</h3>
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Cores e fonte da página inicial</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
-                        Paleta usada só na página inicial (excellentloja.vercel.app) — não afeta o
-                        painel de gestão nem as lojas criadas, que têm suas próprias cores em
-                        Gerenciar lojas.
+                        Paleta e fonte usadas só na página inicial (excellentloja.vercel.app) — não
+                        afeta o painel de gestão nem as lojas criadas, que têm suas próprias cores e
+                        fonte em Gerenciar lojas.
                     </p>
-                    <div class="loja-admin-cores" style="margin:0;">
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
                         <label>Cor principal<input type="color" id="f-cor-landing-principal" value="${Store.config.corPrincipal || '#C9962B'}"></label>
                         <label>Cor de fundo<input type="color" id="f-cor-landing-fundo" value="${Store.config.corFundo || '#FAF5EB'}"></label>
                         <label>Cor do texto<input type="color" id="f-cor-landing-texto" value="${Store.config.corTexto || '#1C1A16'}"></label>
-                        <button type="button" class="js-loja-cor-reset" id="btn-reset-cor-landing" title="Restaurar cores padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                        <button type="button" class="js-loja-cor-reset" id="btn-reset-cor-landing" title="Restaurar cores e fonte padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0 0 14px;">
+                        <label>Cabeçalho<input type="color" id="f-cor-landing-cabecalho" value="${Store.config.corCabecalho || '#FFFFFF'}"></label>
+                        <label>Rodapé<input type="color" id="f-cor-landing-rodape" value="${Store.config.corRodape || Utils.darkenColor(Store.config.corPrincipal || '#C9962B', 0.85)}"></label>
+                        <label>Botão<input type="color" id="f-cor-landing-botao" value="${Store.config.corBotao || Store.config.corPrincipal || '#C9962B'}"></label>
+                        <label>Texto do botão<input type="color" id="f-cor-landing-botao-texto" value="${Store.config.corBotaoTexto || '#FFFFFF'}"></label>
+                        <label>Cards<input type="color" id="f-cor-landing-card" value="${Store.config.corCard || '#FFFFFF'}"></label>
+                        <label>Texto dos cards<input type="color" id="f-cor-landing-card-texto" value="${Store.config.corCardTexto || Store.config.corTexto || '#1C1A16'}"></label>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Fonte das letras</label>
+                        <select id="f-fonte-landing">${Utils.fontSelectOptionsHtml(Store.config.fonteId)}</select>
                     </div>
                 </div>
 
@@ -337,6 +349,13 @@ const Configuracoes = (() => {
             document.getElementById('f-cor-landing-principal').addEventListener('change', (e) => salvarCorLanding('corPrincipal', e.target.value));
             document.getElementById('f-cor-landing-fundo').addEventListener('change', (e) => salvarCorLanding('corFundo', e.target.value));
             document.getElementById('f-cor-landing-texto').addEventListener('change', (e) => salvarCorLanding('corTexto', e.target.value));
+            document.getElementById('f-cor-landing-cabecalho').addEventListener('change', (e) => salvarCorLanding('corCabecalho', e.target.value));
+            document.getElementById('f-cor-landing-rodape').addEventListener('change', (e) => salvarCorLanding('corRodape', e.target.value));
+            document.getElementById('f-cor-landing-botao').addEventListener('change', (e) => salvarCorLanding('corBotao', e.target.value));
+            document.getElementById('f-cor-landing-botao-texto').addEventListener('change', (e) => salvarCorLanding('corBotaoTexto', e.target.value));
+            document.getElementById('f-cor-landing-card').addEventListener('change', (e) => salvarCorLanding('corCard', e.target.value));
+            document.getElementById('f-cor-landing-card-texto').addEventListener('change', (e) => salvarCorLanding('corCardTexto', e.target.value));
+            document.getElementById('f-fonte-landing').addEventListener('change', (e) => salvarCorLanding('fonteId', e.target.value));
             document.getElementById('btn-reset-cor-landing').addEventListener('click', resetarCorLanding);
             document.getElementById('landing-textos-form').addEventListener('submit', salvarTextosLanding);
             document.getElementById('apresentacao-input').addEventListener('change', uploadApresentacaoImagem);
@@ -543,6 +562,7 @@ const Configuracoes = (() => {
                     <label>Cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCard" value="${l.corCard || '#FFFFFF'}"></label>
                     <label>Texto dos cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCardTexto" value="${l.corCardTexto || l.corTexto || '#1C1A16'}"></label>
                     <label title="Textura de grade fixa no fundo da loja"><input type="checkbox" class="js-loja-textura" data-loja="${l.id}" ${l.texturaGrade ? 'checked' : ''}> Textura de grade</label>
+                    <label>Fonte<select class="js-loja-fonte" data-loja="${l.id}" style="width:auto;">${Utils.fontSelectOptionsHtml(l.fonteId)}</select></label>
                 </div>
                 <div class="chip-list">${lojaEmailsHtml(l.id, l.usuariosAutorizados)}</div>
                 <div class="add-chip-row">
@@ -556,6 +576,7 @@ const Configuracoes = (() => {
         box.querySelectorAll('.js-loja-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, input.dataset.campo, input.value)));
         box.querySelectorAll('.js-loja-cor-reset').forEach(btn => btn.addEventListener('click', () => resetarCoresLoja(btn.dataset.loja)));
         box.querySelectorAll('.js-loja-textura').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, 'texturaGrade', e.target.checked)));
+        box.querySelectorAll('.js-loja-fonte').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, 'fonteId', e.target.value)));
     }
 
     async function abrirApisLoja(lojaId, nome) {
@@ -689,7 +710,7 @@ const Configuracoes = (() => {
     }
 
     function resetarCoresLoja(lojaId) {
-        Utils.confirmDialog('Restaurar as cores padrão dessa loja? (Isso também desliga a textura de grade.)', async () => {
+        Utils.confirmDialog('Restaurar as cores e a fonte padrão dessa loja? (Isso também desliga a textura de grade.)', async () => {
             try {
                 await window.db.collection('lojas').doc(lojaId).update({
                     corPrincipal: firebase.firestore.FieldValue.delete(),
@@ -701,7 +722,8 @@ const Configuracoes = (() => {
                     corBotaoTexto: firebase.firestore.FieldValue.delete(),
                     corCard: firebase.firestore.FieldValue.delete(),
                     corCardTexto: firebase.firestore.FieldValue.delete(),
-                    texturaGrade: firebase.firestore.FieldValue.delete()
+                    texturaGrade: firebase.firestore.FieldValue.delete(),
+                    fonteId: firebase.firestore.FieldValue.delete()
                 });
                 Utils.closeModal();
                 await loadLojas();
@@ -941,10 +963,17 @@ const Configuracoes = (() => {
                 await Loja.ref().update({
                     corPrincipal: firebase.firestore.FieldValue.delete(),
                     corFundo: firebase.firestore.FieldValue.delete(),
-                    corTexto: firebase.firestore.FieldValue.delete()
+                    corTexto: firebase.firestore.FieldValue.delete(),
+                    corCabecalho: firebase.firestore.FieldValue.delete(),
+                    corRodape: firebase.firestore.FieldValue.delete(),
+                    corBotao: firebase.firestore.FieldValue.delete(),
+                    corBotaoTexto: firebase.firestore.FieldValue.delete(),
+                    corCard: firebase.firestore.FieldValue.delete(),
+                    corCardTexto: firebase.firestore.FieldValue.delete(),
+                    fonteId: firebase.firestore.FieldValue.delete()
                 });
                 Utils.closeModal();
-                Utils.toast('Cores restauradas.', 'success');
+                Utils.toast('Cores e fonte restauradas.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Restaurar cores padrão', 'Sim, restaurar');
     }
@@ -1419,6 +1448,13 @@ const Configuracoes = (() => {
         setVal('f-cor-landing-principal', c.corPrincipal || '#C9962B');
         setVal('f-cor-landing-fundo', c.corFundo || '#FAF5EB');
         setVal('f-cor-landing-texto', c.corTexto || '#1C1A16');
+        setVal('f-cor-landing-cabecalho', c.corCabecalho || '#FFFFFF');
+        setVal('f-cor-landing-rodape', c.corRodape || Utils.darkenColor(c.corPrincipal || '#C9962B', 0.85));
+        setVal('f-cor-landing-botao', c.corBotao || c.corPrincipal || '#C9962B');
+        setVal('f-cor-landing-botao-texto', c.corBotaoTexto || '#FFFFFF');
+        setVal('f-cor-landing-card', c.corCard || '#FFFFFF');
+        setVal('f-cor-landing-card-texto', c.corCardTexto || c.corTexto || '#1C1A16');
+        setVal('f-fonte-landing', c.fonteId || '');
         setVal('f-landing-eyebrow', c.heroEyebrow || '');
         setVal('f-landing-ap-titulo', c.apresentacaoTitulo || '');
         setVal('f-landing-ap-texto', c.apresentacaoTexto || '');

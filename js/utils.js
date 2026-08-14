@@ -259,12 +259,49 @@ const Utils = (() => {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
+    // catálogo de fontes disponíveis pra página inicial e pras lojas — várias famílias,
+    // de estilos diferentes, todas carregadas via Google Fonts em index.html
+    const FONT_OPTIONS = [
+        { id: 'inter', label: 'Inter (padrão)', family: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", grupo: 'Sem serifa' },
+        { id: 'poppins', label: 'Poppins', family: "'Poppins', sans-serif", grupo: 'Sem serifa' },
+        { id: 'montserrat', label: 'Montserrat', family: "'Montserrat', sans-serif", grupo: 'Sem serifa' },
+        { id: 'nunito', label: 'Nunito', family: "'Nunito', sans-serif", grupo: 'Sem serifa' },
+        { id: 'worksans', label: 'Work Sans', family: "'Work Sans', sans-serif", grupo: 'Sem serifa' },
+        { id: 'playfair', label: 'Playfair Display', family: "'Playfair Display', serif", grupo: 'Serifada / elegante' },
+        { id: 'merriweather', label: 'Merriweather', family: "'Merriweather', serif", grupo: 'Serifada / elegante' },
+        { id: 'lora', label: 'Lora', family: "'Lora', serif", grupo: 'Serifada / elegante' },
+        { id: 'fredoka', label: 'Fredoka (padrão dos títulos)', family: "'Fredoka', sans-serif", grupo: 'Arredondada / divertida' },
+        { id: 'baloo', label: 'Baloo 2', family: "'Baloo 2', cursive", grupo: 'Arredondada / divertida' },
+        { id: 'quicksand', label: 'Quicksand', family: "'Quicksand', sans-serif", grupo: 'Arredondada / divertida' },
+        { id: 'pacifico', label: 'Pacifico', family: "'Pacifico', cursive", grupo: 'Manuscrita' },
+        { id: 'caveat', label: 'Caveat', family: "'Caveat', cursive", grupo: 'Manuscrita' },
+        { id: 'dancing', label: 'Dancing Script', family: "'Dancing Script', cursive", grupo: 'Manuscrita' }
+    ];
+
+    function fontFamilyById(id) {
+        const f = FONT_OPTIONS.find(x => x.id === id);
+        return f ? f.family : null;
+    }
+
+    function fontSelectOptionsHtml(valorAtual) {
+        const grupos = {};
+        FONT_OPTIONS.forEach(f => { (grupos[f.grupo] = grupos[f.grupo] || []).push(f); });
+        const padrao = `<option value="" ${!valorAtual ? 'selected' : ''}>Padrão (Inter + Fredoka)</option>`;
+        const resto = Object.entries(grupos).map(([grupo, fontes]) => `
+            <optgroup label="${escapeHtml(grupo)}">
+                ${fontes.map(f => `<option value="${f.id}" style="font-family:${f.family};" ${valorAtual === f.id ? 'selected' : ''}>${escapeHtml(f.label)}</option>`).join('')}
+            </optgroup>
+        `).join('');
+        return padrao + resto;
+    }
+
     return {
         formatBRL, formatDateBR, formatDateShort, formatDateTimeBR, todayKey, toDate,
         escapeHtml, debounce, uid, toast, openModal, closeModal, confirmDialog,
         statusBadge, STATUS_LABELS,
         selectHtml, refreshSelectOptions, setSelectValue,
         compressImageToBase64,
-        mixColor, lightenColor, darkenColor, hexToRgba
+        mixColor, lightenColor, darkenColor, hexToRgba,
+        FONT_OPTIONS, fontFamilyById, fontSelectOptionsHtml
     };
 })();

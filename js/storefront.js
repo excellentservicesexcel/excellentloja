@@ -351,6 +351,10 @@ const Storefront = (() => {
         };
         Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
 
+        const fontFamily = Utils.fontFamilyById(config.fonteId);
+        if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
+        else raiz.style.removeProperty('--font-family');
+
         document.querySelector('.store-page')?.classList.toggle('has-grid-texture', !!config.texturaGrade);
     }
 
