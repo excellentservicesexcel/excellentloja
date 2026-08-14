@@ -468,7 +468,8 @@ function applyLandingTheme() {
         '--landing-btn-bg-hover': Utils.darkenColor(corBotao, 0.15),
         '--landing-btn-text': Store.config.corBotaoTexto || '#ffffff',
         '--landing-card-bg': Store.config.corCard || '#ffffff',
-        '--landing-card-text': corCardTexto
+        '--landing-card-text': corCardTexto,
+        '--landing-card-text-muted': Utils.lightenColor(corCardTexto, 0.55)
     };
     Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
 

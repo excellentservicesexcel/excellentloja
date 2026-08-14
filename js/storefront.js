@@ -347,6 +347,7 @@ const Storefront = (() => {
             '--store-btn-text': config.corBotaoTexto || '#ffffff',
             '--store-card-bg': config.corCard || '#ffffff',
             '--store-card-text': corCardTexto,
+            '--store-card-text-muted': Utils.lightenColor(corCardTexto, 0.55),
             '--store-grid-color': Utils.hexToRgba(corCardTexto, 0.07)
         };
         Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
