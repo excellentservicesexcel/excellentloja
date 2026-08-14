@@ -253,12 +253,18 @@ const Utils = (() => {
     function lightenColor(hex, amount) { return mixColor(hex, '#ffffff', amount); }
     function darkenColor(hex, amount) { return mixColor(hex, '#000000', amount); }
 
+    function hexToRgba(hex, alpha) {
+        const c = (hex || '#000000').replace('#', '');
+        const r = parseInt(c.substring(0, 2), 16) || 0, g = parseInt(c.substring(2, 4), 16) || 0, b = parseInt(c.substring(4, 6), 16) || 0;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     return {
         formatBRL, formatDateBR, formatDateShort, formatDateTimeBR, todayKey, toDate,
         escapeHtml, debounce, uid, toast, openModal, closeModal, confirmDialog,
         statusBadge, STATUS_LABELS,
         selectHtml, refreshSelectOptions, setSelectValue,
         compressImageToBase64,
-        mixColor, lightenColor, darkenColor
+        mixColor, lightenColor, darkenColor, hexToRgba
     };
 })();

@@ -325,6 +325,8 @@ const Storefront = (() => {
         const accent = config.corPrincipal || '#C9962B';
         const bg = config.corFundo || '#FAF5EB';
         const text = config.corTexto || '#1C1A16';
+        const corBotao = config.corBotao || accent;
+        const corCardTexto = config.corCardTexto || text;
         const tema = {
             '--orange-50': Utils.lightenColor(accent, 0.90),
             '--orange-100': Utils.lightenColor(accent, 0.75),
@@ -335,12 +337,21 @@ const Storefront = (() => {
             '--bg': bg,
             '--surface-soft': Utils.lightenColor(bg, 0.3),
             '--border': Utils.darkenColor(bg, 0.08),
-            '--footer-bg': Utils.darkenColor(accent, 0.85),
+            '--footer-bg': config.corRodape || Utils.darkenColor(accent, 0.85),
             '--text-main': text,
             '--text-body': Utils.lightenColor(text, 0.30),
-            '--text-muted': Utils.lightenColor(text, 0.55)
+            '--text-muted': Utils.lightenColor(text, 0.55),
+            '--store-header-bg': config.corCabecalho || 'rgba(255,255,255,0.92)',
+            '--store-btn-bg': corBotao,
+            '--store-btn-bg-hover': Utils.darkenColor(corBotao, 0.15),
+            '--store-btn-text': config.corBotaoTexto || '#ffffff',
+            '--store-card-bg': config.corCard || '#ffffff',
+            '--store-card-text': corCardTexto,
+            '--store-grid-color': Utils.hexToRgba(corCardTexto, 0.07)
         };
         Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
+
+        document.querySelector('.store-page')?.classList.toggle('has-grid-texture', !!config.texturaGrade);
     }
 
     function applyFundoLoja() {

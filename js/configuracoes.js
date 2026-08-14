@@ -65,46 +65,21 @@ const Configuracoes = (() => {
             </div>
 
             <div class="settings-panel" id="panel-pagamento-online">
-                <div class="panel" style="max-width:640px;margin-bottom:20px;">
-                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Pagamento online <span class="pgto-status-chip" id="pgto-status-chip">Não configurado</span></h3>
-                    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
-                        Hoje a Excellent Loja processa pagamento online integrado com o <strong>Mercado Pago</strong>
-                        (Pix, débito e crédito). Com isso ativado, quem compra na sua loja virtual paga direto
-                        dentro do site — numa tela própria, com QR Code do Pix ou cartão — e o pedido só aparece
-                        aqui no painel, em "Pedidos", depois que o pagamento for confirmado. Sem isso ativado,
-                        a loja continua funcionando como hoje (o pedido é combinado direto pelo WhatsApp).
-                    </p>
-                    <form id="pagamento-online-form">
-                        <div class="form-group">
-                            <label>Public Key do Mercado Pago</label>
-                            <input type="text" id="f-pgto-public-key" placeholder="APP_USR-...">
-                        </div>
-                        <div class="form-group">
-                            <label>Access Token do Mercado Pago</label>
-                            <input type="text" id="f-pgto-access-token" placeholder="APP_USR-...">
-                        </div>
-                        <div class="form-group">
-                            <label>Chave secreta do Webhook <span style="font-weight:400;color:var(--text-muted);">(opcional, mas recomendado)</span></label>
-                            <input type="text" id="f-pgto-webhook-secret" placeholder="Gerada ao cadastrar o webhook no Mercado Pago">
-                        </div>
-                        <label class="pgto-toggle-row">
-                            <input type="checkbox" id="f-pgto-ativo">
-                            <span>Pagamento online ativo nesta loja</span>
-                        </label>
-                        <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Salvar</button></div>
-                    </form>
-                </div>
                 <div class="panel" style="max-width:640px;">
-                    <h3 style="font-size:0.95rem;margin-bottom:4px;">URL para cadastrar no Mercado Pago</h3>
-                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:10px;">
-                        Cole esta URL nas notificações (webhooks) do seu aplicativo, no painel de
-                        desenvolvedor do Mercado Pago, marcando o evento "Pagamentos". É assim que o
-                        sistema fica sabendo na hora que alguém pagou.
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Pagamento online <span class="pgto-status-chip" id="pgto-status-chip">Carregando...</span></h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                        Com isso ativado, quem compra na sua loja virtual paga direto dentro do site — Pix
+                        (com QR Code) ou cartão — numa tela própria, e o pedido só aparece aqui no painel,
+                        em "Pedidos", depois que o pagamento for confirmado. Desativado, a loja continua
+                        funcionando como hoje (o pedido é combinado direto pelo WhatsApp).
                     </p>
-                    <div class="add-chip-row">
-                        <input type="text" id="pgto-webhook-url" readonly>
-                        <button type="button" class="btn btn-outline btn-sm" id="btn-copiar-webhook"><i class="fa-solid fa-copy"></i> Copiar</button>
+                    <div id="pgto-sem-liberar" style="display:none;font-size:0.85rem;color:var(--text-muted);background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
+                        Ainda não disponível pra essa loja — fale com quem administra a Excellent Loja pra liberar.
                     </div>
+                    <label class="pgto-toggle-row" id="pgto-ativo-row" style="display:none;">
+                        <input type="checkbox" id="f-pgto-ativo">
+                        <span>Usar pagamento online nesta loja</span>
+                    </label>
                 </div>
             </div>`}
 
@@ -376,10 +351,8 @@ const Configuracoes = (() => {
             document.getElementById('banner-input').addEventListener('change', uploadBanner);
             document.getElementById('fundoloja-input').addEventListener('change', uploadFundoLoja);
             document.getElementById('btn-add-insta-card').addEventListener('click', () => openInstaCardForm());
-            document.getElementById('pagamento-online-form').addEventListener('submit', salvarPagamentoConfig);
-            document.getElementById('pgto-webhook-url').value = `${location.origin}/api/webhook-mercadopago?loja=${encodeURIComponent(Loja.id)}`;
-            document.getElementById('btn-copiar-webhook').addEventListener('click', copiarWebhookUrl);
-            carregarPagamentoConfig();
+            document.getElementById('f-pgto-ativo').addEventListener('change', (e) => alternarPagamentoAtivo(e.target.checked));
+            carregarPagamentoStatus();
         }
 
         if (!souSuporteAcesso) {
@@ -424,6 +397,7 @@ const Configuracoes = (() => {
             const editEquipe = e.target.closest('.js-equipe-edit');
             const rmEquipe = e.target.closest('.js-equipe-remove');
             const rmLoja = e.target.closest('.js-loja-remove');
+            const apisLoja = e.target.closest('.js-loja-apis');
             const addLojaEmail = e.target.closest('.js-loja-email-add');
             const rmLojaEmail = e.target.closest('.js-loja-email-remove');
             if (rm) removeChip(rm.dataset.field, rm.dataset.value);
@@ -440,6 +414,7 @@ const Configuracoes = (() => {
             if (editEquipe) openEquipeForm(editEquipe.dataset.id);
             if (rmEquipe) removeEquipeCard(rmEquipe.dataset.id);
             if (rmLoja) removerLoja(rmLoja.dataset.id, rmLoja.dataset.nome);
+            if (apisLoja) abrirApisLoja(apisLoja.dataset.id, apisLoja.dataset.nome);
             if (addLojaEmail) addAdminToLoja(addLojaEmail.dataset.loja);
             if (rmLojaEmail) removeAdminFromLoja(rmLojaEmail.dataset.loja, rmLojaEmail.dataset.email);
         });
@@ -474,65 +449,45 @@ const Configuracoes = (() => {
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
     }
 
-    async function carregarPagamentoConfig() {
+    async function carregarPagamentoStatus() {
         const chip = document.getElementById('pgto-status-chip');
         try {
-            const snap = await Loja.col('config').doc('pagamento').get();
-            const c = snap.exists ? snap.data() : {};
-            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-            setVal('f-pgto-public-key', c.publicKey);
-            setVal('f-pgto-access-token', c.accessToken);
-            setVal('f-pgto-webhook-secret', c.webhookSecret);
+            const snap = await Loja.col('config').doc('pagamentoStatus').get();
+            const s = snap.exists ? snap.data() : {};
+            const liberado = !!s.liberado;
+            document.getElementById('pgto-sem-liberar').style.display = liberado ? 'none' : 'block';
+            document.getElementById('pgto-ativo-row').style.display = liberado ? 'flex' : 'none';
             const ativoInput = document.getElementById('f-pgto-ativo');
-            if (ativoInput) ativoInput.checked = !!c.ativo;
+            if (ativoInput) ativoInput.checked = !!s.ativo;
             if (chip) {
-                chip.textContent = c.ativo ? 'Ativo' : (c.publicKey || c.accessToken ? 'Configurado, mas inativo' : 'Não configurado');
-                chip.classList.toggle('on', !!c.ativo);
+                chip.textContent = !liberado ? 'Não disponível' : (s.ativo ? 'Ativo' : 'Disponível, mas inativo');
+                chip.classList.toggle('on', liberado && !!s.ativo);
             }
         } catch (err) {
             if (chip) chip.textContent = 'Erro ao carregar';
         }
     }
 
-    async function salvarPagamentoConfig(e) {
-        e.preventDefault();
-        const publicKey = document.getElementById('f-pgto-public-key').value.trim();
-        const accessToken = document.getElementById('f-pgto-access-token').value.trim();
-        const webhookSecret = document.getElementById('f-pgto-webhook-secret').value.trim();
-        const ativo = document.getElementById('f-pgto-ativo').checked;
-        if (ativo && (!publicKey || !accessToken)) {
-            Utils.toast('Preencha a Public Key e o Access Token antes de ativar.', 'error');
-            return;
-        }
-        const btn = e.target.querySelector('button[type="submit"]');
-        btn.disabled = true;
+    async function alternarPagamentoAtivo(ativo) {
+        const input = document.getElementById('f-pgto-ativo');
+        input.disabled = true;
         try {
-            const batch = window.db.batch();
-            batch.set(Loja.col('config').doc('pagamento'), {
-                publicKey, accessToken, webhookSecret, ativo,
-                atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            // espelha só o que é seguro no doc público da loja (nunca o Access Token/segredo),
-            // pra loja virtual saber se deve mostrar a tela de pagamento — sem poder ler a chave.
-            batch.set(Loja.ref(), {
-                pagamentoOnline: { ativo, publicKey: ativo ? publicKey : '' }
-            }, { merge: true });
-            await batch.commit();
-            Utils.toast('Configuração de pagamento salva.', 'success');
-            await carregarPagamentoConfig();
+            const statusRef = Loja.col('config').doc('pagamentoStatus');
+            const statusSnap = await statusRef.get();
+            const liberado = statusSnap.exists && !!statusSnap.data().liberado;
+            if (!liberado) { Utils.toast('Ainda não liberado pra essa loja.', 'error'); input.checked = false; return; }
+            await statusRef.update({ ativo, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            // espelha só o "ligado/desligado" no doc público da loja — a Public Key já foi
+            // gravada lá por quem liberou; aqui só ajustamos o interruptor.
+            await Loja.ref().update({ 'pagamentoOnline.ativo': ativo });
+            Utils.toast(ativo ? 'Pagamento online ativado.' : 'Pagamento online desativado.', 'success');
+            await carregarPagamentoStatus();
         } catch (err) {
             Utils.toast('Erro: ' + err.message, 'error');
+            input.checked = !ativo;
         } finally {
-            btn.disabled = false;
+            input.disabled = false;
         }
-    }
-
-    function copiarWebhookUrl() {
-        const input = document.getElementById('pgto-webhook-url');
-        input.select();
-        (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject())
-            .then(() => Utils.toast('URL copiada!', 'success'))
-            .catch(() => { try { document.execCommand('copy'); Utils.toast('URL copiada!', 'success'); } catch (e) { Utils.toast('Não foi possível copiar.', 'error'); } });
     }
 
     async function loadLojas() {
@@ -570,6 +525,7 @@ const Configuracoes = (() => {
                         <strong>${Utils.escapeHtml(l.nomeLoja || l.id)}</strong>
                         <span class="loja-admin-slug">excellentloja.vercel.app/${Utils.escapeHtml(l.id)}</span>
                     </div>
+                    <button class="js-loja-apis" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="APIs / pagamento online"><i class="fa-solid fa-plug"></i></button>
                     <a href="/${l.id}" class="js-loja-enter" title="Entrar no painel desta loja"><i class="fa-solid fa-arrow-right-to-bracket"></i></a>
                     <button class="js-loja-remove" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Excluir loja"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -578,6 +534,15 @@ const Configuracoes = (() => {
                     <label>Cor de fundo<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corFundo" value="${l.corFundo || '#FAF5EB'}"></label>
                     <label>Cor do texto<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corTexto" value="${l.corTexto || '#1C1A16'}"></label>
                     <button type="button" class="js-loja-cor-reset" data-loja="${l.id}" title="Restaurar cores padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                </div>
+                <div class="loja-admin-cores">
+                    <label>Cabeçalho<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCabecalho" value="${l.corCabecalho || '#FFFFFF'}"></label>
+                    <label>Rodapé<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corRodape" value="${l.corRodape || Utils.darkenColor(l.corPrincipal || '#C9962B', 0.85)}"></label>
+                    <label>Botão<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corBotao" value="${l.corBotao || l.corPrincipal || '#C9962B'}"></label>
+                    <label>Texto do botão<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corBotaoTexto" value="${l.corBotaoTexto || '#FFFFFF'}"></label>
+                    <label>Cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCard" value="${l.corCard || '#FFFFFF'}"></label>
+                    <label>Texto dos cards<input type="color" class="js-loja-cor" data-loja="${l.id}" data-campo="corCardTexto" value="${l.corCardTexto || l.corTexto || '#1C1A16'}"></label>
+                    <label title="Textura de grade fixa no fundo da loja"><input type="checkbox" class="js-loja-textura" data-loja="${l.id}" ${l.texturaGrade ? 'checked' : ''}> Textura de grade</label>
                 </div>
                 <div class="chip-list">${lojaEmailsHtml(l.id, l.usuariosAutorizados)}</div>
                 <div class="add-chip-row">
@@ -590,6 +555,115 @@ const Configuracoes = (() => {
         box.querySelectorAll('.js-loja-favicon-input').forEach(input => input.addEventListener('change', (e) => uploadLojaFavicon(e, input.dataset.loja)));
         box.querySelectorAll('.js-loja-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, input.dataset.campo, input.value)));
         box.querySelectorAll('.js-loja-cor-reset').forEach(btn => btn.addEventListener('click', () => resetarCoresLoja(btn.dataset.loja)));
+        box.querySelectorAll('.js-loja-textura').forEach(input => input.addEventListener('change', (e) => salvarCorLoja(input.dataset.loja, 'texturaGrade', e.target.checked)));
+    }
+
+    async function abrirApisLoja(lojaId, nome) {
+        Utils.openModal(`
+            <div class="modal-head"><h3>APIs — ${Utils.escapeHtml(nome)}</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin:-8px 0 16px;">
+                Cada chave fica só aqui no seu painel — quem administra essa loja nunca vê ou edita
+                as chaves, só liga/desliga o uso depois que você libera.
+            </p>
+            <div id="apis-loja-body"><div class="store-payment-loading"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div></div>
+        `, { wide: true });
+
+        let dados = { liberado: false, publicKey: '', accessToken: '', webhookSecret: '' };
+        try {
+            const snap = await window.db.collection('lojas').doc(lojaId).collection('config').doc('pagamento').get();
+            if (snap.exists) dados = { ...dados, ...snap.data() };
+        } catch (err) {
+            document.getElementById('apis-loja-body').innerHTML = `<span style="color:var(--danger);font-size:0.85rem;">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
+            return;
+        }
+
+        renderApisLojaBody(lojaId, dados);
+    }
+
+    function renderApisLojaBody(lojaId, dados) {
+        const body = document.getElementById('apis-loja-body');
+        if (!body) return;
+        const webhookUrl = `${location.origin}/api/webhook-mercadopago?loja=${encodeURIComponent(lojaId)}`;
+        body.innerHTML = `
+            <div class="panel" style="margin:0;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:${dados.liberado ? '14px' : '0'};">
+                    <strong style="font-size:0.9rem;"><i class="fa-solid fa-credit-card"></i> Mercado Pago</strong>
+                    <label class="pgto-toggle-row" style="margin:0;">
+                        <input type="checkbox" id="f-api-liberado" ${dados.liberado ? 'checked' : ''}>
+                        <span>Liberado pra essa loja</span>
+                    </label>
+                </div>
+                <div id="apis-loja-campos" style="display:${dados.liberado ? 'block' : 'none'};">
+                    <div class="form-group"><label>Public Key</label><input type="text" id="f-api-public-key" placeholder="APP_USR-..." value="${Utils.escapeHtml(dados.publicKey || '')}"></div>
+                    <div class="form-group"><label>Access Token</label><input type="text" id="f-api-access-token" placeholder="APP_USR-..." value="${Utils.escapeHtml(dados.accessToken || '')}"></div>
+                    <div class="form-group"><label>Chave secreta do Webhook <span style="font-weight:400;color:var(--text-muted);">(opcional, mas recomendado)</span></label><input type="text" id="f-api-webhook-secret" placeholder="Gerada ao cadastrar o webhook no Mercado Pago" value="${Utils.escapeHtml(dados.webhookSecret || '')}"></div>
+                    <div class="form-group">
+                        <label>URL para cadastrar no Mercado Pago (notificações → Pagamentos)</label>
+                        <div class="add-chip-row" style="max-width:none;">
+                            <input type="text" id="apis-loja-webhook-url" readonly value="${webhookUrl}">
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-copiar-webhook-loja"><i class="fa-solid fa-copy"></i> Copiar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top:16px;">
+                    <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-salvar-api-loja"><i class="fa-solid fa-check"></i> Salvar</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('f-api-liberado').addEventListener('change', (e) => {
+            document.getElementById('apis-loja-campos').style.display = e.target.checked ? 'block' : 'none';
+        });
+        const copyBtn = document.getElementById('btn-copiar-webhook-loja');
+        if (copyBtn) copyBtn.addEventListener('click', () => {
+            const input = document.getElementById('apis-loja-webhook-url');
+            input.select();
+            (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject())
+                .then(() => Utils.toast('URL copiada!', 'success'))
+                .catch(() => { try { document.execCommand('copy'); Utils.toast('URL copiada!', 'success'); } catch (e) { Utils.toast('Não foi possível copiar.', 'error'); } });
+        });
+        document.getElementById('btn-salvar-api-loja').addEventListener('click', () => salvarApiLoja(lojaId));
+    }
+
+    async function salvarApiLoja(lojaId) {
+        const liberado = document.getElementById('f-api-liberado').checked;
+        const publicKey = document.getElementById('f-api-public-key') ? document.getElementById('f-api-public-key').value.trim() : '';
+        const accessToken = document.getElementById('f-api-access-token') ? document.getElementById('f-api-access-token').value.trim() : '';
+        const webhookSecret = document.getElementById('f-api-webhook-secret') ? document.getElementById('f-api-webhook-secret').value.trim() : '';
+        if (liberado && (!publicKey || !accessToken)) {
+            Utils.toast('Preencha a Public Key e o Access Token antes de liberar.', 'error');
+            return;
+        }
+        const btn = document.getElementById('btn-salvar-api-loja');
+        btn.disabled = true;
+        try {
+            const lojaRef = window.db.collection('lojas').doc(lojaId);
+            const statusSnap = await lojaRef.collection('config').doc('pagamentoStatus').get();
+            const ativoEscolhidoPelaLoja = statusSnap.exists ? !!statusSnap.data().ativo : false;
+
+            const batch = window.db.batch();
+            batch.set(lojaRef.collection('config').doc('pagamento'), {
+                liberado, publicKey, accessToken, webhookSecret,
+                atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            batch.set(lojaRef.collection('config').doc('pagamentoStatus'), {
+                liberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            // a Public Key não é secreta (é usada no navegador do cliente), então fica
+            // espelhada sempre que liberado — independe do interruptor "ativo" da loja,
+            // que ela liga/desliga sozinha sem precisar reenviar a chave.
+            batch.set(lojaRef, {
+                pagamentoOnline: { ativo: liberado && ativoEscolhidoPelaLoja, publicKey: liberado ? publicKey : '' }
+            }, { merge: true });
+            await batch.commit();
+
+            Utils.closeModal();
+            Utils.toast('Configuração salva.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+            btn.disabled = false;
+        }
     }
 
     async function uploadLojaFavicon(e, lojaId) {
@@ -615,12 +689,19 @@ const Configuracoes = (() => {
     }
 
     function resetarCoresLoja(lojaId) {
-        Utils.confirmDialog('Restaurar as cores padrão dessa loja?', async () => {
+        Utils.confirmDialog('Restaurar as cores padrão dessa loja? (Isso também desliga a textura de grade.)', async () => {
             try {
                 await window.db.collection('lojas').doc(lojaId).update({
                     corPrincipal: firebase.firestore.FieldValue.delete(),
                     corFundo: firebase.firestore.FieldValue.delete(),
-                    corTexto: firebase.firestore.FieldValue.delete()
+                    corTexto: firebase.firestore.FieldValue.delete(),
+                    corCabecalho: firebase.firestore.FieldValue.delete(),
+                    corRodape: firebase.firestore.FieldValue.delete(),
+                    corBotao: firebase.firestore.FieldValue.delete(),
+                    corBotaoTexto: firebase.firestore.FieldValue.delete(),
+                    corCard: firebase.firestore.FieldValue.delete(),
+                    corCardTexto: firebase.firestore.FieldValue.delete(),
+                    texturaGrade: firebase.firestore.FieldValue.delete()
                 });
                 Utils.closeModal();
                 await loadLojas();
