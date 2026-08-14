@@ -76,6 +76,13 @@ service cloud.firestore {
         allow write: if isLojaAdmin(lojaId);
       }
 
+      match /planos/{id} {
+        // cards de planos (Básico/Profissional/Empresarial) da página inicial,
+        // mostrados ao clicar em "Quero minha loja" (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
       match /clientes/{id} {
         allow read, write: if isLojaAdmin(lojaId);
         // cliente da loja virtual cadastra/edita o próprio registro (doc id = uid)
@@ -104,9 +111,20 @@ service cloud.firestore {
 
       match /config/{id} {
         // guarda dados sensíveis (ex: chave de API de pagamento) — nunca público,
-        // só quem administra a loja pode ler ou escrever. As funções serverless
-        // em /api leem isso pelo Admin SDK, que ignora estas regras.
-        allow read, write: if isLojaAdmin(lojaId);
+        // só o super admin (dono da plataforma) lê ou escreve aqui, pra manter o
+        // controle das configurações sensíveis. As funções serverless em /api leem
+        // isso pelo Admin SDK, que ignora estas regras.
+        allow read, write: if isSuperAdmin();
+      }
+
+      match /config/pagamentoStatus {
+        // versão "segura" (sem chave nenhuma) do status do pagamento online —
+        // quem administra a própria loja pode ler (pra saber se está liberado) e
+        // ligar/desligar o próprio uso (campo "ativo"), mas não pode mexer em
+        // "liberado" nem em nenhuma chave — só o super admin libera isso.
+        allow read: if isLojaAdmin(lojaId);
+        allow update: if isLojaAdmin(lojaId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ativo', 'atualizadoEm']);
       }
 
       match /pagamentosPendentes/{id} {
