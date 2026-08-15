@@ -407,6 +407,17 @@ function applyLandingBranding() {
     if (hero) {
         hero.classList.toggle('has-capa', !!Store.config.capaLanding);
         hero.style.backgroundImage = Store.config.capaLanding ? `url("${Store.config.capaLanding}")` : '';
+        if (Store.config.capaLanding) {
+            const capaImg = new Image();
+            capaImg.onload = () => {
+                if (capaImg.naturalWidth && capaImg.naturalHeight) {
+                    hero.style.setProperty('--capa-ratio', `${capaImg.naturalWidth} / ${capaImg.naturalHeight}`);
+                }
+            };
+            capaImg.src = Store.config.capaLanding;
+        } else {
+            hero.style.removeProperty('--capa-ratio');
+        }
     }
     applyLandingTheme();
 
