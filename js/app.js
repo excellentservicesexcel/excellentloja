@@ -525,6 +525,7 @@ function applyLandingTheme() {
     const text = Store.config.corTexto || '#1C1A16';
     const corBotao = Store.config.corBotao || accent;
     const corCardTexto = Store.config.corCardTexto || text;
+    const corCabecalho = Store.config.corCabecalho || '#FFFFFF';
     const tema = {
         '--orange-50': Utils.lightenColor(accent, 0.90),
         '--orange-100': Utils.lightenColor(accent, 0.75),
@@ -539,7 +540,10 @@ function applyLandingTheme() {
         '--text-main': text,
         '--text-body': Utils.lightenColor(text, 0.30),
         '--text-muted': Utils.lightenColor(text, 0.55),
-        '--landing-header-bg': Store.config.corCabecalho || 'rgba(255,255,255,0.92)',
+        // cabeçalho com efeito vidro: a cor escolhida vira um "tingimento" translúcido em
+        // vez de opaca, combinada com o backdrop-filter:blur do CSS
+        '--landing-header-bg': Utils.hexToRgba(corCabecalho, 0.72),
+        '--landing-grid-color': Utils.hexToRgba(text, 0.06),
         '--landing-btn-bg': corBotao,
         '--landing-btn-bg-hover': Utils.darkenColor(corBotao, 0.15),
         '--landing-btn-text': Store.config.corBotaoTexto || '#ffffff',
@@ -552,6 +556,23 @@ function applyLandingTheme() {
     const fontFamily = Utils.fontFamilyById(Store.config.fonteId);
     if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
     else raiz.style.removeProperty('--font-family');
+
+    // Monta o fundo da página em camadas (grade + degradê/cor sólida) via background-image —
+    // uma cor sólida também vira gradiente (mesma cor nas duas pontas) pra poder ficar na
+    // mesma lista de camadas sem misturar com background-color e sem cortar a textura de grade
+    const camadas = [];
+    const tamanhos = [];
+    if (Store.config.texturaGrade) {
+        camadas.push('linear-gradient(var(--landing-grid-color) 1px, transparent 1px)');
+        camadas.push('linear-gradient(90deg, var(--landing-grid-color) 1px, transparent 1px)');
+        tamanhos.push('44px 44px', '44px 44px');
+    }
+    const corFundo2 = Store.config.corFundo2;
+    camadas.push(Store.config.fundoDegrade && corFundo2 ? `linear-gradient(150deg, ${bg}, ${corFundo2})` : `linear-gradient(${bg}, ${bg})`);
+    tamanhos.push('cover');
+    raiz.style.backgroundImage = camadas.join(', ');
+    raiz.style.backgroundSize = tamanhos.join(', ');
+    raiz.style.backgroundAttachment = 'fixed';
 }
 
 async function loadLandingLojas() {

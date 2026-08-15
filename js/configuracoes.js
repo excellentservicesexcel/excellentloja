@@ -123,6 +123,17 @@ const Configuracoes = (() => {
                         <label>Cards<input type="color" id="f-cor-landing-card" value="${Store.config.corCard || '#FFFFFF'}"></label>
                         <label>Texto dos cards<input type="color" id="f-cor-landing-card-texto" value="${Store.config.corCardTexto || Store.config.corTexto || '#1C1A16'}"></label>
                     </div>
+                    <div class="loja-admin-cores" style="margin:0 0 14px;">
+                        <label title="Deixa o fundo com um degradê entre duas cores em vez de uma cor só">
+                            <input type="checkbox" id="f-landing-fundo-degrade" ${Store.config.fundoDegrade ? 'checked' : ''}> Fundo em degradê
+                        </label>
+                        <label id="wrap-cor-landing-fundo2" style="${Store.config.fundoDegrade ? '' : 'display:none;'}">
+                            Cor de fundo 2<input type="color" id="f-cor-landing-fundo2" value="${Store.config.corFundo2 || '#F1DFC4'}">
+                        </label>
+                        <label title="Textura sutil de grade fixa no fundo da página inicial">
+                            <input type="checkbox" id="f-landing-textura" ${Store.config.texturaGrade ? 'checked' : ''}> Textura de grade
+                        </label>
+                    </div>
                     <div class="form-group" style="margin:0;">
                         <label>Fonte das letras</label>
                         <select id="f-fonte-landing">${Utils.fontSelectOptionsHtml(Store.config.fonteId)}</select>
@@ -375,6 +386,12 @@ const Configuracoes = (() => {
             document.getElementById('f-cor-landing-botao-texto').addEventListener('change', (e) => salvarCorLanding('corBotaoTexto', e.target.value));
             document.getElementById('f-cor-landing-card').addEventListener('change', (e) => salvarCorLanding('corCard', e.target.value));
             document.getElementById('f-cor-landing-card-texto').addEventListener('change', (e) => salvarCorLanding('corCardTexto', e.target.value));
+            document.getElementById('f-landing-fundo-degrade').addEventListener('change', (e) => {
+                document.getElementById('wrap-cor-landing-fundo2').style.display = e.target.checked ? '' : 'none';
+                salvarCorLanding('fundoDegrade', e.target.checked);
+            });
+            document.getElementById('f-cor-landing-fundo2').addEventListener('change', (e) => salvarCorLanding('corFundo2', e.target.value));
+            document.getElementById('f-landing-textura').addEventListener('change', (e) => salvarCorLanding('texturaGrade', e.target.checked));
             document.getElementById('f-fonte-landing').addEventListener('change', (e) => salvarCorLanding('fonteId', e.target.value));
             document.getElementById('btn-reset-cor-landing').addEventListener('click', resetarCorLanding);
             document.getElementById('landing-textos-form').addEventListener('submit', salvarTextosLanding);
@@ -1050,6 +1067,9 @@ const Configuracoes = (() => {
                     corBotaoTexto: firebase.firestore.FieldValue.delete(),
                     corCard: firebase.firestore.FieldValue.delete(),
                     corCardTexto: firebase.firestore.FieldValue.delete(),
+                    fundoDegrade: firebase.firestore.FieldValue.delete(),
+                    corFundo2: firebase.firestore.FieldValue.delete(),
+                    texturaGrade: firebase.firestore.FieldValue.delete(),
                     fonteId: firebase.firestore.FieldValue.delete()
                 });
                 Utils.closeModal();
@@ -1661,6 +1681,13 @@ const Configuracoes = (() => {
         setVal('f-cor-landing-botao-texto', c.corBotaoTexto || '#FFFFFF');
         setVal('f-cor-landing-card', c.corCard || '#FFFFFF');
         setVal('f-cor-landing-card-texto', c.corCardTexto || c.corTexto || '#1C1A16');
+        const fundoDegradeEl = document.getElementById('f-landing-fundo-degrade');
+        if (fundoDegradeEl) fundoDegradeEl.checked = !!c.fundoDegrade;
+        const fundo2WrapEl = document.getElementById('wrap-cor-landing-fundo2');
+        if (fundo2WrapEl) fundo2WrapEl.style.display = c.fundoDegrade ? '' : 'none';
+        setVal('f-cor-landing-fundo2', c.corFundo2 || '#F1DFC4');
+        const texturaLandingEl = document.getElementById('f-landing-textura');
+        if (texturaLandingEl) texturaLandingEl.checked = !!c.texturaGrade;
         setVal('f-fonte-landing', c.fonteId || '');
         setVal('f-landing-eyebrow', c.heroEyebrow || '');
         setVal('f-landing-ap-titulo', c.apresentacaoTitulo || '');
