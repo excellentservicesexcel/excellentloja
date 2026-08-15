@@ -173,7 +173,9 @@ ul { list-style: none; }
 #landing-screen { position: fixed; inset: 0; z-index: 8900; overflow-y: auto; background: var(--bg); font-family: var(--font-family, 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif); }
 .landing-header {
     position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 40px; background: var(--landing-header-bg, rgba(255,255,255,0.92)); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    padding: 16px 40px; background: var(--landing-header-bg, rgba(255,255,255,0.72));
+    backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-bottom: 1px solid var(--border); box-shadow: 0 1px 24px rgba(0,0,0,0.05);
 }
 /* cor dos botões só dentro da página inicial, sem afetar o painel de gestão */
 #landing-screen .btn-primary { background: var(--landing-btn-bg, var(--orange-500)); color: var(--landing-btn-text, #fff); }
