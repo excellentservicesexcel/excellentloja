@@ -83,6 +83,12 @@ service cloud.firestore {
         allow write: if isLojaAdmin(lojaId);
       }
 
+      match /capasLanding/{id} {
+        // fotos do carrossel de capa da página inicial (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
       match /clientes/{id} {
         allow read, write: if isLojaAdmin(lojaId);
         // cliente da loja virtual cadastra/edita o próprio registro (doc id = uid)
