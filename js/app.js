@@ -3,17 +3,19 @@
    Store central (dados em tempo real do Firestore) + navegação + boot.
    ========================================================================== */
 
+const DEFAULT_CONFIG = {
+    nomeLoja: 'Excellent Loja',
+    categoriasProdutos: ['Geral', 'Novidades', 'Mais vendidos', 'Promoções'],
+    formasPagamento: ['Pix', 'Dinheiro', 'Cartão de Crédito', 'Cartão de Débito'],
+    taxaEntregaPadrao: 0,
+    usuariosAutorizados: ['excellentservices.excel@gmail.com']
+};
+
 const Store = {
     clientes: [], produtos: [], pedidos: [], estoque: [], financeiro: [], producao: [], receitas: [], capas: [], instaCards: [],
     beneficios: [], equipe: [], capasLanding: [],
     profile: {},
-    config: {
-        nomeLoja: 'Excellent Loja',
-        categoriasProdutos: ['Geral', 'Novidades', 'Mais vendidos', 'Promoções'],
-        formasPagamento: ['Pix', 'Dinheiro', 'Cartão de Crédito', 'Cartão de Débito'],
-        taxaEntregaPadrao: 0,
-        usuariosAutorizados: ['excellentservices.excel@gmail.com']
-    },
+    config: { ...DEFAULT_CONFIG },
     listeners: {},
     on(name, cb) { (this.listeners[name] = this.listeners[name] || []).push(cb); },
     emit(name) {
@@ -92,7 +94,7 @@ function initStoreListeners() {
     }, err => console.error('capasLanding', err)));
 
     _unsubscribers.push(Loja.ref().onSnapshot(snap => {
-        if (snap.exists) Store.config = { ...Store.config, ...snap.data() };
+        if (snap.exists) Store.config = { ...DEFAULT_CONFIG, ...snap.data() };
         Store.emit('config');
     }, err => console.error('config', err)));
 }
@@ -483,6 +485,11 @@ function applyLandingBranding() {
             ? `<img src="${Store.config.apresentacaoImagem}" alt="">`
             : '<i class="fa-solid fa-image"></i>';
         apMedia.style.setProperty('--apresentacao-escala', (Number(Store.config.apresentacaoImagemTamanho) || 100) / 100);
+        // PNG costuma ser logo/gráfico com fundo transparente — mantém sem cortar/arredondar
+        // pra não estranhar o recorte. Foto comum (JPEG etc.) ganha cantos arredondados e o
+        // mesmo brilho ao passar o mouse que os outros cards da página inicial usam.
+        const isFoto = !!Store.config.apresentacaoImagem && !Store.config.apresentacaoImagem.startsWith('data:image/png');
+        apMedia.classList.toggle('landing-shine', isFoto);
     }
 
     const telDigits = (Store.config.telefone || '').replace(/\D/g, '');
@@ -717,7 +724,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lojaExiste = !!(lojaSnap && lojaSnap.exists);
 
     if (lojaExiste) {
-        Store.config = { ...Store.config, ...lojaSnap.data() };
+        Store.config = { ...DEFAULT_CONFIG, ...lojaSnap.data() };
         applyLandingBranding();
     } else if (!Loja.isRoot) {
         document.getElementById('app-loading').style.display = 'none';
@@ -739,7 +746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 try {
                     await Loja.ref().set(dadosIniciais);
-                    Store.config = { ...Store.config, ...dadosIniciais };
+                    Store.config = { ...DEFAULT_CONFIG, ...dadosIniciais };
                     applyLandingBranding();
                 } catch (err) { console.error('bootstrap loja root', err); }
             } else {

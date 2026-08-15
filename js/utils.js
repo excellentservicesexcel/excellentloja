@@ -217,31 +217,42 @@ const Utils = (() => {
                 const img = new Image();
                 img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
                     let sx = 0, sy = 0, sw = img.width, sh = img.height;
                     if (square) {
                         // recorta o centro pra um quadrado, evitando favicon esticado
                         const side = Math.min(sw, sh);
                         sx = (sw - side) / 2; sy = (sh - side) / 2; sw = side; sh = side;
                     }
-                    let width = sw, height = sh;
-                    if (width > maxDim || height > maxDim) {
-                        if (width >= height) { height = Math.round(height * maxDim / width); width = maxDim; }
-                        else { width = Math.round(width * maxDim / height); height = maxDim; }
+                    function renderAt(dim) {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        let width = sw, height = sh;
+                        if (width > dim || height > dim) {
+                            if (width >= height) { height = Math.round(height * dim / width); width = dim; }
+                            else { width = Math.round(width * dim / height); height = dim; }
+                        }
+                        canvas.width = width; canvas.height = height;
+                        if (!transparent) {
+                            ctx.fillStyle = '#fff';
+                            ctx.fillRect(0, 0, width, height);
+                        }
+                        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+                        return canvas;
                     }
-                    canvas.width = width; canvas.height = height;
-                    if (!transparent) {
-                        ctx.fillStyle = '#fff';
-                        ctx.fillRect(0, 0, width, height);
-                    }
-                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
                     if (transparent) {
-                        // PNG não tem controle de qualidade/tamanho como o JPEG — o maxDim já
-                        // mantém o arquivo pequeno, já que logo/ícone costuma ser um gráfico simples
-                        resolve(canvas.toDataURL('image/png'));
+                        // PNG não tem controle de qualidade como o JPEG — se ainda ficar grande
+                        // demais (foto complexa, não um gráfico simples), reduz as dimensões
+                        // até caber no limite, já que reduzir "qualidade" não é uma opção
+                        let dim = maxDim;
+                        let dataUrl = renderAt(dim).toDataURL('image/png');
+                        while (dataUrl.length > maxBytes && dim > 200) {
+                            dim = Math.round(dim * 0.8);
+                            dataUrl = renderAt(dim).toDataURL('image/png');
+                        }
+                        resolve(dataUrl);
                         return;
                     }
+                    const canvas = renderAt(maxDim);
                     let q = startQuality;
                     let dataUrl = canvas.toDataURL('image/jpeg', q);
                     while (dataUrl.length > maxBytes && q > 0.35) {
