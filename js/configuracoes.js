@@ -152,6 +152,10 @@ const Configuracoes = (() => {
                         <input type="file" id="apresentacao-input" accept="image/*" style="display:none;">
                     </label>
                     <span id="apresentacao-uploading" style="display:none;margin-left:10px;font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Enviando...</span>
+                    <div class="form-group" style="margin:16px 0 0;">
+                        <label>Tamanho da imagem <span id="apresentacao-tamanho-valor" style="color:var(--text-muted);font-weight:400;"></span></label>
+                        <input type="range" id="f-apresentacao-tamanho" min="50" max="150" step="5" value="100" style="width:100%;">
+                    </div>
                 </div>
 
                 <div class="panel" style="max-width:820px;margin-bottom:20px;">
@@ -373,6 +377,10 @@ const Configuracoes = (() => {
             document.getElementById('btn-reset-cor-landing').addEventListener('click', resetarCorLanding);
             document.getElementById('landing-textos-form').addEventListener('submit', salvarTextosLanding);
             document.getElementById('apresentacao-input').addEventListener('change', uploadApresentacaoImagem);
+            document.getElementById('f-apresentacao-tamanho').addEventListener('input', (e) => {
+                document.getElementById('apresentacao-tamanho-valor').textContent = `(${e.target.value}%)`;
+            });
+            document.getElementById('f-apresentacao-tamanho').addEventListener('change', (e) => salvarTamanhoApresentacao(Number(e.target.value)));
             document.getElementById('btn-add-beneficio-card').addEventListener('click', () => openBeneficioForm());
             document.getElementById('btn-add-equipe-card').addEventListener('click', () => openEquipeForm());
             document.getElementById('btn-add-plano-card').addEventListener('click', () => openPlanoForm());
@@ -1054,6 +1062,12 @@ const Configuracoes = (() => {
         }
     }
 
+    async function salvarTamanhoApresentacao(valor) {
+        try {
+            await Loja.ref().set({ apresentacaoImagemTamanho: valor }, { merge: true });
+        } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
     async function uploadApresentacaoImagem(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1633,6 +1647,9 @@ const Configuracoes = (() => {
         setVal('f-landing-eyebrow', c.heroEyebrow || '');
         setVal('f-landing-ap-titulo', c.apresentacaoTitulo || '');
         setVal('f-landing-ap-texto', c.apresentacaoTexto || '');
+        setVal('f-apresentacao-tamanho', c.apresentacaoImagemTamanho || 100);
+        const tamanhoLabel = document.getElementById('apresentacao-tamanho-valor');
+        if (tamanhoLabel) tamanhoLabel.textContent = `(${c.apresentacaoImagemTamanho || 100}%)`;
 
         const user = Auth.currentUser();
         const contaEmailEl = document.getElementById('conta-email');

@@ -420,6 +420,7 @@ function applyLandingBranding() {
         apMedia.innerHTML = Store.config.apresentacaoImagem
             ? `<img src="${Store.config.apresentacaoImagem}" alt="">`
             : '<i class="fa-solid fa-image"></i>';
+        apMedia.style.setProperty('--apresentacao-escala', (Number(Store.config.apresentacaoImagemTamanho) || 100) / 100);
     }
 
     const telDigits = (Store.config.telefone || '').replace(/\D/g, '');
