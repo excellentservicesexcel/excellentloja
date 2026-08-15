@@ -485,10 +485,15 @@ function applyLandingBranding() {
             ? `<img src="${Store.config.apresentacaoImagem}" alt="">`
             : '<i class="fa-solid fa-image"></i>';
         apMedia.style.setProperty('--apresentacao-escala', (Number(Store.config.apresentacaoImagemTamanho) || 100) / 100);
-        // PNG costuma ser logo/gráfico com fundo transparente — mantém sem cortar/arredondar
-        // pra não estranhar o recorte. Foto comum (JPEG etc.) ganha cantos arredondados e o
-        // mesmo brilho ao passar o mouse que os outros cards da página inicial usam.
-        const isFoto = !!Store.config.apresentacaoImagem && !Store.config.apresentacaoImagem.startsWith('data:image/png');
+        // Imagem com transparência de verdade (logo/gráfico) mantém sem cortar/arredondar
+        // pra não estranhar o recorte. Foto comum ganha cantos arredondados e o mesmo brilho
+        // ao passar o mouse que os outros cards da página inicial usam. apresentacaoImagemTransparente
+        // é calculado no upload (checando os pixels); imagens salvas antes disso existir caem
+        // no palpite antigo (só olhar se é .png) até serem reenviadas.
+        const transparente = Store.config.apresentacaoImagemTransparente !== undefined
+            ? Store.config.apresentacaoImagemTransparente
+            : (Store.config.apresentacaoImagem || '').startsWith('data:image/png');
+        const isFoto = !!Store.config.apresentacaoImagem && !transparente;
         apMedia.classList.toggle('landing-shine', isFoto);
     }
 

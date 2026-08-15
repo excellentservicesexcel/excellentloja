@@ -267,6 +267,32 @@ const Utils = (() => {
         });
     }
 
+    // Detecta se uma imagem PNG tem transparência de verdade (algum pixel com alfa < 255) —
+    // um arquivo .png pode muito bem ter fundo 100% opaco (ex: exportado de um editor sem
+    // remover o fundo), então checar só a extensão não é suficiente pra decidir se ela deve
+    // ser tratada como "logo" (sem cortar/arredondar) ou como "foto" comum.
+    function imageHasTransparency(dataUrl) {
+        return new Promise((resolve) => {
+            if (!dataUrl || !dataUrl.startsWith('data:image/png')) { resolve(false); return; }
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    for (let i = 3; i < data.length; i += 4) {
+                        if (data[i] < 255) { resolve(true); return; }
+                    }
+                    resolve(false);
+                } catch (e) { resolve(false); }
+            };
+            img.onerror = () => resolve(false);
+            img.src = dataUrl;
+        });
+    }
+
     function mixColor(hex, target, amount) {
         const c = (hex || '#000000').replace('#', '');
         const t = (target || '#ffffff').replace('#', '');
@@ -326,6 +352,7 @@ const Utils = (() => {
         statusBadge, STATUS_LABELS,
         selectHtml, refreshSelectOptions, setSelectValue,
         compressImageToBase64,
+        imageHasTransparency,
         mixColor, lightenColor, darkenColor, hexToRgba,
         FONT_OPTIONS, fontFamilyById, fontSelectOptionsHtml
     };

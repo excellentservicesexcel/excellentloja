@@ -1089,7 +1089,8 @@ const Configuracoes = (() => {
         status.style.display = 'inline';
         try {
             const apresentacaoImagem = await Utils.compressImageToBase64(file, { maxDim: 1000, maxBytes: 260000, transparent: true });
-            await Loja.ref().set({ apresentacaoImagem }, { merge: true });
+            const apresentacaoImagemTransparente = await Utils.imageHasTransparency(apresentacaoImagem);
+            await Loja.ref().set({ apresentacaoImagem, apresentacaoImagemTransparente }, { merge: true });
             Utils.toast('Imagem da apresentação atualizada.', 'success');
         } catch (err) {
             Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
@@ -1102,7 +1103,10 @@ const Configuracoes = (() => {
     async function removeApresentacaoImagem() {
         Utils.confirmDialog('Remover a imagem da apresentação?', async () => {
             try {
-                await Loja.ref().update({ apresentacaoImagem: firebase.firestore.FieldValue.delete() });
+                await Loja.ref().update({
+                    apresentacaoImagem: firebase.firestore.FieldValue.delete(),
+                    apresentacaoImagemTransparente: firebase.firestore.FieldValue.delete()
+                });
                 Utils.closeModal();
                 Utils.toast('Imagem removida.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
