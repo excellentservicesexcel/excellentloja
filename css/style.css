@@ -228,6 +228,13 @@ ul { list-style: none; }
     transform: scale(var(--apresentacao-escala, 1));
     transition: transform 0.15s ease;
 }
+/* Foto comum (não-logo): vira um card igual aos outros da página inicial, com sombra
+   simétrica e cantos arredondados de verdade, em vez do drop-shadow pensado pra logo */
+.landing-apresentacao-media.landing-shine {
+    box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: transform .2s, box-shadow .2s;
+}
+.landing-apresentacao-media.landing-shine:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.landing-apresentacao-media.landing-shine img { filter: none; object-fit: cover; }
 .btn-primary.landing-hero-cta { box-shadow: 0 14px 30px rgba(201,150,43,0.32); }
 
 .landing-how { max-width: 1100px; margin: 0 auto 80px; padding: 0 24px; text-align: center; }
