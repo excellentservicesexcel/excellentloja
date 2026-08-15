@@ -360,6 +360,7 @@ ul { list-style: none; }
 @media (max-width: 900px) {
     .landing-header { padding: 14px 20px; }
     .landing-hero { min-height: 340px; }
+    .landing-hero.has-capa { background-size: contain; background-repeat: no-repeat; }
     .landing-eyebrow { font-size: 0.68rem; padding: 10px 18px 9px; }
     .landing-hero-ctas { left: 16px; right: 16px; justify-content: center; }
     .landing-hero-cta { padding: 11px 20px; font-size: 0.84rem; }
@@ -1241,7 +1242,7 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
     .store-banner-cta { left: 14px; bottom: 12px; }
     .store-hero-cta .store-hero-btn, .store-banner-cta .btn { padding: 8px 18px; font-size: 0.76rem; box-shadow: 0 6px 14px rgba(0,0,0,0.28); }
     .store-hero-dots { top: 12px; right: 16px; }
-    .store-features { grid-template-columns: repeat(2, 1fr); margin: -30px 20px 30px; gap: 22px 14px; }
+    .store-features { grid-template-columns: repeat(2, 1fr); margin: 16px 20px 30px; gap: 22px 14px; }
     .store-feature i { font-size: 1.2rem; margin-bottom: 6px; }
     .store-feature strong { font-size: 0.82rem; }
     .store-feature span { font-size: 0.72rem; }
@@ -1257,7 +1258,7 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
     .store-newsletter form { max-width: 100%; }
 }
 @media (max-width: 520px) {
-    .store-features { margin: -30px 16px 26px; }
+    .store-features { margin: 16px 16px 26px; }
     .store-benefits { margin: 0 16px 30px; }
     .store-grid { gap: 12px; }
     .store-footer { padding: 28px 16px 0; }
