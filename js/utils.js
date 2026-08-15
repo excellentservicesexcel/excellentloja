@@ -204,8 +204,12 @@ const Utils = (() => {
         const maxBytes = opts.maxBytes || 400000;
         const startQuality = opts.quality || 0.8;
         const square = !!opts.square;
-        // logos/ícones: mantém o fundo transparente do PNG em vez de "chapar" de branco
-        const transparent = !!opts.transparent;
+        // logos/ícones: mantém o fundo transparente do PNG em vez de "chapar" de branco —
+        // só faz sentido (e só é seguro em tamanho) quando o arquivo de origem já suporta
+        // transparência; uma foto comum (JPEG) vira PNG gigante sem compressão e pode
+        // estourar o limite de tamanho do Firestore
+        const transparentTypes = ['image/png', 'image/webp', 'image/gif'];
+        const transparent = !!opts.transparent && transparentTypes.includes(file.type);
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
