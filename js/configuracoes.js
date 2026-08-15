@@ -90,11 +90,13 @@ const Configuracoes = (() => {
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
                         Imagem de fundo do topo da página inicial (excellentloja.vercel.app). Aparece
                         sem escurecer — se quiser algum texto ou logotipo nela, inclua já na própria
-                        imagem. Use uma foto na horizontal.
+                        imagem. Com 1 foto, o formato se ajusta à imagem sem cortar; com mais de uma,
+                        elas alternam automaticamente a cada 3 segundos (use fotos na horizontal,
+                        proporção 3:1, pra ficarem consistentes entre si).
                     </p>
                     <div class="capa-grid" id="capalanding-grid"></div>
                     <label class="btn btn-outline btn-sm" style="margin-top:14px;cursor:pointer;display:inline-flex;">
-                        <i class="fa-solid fa-upload"></i> Adicionar/trocar imagem
+                        <i class="fa-solid fa-upload"></i> Adicionar foto
                         <input type="file" id="capalanding-input" accept="image/*" style="display:none;">
                     </label>
                     <span id="capalanding-uploading" style="display:none;margin-left:10px;font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Enviando...</span>
@@ -449,7 +451,7 @@ const Configuracoes = (() => {
             if (rmBanner) removeBanner();
             if (rmFundo) removeFundoPainel();
             if (rmFundoLoja) removeFundoLoja();
-            if (rmCapaLanding) removeCapaLanding();
+            if (rmCapaLanding) removeCapaLanding(rmCapaLanding.dataset.id);
             if (editInsta) openInstaCardForm(editInsta.dataset.id);
             if (rmInsta) removeInstaCard(rmInsta.dataset.id);
             if (rmApresentacao) removeApresentacaoImagem();
@@ -988,9 +990,14 @@ const Configuracoes = (() => {
         const status = document.getElementById('capalanding-uploading');
         status.style.display = 'inline';
         try {
-            const capaLanding = await Utils.compressImageToBase64(file, { maxDim: 1400, maxBytes: 320000 });
-            await Loja.ref().set({ capaLanding }, { merge: true });
-            Utils.toast('Capa da página inicial atualizada.', 'success');
+            const imagem = await Utils.compressImageToBase64(file, { maxDim: 1400, maxBytes: 320000 });
+            // migra a imagem única antiga (se existir) pro carrossel antes de adicionar a nova
+            if (Store.config.capaLanding && !Store.capasLanding.length) {
+                await Loja.col('capasLanding').add({ imagem: Store.config.capaLanding, criadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+                await Loja.ref().update({ capaLanding: firebase.firestore.FieldValue.delete() });
+            }
+            await Loja.col('capasLanding').add({ imagem, criadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            Utils.toast('Foto de capa adicionada.', 'success');
         } catch (err) {
             Utils.toast('Erro ao enviar imagem: ' + err.message, 'error');
         } finally {
@@ -999,24 +1006,31 @@ const Configuracoes = (() => {
         }
     }
 
-    async function removeCapaLanding() {
-        Utils.confirmDialog('Remover a capa da página inicial?', async () => {
+    async function removeCapaLanding(id) {
+        Utils.confirmDialog('Remover esta foto da capa da página inicial?', async () => {
             try {
-                await Loja.ref().update({ capaLanding: firebase.firestore.FieldValue.delete() });
+                if (id === 'legacy') {
+                    await Loja.ref().update({ capaLanding: firebase.firestore.FieldValue.delete() });
+                } else {
+                    await Loja.col('capasLanding').doc(id).delete();
+                }
                 Utils.closeModal();
-                Utils.toast('Imagem removida.', 'success');
+                Utils.toast('Foto removida.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
-        }, 'Remover imagem', 'Sim, remover');
+        }, 'Remover foto', 'Sim, remover');
     }
 
-    function capaLandingGridHtml(capaLanding) {
-        if (!capaLanding) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhuma imagem definida — o topo mostra um fundo padrão.</span>';
-        return `
+    function capaLandingGridHtml(capasLanding, capaLandingLegado) {
+        const itens = capasLanding && capasLanding.length
+            ? capasLanding
+            : (capaLandingLegado ? [{ id: 'legacy', imagem: capaLandingLegado }] : []);
+        if (!itens.length) return '<span style="font-size:0.82rem;color:var(--text-muted);">Nenhuma imagem definida — o topo mostra um fundo padrão.</span>';
+        return itens.map(c => `
             <div class="capa-thumb">
-                <img src="${capaLanding}">
-                <button class="js-capalanding-remove" title="Remover"><i class="fa-solid fa-trash"></i></button>
+                <img src="${c.imagem}">
+                <button class="js-capalanding-remove" data-id="${c.id}" title="Remover"><i class="fa-solid fa-trash"></i></button>
             </div>
-        `;
+        `).join('');
     }
 
     async function salvarCorLanding(campo, valor) {
@@ -1627,7 +1641,7 @@ const Configuracoes = (() => {
         set('chips-categorias', chipHtml('categoriasProdutos', c.categoriasProdutos));
         set('chips-pagamento', chipHtml('formasPagamento', c.formasPagamento));
         set('chips-usuarios', chipHtml('usuariosAutorizados', c.usuariosAutorizados));
-        set('capalanding-grid', capaLandingGridHtml(c.capaLanding));
+        set('capalanding-grid', capaLandingGridHtml(Store.capasLanding, c.capaLanding));
         set('apresentacao-grid', apresentacaoGridHtml(c.apresentacaoImagem));
         set('beneficio-card-grid', beneficioCardGridHtml(Store.beneficios));
         set('equipe-card-grid', equipeCardGridHtml(Store.equipe));

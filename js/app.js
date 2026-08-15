@@ -5,7 +5,7 @@
 
 const Store = {
     clientes: [], produtos: [], pedidos: [], estoque: [], financeiro: [], producao: [], receitas: [], capas: [], instaCards: [],
-    beneficios: [], equipe: [],
+    beneficios: [], equipe: [], capasLanding: [],
     profile: {},
     config: {
         nomeLoja: 'Excellent Loja',
@@ -85,6 +85,12 @@ function initStoreListeners() {
         Store.emit('planos');
     }, err => console.error('planos', err)));
 
+    _unsubscribers.push(Loja.col('capasLanding').orderBy('criadoEm').onSnapshot(snap => {
+        Store.capasLanding = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        Store.emit('capasLanding');
+        renderLandingHero();
+    }, err => console.error('capasLanding', err)));
+
     _unsubscribers.push(Loja.ref().onSnapshot(snap => {
         if (snap.exists) Store.config = { ...Store.config, ...snap.data() };
         Store.emit('config');
@@ -96,7 +102,7 @@ function teardownStoreListeners() {
     _unsubscribers = [];
     Store.clientes = []; Store.produtos = []; Store.pedidos = []; Store.estoque = [];
     Store.financeiro = []; Store.producao = []; Store.receitas = []; Store.capas = []; Store.instaCards = [];
-    Store.beneficios = []; Store.equipe = []; Store.planos = [];
+    Store.beneficios = []; Store.equipe = []; Store.planos = []; Store.capasLanding = [];
 }
 
 let _profileUnsub = null;
@@ -243,6 +249,7 @@ function bindStoreSubscriptions() {
     Store.on('beneficios', () => Configuracoes.render());
     Store.on('equipe', () => Configuracoes.render());
     Store.on('planos', () => Configuracoes.render());
+    Store.on('capasLanding', () => Configuracoes.render());
     Store.on('profile', () => { updateGreeting(); refreshSidebarUser(); Configuracoes.render(); });
     Store.on('*', () => Relatorios.render());
 }
@@ -389,6 +396,65 @@ function bindLanding() {
     });
 }
 
+let _landingHeroCarouselTimer = null;
+function stopLandingHeroCarousel() {
+    if (_landingHeroCarouselTimer) { clearInterval(_landingHeroCarouselTimer); _landingHeroCarouselTimer = null; }
+}
+function startLandingHeroCarousel(count) {
+    stopLandingHeroCarousel();
+    if (count <= 1) return;
+    let index = 0;
+    _landingHeroCarouselTimer = setInterval(() => {
+        index = (index + 1) % count;
+        const track = document.getElementById('landing-hero-track');
+        if (track) track.style.transform = `translateX(-${index * 100}%)`;
+        document.querySelectorAll('#landing-hero-dots .landing-hero-dot').forEach((d, i) => d.classList.toggle('active', i === index));
+    }, 3000);
+}
+
+function renderLandingHero() {
+    const hero = document.getElementById('landing-hero');
+    const wrap = document.getElementById('landing-hero-carousel-wrap');
+    if (!hero || !wrap) return;
+    const listaCapas = (Store.capasLanding && Store.capasLanding.length)
+        ? Store.capasLanding.map(c => c.imagem)
+        : (Store.config.capaLanding ? [Store.config.capaLanding] : []);
+
+    if (listaCapas.length < 2) {
+        stopLandingHeroCarousel();
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+        hero.classList.remove('has-carousel');
+        const capa = listaCapas[0] || '';
+        hero.classList.toggle('has-capa', !!capa);
+        hero.style.backgroundImage = capa ? `url("${capa}")` : '';
+        if (capa) {
+            const capaImg = new Image();
+            capaImg.onload = () => {
+                if (capaImg.naturalWidth && capaImg.naturalHeight) {
+                    hero.style.setProperty('--capa-ratio', `${capaImg.naturalWidth} / ${capaImg.naturalHeight}`);
+                }
+            };
+            capaImg.src = capa;
+        } else {
+            hero.style.removeProperty('--capa-ratio');
+        }
+        return;
+    }
+
+    hero.classList.remove('has-capa');
+    hero.style.backgroundImage = '';
+    hero.classList.add('has-carousel');
+    wrap.style.display = 'block';
+    wrap.innerHTML = `
+        <div class="landing-hero-carousel-track" id="landing-hero-track">
+            ${listaCapas.map(src => `<div class="landing-hero-slide"><img src="${src}" alt=""></div>`).join('')}
+        </div>
+        <div class="landing-hero-dots" id="landing-hero-dots">${listaCapas.map((_, i) => `<span class="landing-hero-dot ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
+    `;
+    startLandingHeroCarousel(listaCapas.length);
+}
+
 function applyLandingBranding() {
     const nome = Store.config.nomeLoja || 'Excellent Loja';
     document.title = `${nome} | Sistema de Gestão`;
@@ -403,22 +469,7 @@ function applyLandingBranding() {
 
     if (!Loja.isRoot) return;
 
-    const hero = document.getElementById('landing-hero');
-    if (hero) {
-        hero.classList.toggle('has-capa', !!Store.config.capaLanding);
-        hero.style.backgroundImage = Store.config.capaLanding ? `url("${Store.config.capaLanding}")` : '';
-        if (Store.config.capaLanding) {
-            const capaImg = new Image();
-            capaImg.onload = () => {
-                if (capaImg.naturalWidth && capaImg.naturalHeight) {
-                    hero.style.setProperty('--capa-ratio', `${capaImg.naturalWidth} / ${capaImg.naturalHeight}`);
-                }
-            };
-            capaImg.src = Store.config.capaLanding;
-        } else {
-            hero.style.removeProperty('--capa-ratio');
-        }
-    }
+    renderLandingHero();
     applyLandingTheme();
 
     const apTitulo = document.getElementById('landing-apresentacao-titulo');
@@ -615,14 +666,17 @@ function renderLandingPlanos(lista) {
 async function loadLandingExtras() {
     if (!Loja.isRoot) return;
     try {
-        const [benSnap, eqSnap, planSnap] = await Promise.all([
+        const [benSnap, eqSnap, planSnap, capasSnap] = await Promise.all([
             Loja.col('beneficios').orderBy('criadoEm').get(),
             Loja.col('equipe').orderBy('criadoEm').get(),
-            Loja.col('planos').orderBy('criadoEm').get()
+            Loja.col('planos').orderBy('criadoEm').get(),
+            Loja.col('capasLanding').orderBy('criadoEm').get()
         ]);
         renderLandingBeneficios(benSnap.docs.map(d => ({ id: d.id, ...d.data() })));
         renderLandingEquipe(eqSnap.docs.map(d => ({ id: d.id, ...d.data() })));
         renderLandingPlanos(planSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        Store.capasLanding = capasSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderLandingHero();
     } catch (err) { console.error('landing extras', err); }
 }
 
