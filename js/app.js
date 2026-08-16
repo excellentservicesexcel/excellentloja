@@ -455,6 +455,15 @@ function renderLandingHero() {
         <div class="landing-hero-dots" id="landing-hero-dots">${listaCapas.map((_, i) => `<span class="landing-hero-dot ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
     `;
     startLandingHeroCarousel(listaCapas.length);
+    // usa a proporção real da primeira foto como referência do quadro do carrossel, em vez de
+    // uma proporção fixa — evita cortar as laterais quando a imagem não é exatamente 3:1
+    const primeiraImg = new Image();
+    primeiraImg.onload = () => {
+        if (primeiraImg.naturalWidth && primeiraImg.naturalHeight) {
+            wrap.style.setProperty('--capa-ratio', `${primeiraImg.naturalWidth} / ${primeiraImg.naturalHeight}`);
+        }
+    };
+    primeiraImg.src = listaCapas[0];
 }
 
 function applyLandingBranding() {
