@@ -1,12 +1,15 @@
 /* ==========================================================================
    Checkout de plano — comprar um plano na página inicial, dentro do
-   próprio site (sem WhatsApp). Usa o modal global (Utils.openModal) com
-   várias etapas: dados do comprador → pagamento (Pix/Cartão) → configurar
-   a loja → criar conta → pronto.
+   próprio site (sem WhatsApp). Usa o modal global (Utils.openModal), com
+   um cartão "espelhado" (glass) que herda a paleta de cores da página
+   inicial, e uma linha do tempo com 4 etapas: dados → pagamento →
+   configurar loja → criar conta (+ uma tela final de boas-vindas).
 
-   O progresso fica salvo no localStorage (chave STORAGE_KEY), então se a
-   pessoa fechar a aba no meio da compra, ao voltar o Checkout.init() (que
-   roda no boot da página) reabre exatamente na etapa em que ela parou.
+   O progresso só é salvo no localStorage (chave STORAGE_KEY) DEPOIS que o
+   pagamento é aprovado — antes disso (preenchendo dados, aguardando Pix,
+   etc.) nada é lembrado: fechar a aba e voltar começa do zero, de
+   propósito. Só depois de pago é que faz sentido retomar de onde parou,
+   até a loja terminar de ser criada (aí o registro é apagado pra sempre).
    ========================================================================== */
 
 const Checkout = (() => {
@@ -42,7 +45,7 @@ const Checkout = (() => {
     function init() {
         if (!Loja.isRoot) return;
         const salvo = carregarEstado();
-        if (!salvo || salvo.etapa === 'concluido') return;
+        if (!salvo) return;
         estado = salvo;
         abrirEtapaAtual();
     }
@@ -62,7 +65,6 @@ const Checkout = (() => {
             dadosComprador: { nome: '', email: '', whatsapp: '' },
             dadosLoja: { nome: '', slug: '', telefone: '', instagram: '' }
         };
-        salvarEstado();
         abrirEtapaAtual();
     }
 
@@ -73,12 +75,46 @@ const Checkout = (() => {
         else if (estado.etapa === 'conta') renderEtapaConta();
     }
 
+    /* ---------------------------------------------------------------- */
+    /* Modal com tema da página inicial + linha do tempo                   */
+    /* ---------------------------------------------------------------- */
+    function abrirModal(html, opts = {}) {
+        Utils.openModal(html, opts);
+        const box = document.getElementById('modal-box');
+        if (!box) return;
+        box.classList.add('checkout-modal');
+        const c = Store.config;
+        const accent = c.corPrincipal || '#C9962B';
+        const bg = c.corFundo || '#FAF5EB';
+        const text = c.corTexto || '#1C1A16';
+        const vars = {
+            '--orange-50': Utils.lightenColor(accent, 0.90),
+            '--orange-100': Utils.lightenColor(accent, 0.75),
+            '--orange-200': Utils.lightenColor(accent, 0.55),
+            '--orange-500': accent,
+            '--orange-600': Utils.darkenColor(accent, 0.15),
+            '--orange-700': Utils.darkenColor(accent, 0.30),
+            '--surface': c.corCard || '#FFFFFF',
+            '--surface-soft': Utils.lightenColor(bg, 0.3),
+            '--border': Utils.darkenColor(bg, 0.08),
+            '--text-main': text,
+            '--text-body': Utils.lightenColor(text, 0.30),
+            '--text-muted': Utils.lightenColor(text, 0.55)
+        };
+        Object.entries(vars).forEach(([k, v]) => box.style.setProperty(k, v));
+    }
+
     function progressoHtml(passo) {
         const nomes = ['Seus dados', 'Pagamento', 'Sua loja', 'Sua conta'];
-        return `
-            <div class="checkout-progress">
-                ${nomes.map((n, i) => `<span class="checkout-progress-step ${i + 1 === passo ? 'active' : ''} ${i + 1 < passo ? 'done' : ''}">${i + 1}. ${n}</span>`).join('')}
-            </div>`;
+        let html = '<div class="checkout-timeline">';
+        nomes.forEach((n, i) => {
+            const num = i + 1;
+            const cls = num < passo ? 'done' : (num === passo ? 'active' : '');
+            html += `<div class="checkout-timeline-step ${cls}"><span class="dot">${num < passo ? '<i class="fa-solid fa-check"></i>' : num}</span><span class="label">${n}</span></div>`;
+            if (i < nomes.length - 1) html += `<div class="checkout-timeline-connector ${num < passo ? 'done' : ''}"></div>`;
+        });
+        html += '</div>';
+        return html;
     }
 
     /* ---------------------------------------------------------------- */
@@ -87,10 +123,10 @@ const Checkout = (() => {
     function renderEtapaDados() {
         limparRecursos();
         const d = estado.dadosComprador;
-        Utils.openModal(`
+        abrirModal(`
             <div class="modal-head"><h3>Plano ${Utils.escapeHtml(estado.plano.nome)}</h3><button class="modal-close" onclick="Checkout.fechar()"><i class="fa-solid fa-xmark"></i></button></div>
             ${progressoHtml(1)}
-            <p style="font-size:0.85rem;color:var(--text-muted);margin:10px 0 16px;">Preencha seus dados para continuar para o pagamento de ${Utils.escapeHtml(Utils.formatBRL(estado.plano.valorCobranca))}${estado.plano.tipo ? ' (' + Utils.escapeHtml(estado.plano.tipo) + ')' : ''}.</p>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin:14px 0 16px;">Preencha seus dados para continuar para o pagamento de ${Utils.escapeHtml(Utils.formatBRL(estado.plano.valorCobranca))}${estado.plano.tipo ? ' (' + Utils.escapeHtml(estado.plano.tipo) + ')' : ''}.</p>
             <form id="checkout-dados-form">
                 <div class="form-group"><label>Nome completo *</label><input type="text" id="ck-nome" required value="${Utils.escapeHtml(d.nome)}"></div>
                 <div class="form-group"><label>E-mail *</label><input type="email" id="ck-email" required value="${Utils.escapeHtml(d.email)}"></div>
@@ -109,7 +145,6 @@ const Checkout = (() => {
                 email: document.getElementById('ck-email').value.trim().toLowerCase(),
                 whatsapp: document.getElementById('ck-whatsapp').value.trim()
             };
-            salvarEstado();
             const btn = document.getElementById('checkout-dados-submit');
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparando pagamento...';
@@ -131,13 +166,11 @@ const Checkout = (() => {
                 if (data.reaproveitada && data.lojaId) {
                     // já é cliente com loja ativa: só renova/atualiza o plano, sem repetir onboarding
                     estado.lojaId = data.lojaId;
-                    estado.etapa = 'pagamento';
                     estado.pularOnboarding = true;
                 } else {
-                    estado.etapa = 'pagamento';
                     estado.pularOnboarding = false;
                 }
-                salvarEstado();
+                estado.etapa = 'pagamento';
                 renderEtapaPagamento();
             } catch (err) {
                 Utils.toast('Erro: ' + err.message, 'error');
@@ -152,10 +185,10 @@ const Checkout = (() => {
     /* ---------------------------------------------------------------- */
     function renderEtapaPagamento() {
         limparRecursos();
-        Utils.openModal(`
+        abrirModal(`
             <div class="modal-head"><h3>Pagamento</h3><button class="modal-close" onclick="Checkout.fechar()"><i class="fa-solid fa-xmark"></i></button></div>
             ${progressoHtml(2)}
-            <div class="store-payment-head" style="margin-top:10px;">
+            <div class="store-payment-head" style="margin-top:14px;">
                 <span class="store-payment-total">${Utils.formatBRL(estado.plano.valorCobranca)}</span>
             </div>
             <div class="store-payment-tabs" id="checkout-payment-tabs">
@@ -192,8 +225,8 @@ const Checkout = (() => {
 
     function mostrarSucessoPagamento() {
         limparRecursos();
-        const box = document.getElementById('checkout-payment-tabs');
-        if (box) box.style.display = 'none';
+        const tabs = document.getElementById('checkout-payment-tabs');
+        if (tabs) tabs.style.display = 'none';
         const body = document.getElementById('checkout-payment-body');
         if (body) body.innerHTML = `
             <div class="store-payment-result success">
@@ -202,12 +235,12 @@ const Checkout = (() => {
                 <span>${estado.pularOnboarding ? 'Sua assinatura foi renovada.' : 'Só faltam alguns passos para sua loja ficar pronta.'}</span>
             </div>`;
 
+        // só a partir daqui o progresso passa a ser lembrado — antes do pagamento
+        // aprovado, fechar a aba e voltar começa a compra do zero, de propósito.
         setTimeout(async () => {
             if (estado.pularOnboarding) {
                 limparEstado();
                 Utils.closeModal();
-                // a sessão até aqui é anônima (só do checkout) — sai dela e manda pro
-                // login: o próprio boot já reconhece o e-mail e redireciona pra loja dela
                 try { await window.auth.signOut(); } catch (e) {}
                 Utils.toast('Assinatura renovada! Entre com seu e-mail para acessar sua loja.', 'success');
                 showLogin();
@@ -324,10 +357,10 @@ const Checkout = (() => {
     function renderEtapaLoja() {
         limparRecursos();
         const d = estado.dadosLoja;
-        Utils.openModal(`
+        abrirModal(`
             <div class="modal-head"><h3>Configure sua loja</h3></div>
             ${progressoHtml(3)}
-            <p style="font-size:0.85rem;color:var(--text-muted);margin:10px 0 16px;">Pagamento confirmado! Agora conte um pouco sobre sua loja — dá para ajustar tudo depois.</p>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin:14px 0 16px;">Pagamento confirmado! Agora conte um pouco sobre sua loja — dá para ajustar tudo depois.</p>
             <form id="checkout-loja-form">
                 <div class="form-group"><label>Nome da loja *</label><input type="text" id="ck-loja-nome" required value="${Utils.escapeHtml(d.nome)}" placeholder="Ex: Bar do João"></div>
                 <div class="form-group">
@@ -363,10 +396,10 @@ const Checkout = (() => {
     /* ---------------------------------------------------------------- */
     function renderEtapaConta() {
         limparRecursos();
-        Utils.openModal(`
+        abrirModal(`
             <div class="modal-head"><h3>Crie sua conta</h3></div>
             ${progressoHtml(4)}
-            <p style="font-size:0.85rem;color:var(--text-muted);margin:10px 0 16px;">Último passo — crie sua conta para acessar o painel da sua loja.</p>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin:14px 0 16px;">Último passo — crie sua conta para acessar o painel da sua loja.</p>
             <div class="checkout-conta-error" id="checkout-conta-error" style="display:none;"></div>
             <form id="checkout-conta-form">
                 <div class="form-group"><label>E-mail</label><input type="email" id="ck-conta-email" value="${Utils.escapeHtml(estado.dadosComprador.email)}" readonly></div>
@@ -417,15 +450,42 @@ const Checkout = (() => {
             if (!resp.ok) throw new Error(data.erro || 'Não foi possível criar sua loja.');
 
             limparEstado();
-            Utils.closeModal();
-            Utils.toast('Loja criada com sucesso! Bem-vindo(a) à Excellent Loja.', 'success');
-            location.href = `/${data.lojaId}`;
+            renderEtapaPronto(data.lojaId);
         } catch (err) {
             erroBox.textContent = err.message || 'Não foi possível concluir. Tente novamente.';
             erroBox.style.display = 'block';
             btn.disabled = false;
             btn.innerHTML = original;
         }
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* Etapa 5 — pronto! boas-vindas + link da loja                        */
+    /* ---------------------------------------------------------------- */
+    function renderEtapaPronto(lojaId) {
+        limparRecursos();
+        const link = `${location.origin}/${lojaId}`;
+        abrirModal(`
+            <div class="checkout-pronto">
+                <div class="checkout-pronto-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <h3>Sua loja está pronta! 🎉</h3>
+                <p>Guarde este e-mail — é com ele (<strong>${Utils.escapeHtml(estado.dadosComprador.email)}</strong>) que você acessa o painel da sua loja sempre que quiser.</p>
+                <label class="checkout-pronto-label">Endereço da sua loja — compartilhe com quem quiser</label>
+                <div class="store-pix-code-row">
+                    <input type="text" readonly id="checkout-link-loja" value="${link}">
+                    <button type="button" class="btn btn-outline btn-sm" id="checkout-copiar-link"><i class="fa-solid fa-copy"></i> Copiar</button>
+                </div>
+                <button type="button" class="btn btn-primary btn-block" id="checkout-ir-painel" style="margin-top:18px;"><i class="fa-solid fa-arrow-right"></i> Ir para o meu painel</button>
+            </div>
+        `, { wide: true });
+
+        document.getElementById('checkout-copiar-link').addEventListener('click', () => {
+            document.getElementById('checkout-link-loja').select();
+            (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+                .then(() => Utils.toast('Link copiado!', 'success'))
+                .catch(() => { try { document.execCommand('copy'); Utils.toast('Link copiado!', 'success'); } catch (e) {} });
+        });
+        document.getElementById('checkout-ir-painel').addEventListener('click', () => { location.href = `/${lojaId}`; });
     }
 
     function fechar() {
