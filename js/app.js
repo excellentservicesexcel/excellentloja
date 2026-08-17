@@ -142,7 +142,7 @@ window.nextPedidoNumero = nextPedidoNumero;
 /* ---------------------------------------------------------------------- */
 /* Navegação                                                               */
 /* ---------------------------------------------------------------------- */
-const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'configuracoes'];
+const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'configuracoes', 'compras'];
 
 const TITLES = {
     dashboard: ['Olá, {nome}! 👋', 'Confira o resumo do seu negócio hoje.'],
@@ -155,7 +155,8 @@ const TITLES = {
     financeiro: ['Financeiro', 'Receitas, despesas e saúde financeira do negócio.'],
     precificacao: ['Precificação', 'Calcule o custo e o preço ideal dos seus produtos.'],
     relatorios: ['Relatórios', 'Indicadores e desempenho de vendas.'],
-    configuracoes: ['Configurações', 'Dados da loja, categorias e preferências.']
+    configuracoes: ['Configurações', 'Dados da loja, categorias e preferências.'],
+    compras: ['Compras', 'Assinaturas dos planos da plataforma — pagamentos, renovações e comprovantes.']
 };
 
 let _currentView = 'dashboard';
@@ -234,6 +235,7 @@ function mountAllModules() {
     Precificacao.mount();
     Relatorios.mount();
     Configuracoes.mount();
+    Compras.mount();
 }
 
 function bindStoreSubscriptions() {
@@ -337,14 +339,17 @@ function showApp() {
     const modoPlataforma = Loja.isRoot && souSuperAdmin;
     applyNavMode(modoPlataforma);
     document.getElementById('btn-back-my-panel').style.display = (souSuperAdmin && !Loja.isRoot) ? 'flex' : 'none';
+    if (modoPlataforma) Compras.carregar();
     goToView(modoPlataforma ? 'configuracoes' : 'dashboard');
 }
 
-function applyNavMode(minimal) {
+function applyNavMode(plataforma) {
     document.querySelectorAll('#nav-links .nav-item, #mobile-tabbar .nav-item').forEach(el => {
-        el.style.display = (!minimal || el.dataset.view === 'configuracoes') ? '' : 'none';
+        const view = el.dataset.view;
+        if (view === 'compras') { el.style.display = plataforma ? '' : 'none'; return; }
+        el.style.display = (!plataforma || view === 'configuracoes') ? '' : 'none';
     });
-    document.getElementById('btn-view-store').style.display = minimal ? 'none' : '';
+    document.getElementById('btn-view-store').style.display = plataforma ? 'none' : '';
 }
 
 function showLogin() {
@@ -394,6 +399,12 @@ function bindLanding() {
         if (scrollLink) {
             e.preventDefault();
             document.getElementById(scrollLink.dataset.scroll)?.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+        const comprarBtn = e.target.closest('.js-comprar-plano');
+        if (comprarBtn) {
+            const plano = _landingPlanosCache[Number(comprarBtn.dataset.planoI)];
+            if (plano) Checkout.abrir(plano);
         }
     });
 }
@@ -649,7 +660,7 @@ function renderLandingEquipe(lista) {
 
 const DEFAULT_PLANOS = [
     {
-        nome: 'Básico', valor: 'R$ 47/mês', cor: '#CD7F32',
+        nome: 'Básico', valor: 'R$ 47', tipo: 'Mensal', valorCobranca: 47, cor: '#CD7F32',
         itens: [
             { texto: 'Loja virtual completa', incluido: true },
             { texto: 'Painel de pedidos, estoque e financeiro', incluido: true },
@@ -659,7 +670,7 @@ const DEFAULT_PLANOS = [
         ]
     },
     {
-        nome: 'Profissional', valor: 'R$ 97/mês', cor: '#B9BBBE',
+        nome: 'Profissional', valor: 'R$ 97', tipo: 'Mensal', valorCobranca: 97, cor: '#B9BBBE',
         itens: [
             { texto: 'Tudo do plano Básico', incluido: true },
             { texto: 'Produtos ilimitados', incluido: true },
@@ -669,7 +680,7 @@ const DEFAULT_PLANOS = [
         ]
     },
     {
-        nome: 'Empresarial', valor: 'R$ 187/mês', cor: '#D4AF37',
+        nome: 'Empresarial', valor: 'R$ 187', tipo: 'Mensal', valorCobranca: 187, cor: '#D4AF37',
         itens: [
             { texto: 'Tudo do plano Profissional', incluido: true },
             { texto: 'Múltiplos administradores', incluido: true },
@@ -679,11 +690,14 @@ const DEFAULT_PLANOS = [
     }
 ];
 
+let _landingPlanosCache = [];
+
 function renderLandingPlanos(lista) {
     const grid = document.getElementById('landing-planos-grid');
     if (!grid) return;
     const planos = (lista && lista.length) ? lista : DEFAULT_PLANOS;
-    grid.innerHTML = planos.map(p => {
+    _landingPlanosCache = planos;
+    grid.innerHTML = planos.map((p, i) => {
         const cor = p.cor || '#C9962B';
         const corClara = Utils.lightenColor(cor, 0.6);
         const itens = (p.itens || []).map(it => `
@@ -692,13 +706,18 @@ function renderLandingPlanos(lista) {
                 <span>${Utils.escapeHtml(it.texto || '')}</span>
             </li>
         `).join('');
+        const comprável = Number(p.valorCobranca) > 0;
+        const cta = comprável
+            ? `<button type="button" class="btn btn-primary landing-shine js-comprar-plano" data-plano-i="${i}">Quero esse plano</button>`
+            : `<a href="#" data-scroll="landing-contato" class="btn btn-primary landing-shine">Quero esse plano</a>`;
         return `
             <div class="landing-plano-card landing-shine landing-reveal" style="--plano-cor:${cor};--plano-cor-clara:${corClara};">
                 <div class="landing-plano-faixa"></div>
                 <div class="landing-plano-nome"><i class="fa-solid fa-medal"></i> ${Utils.escapeHtml(p.nome || '')}</div>
                 <ul class="landing-plano-itens">${itens}</ul>
+                ${p.tipo ? `<div class="landing-plano-tipo">${Utils.escapeHtml(p.tipo)}</div>` : ''}
                 <div class="landing-plano-preco">${Utils.escapeHtml(p.valor || '')}</div>
-                <div class="landing-plano-cta"><a href="#" data-scroll="landing-contato" class="btn btn-primary landing-shine">Quero esse plano</a></div>
+                <div class="landing-plano-cta">${cta}</div>
             </div>
         `;
     }).join('');
@@ -753,6 +772,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadLandingLojas();
     loadLandingExtras();
     observeLandingReveals();
+    Checkout.init();
 
     let lojaSnap;
     try { lojaSnap = await Loja.ref().get(); } catch (err) { console.error('loja fetch', err); }

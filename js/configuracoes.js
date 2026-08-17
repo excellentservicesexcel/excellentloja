@@ -80,6 +80,13 @@ const Configuracoes = (() => {
                         <input type="checkbox" id="f-pgto-ativo">
                         <span>Usar pagamento online nesta loja</span>
                     </label>
+                    ${Store.config.planoAtual ? `
+                    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+                    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">
+                        Precisa de ajuda pra configurar alguma API (Mercado Pago ou outra)? Fale direto com o suporte.
+                    </p>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-whatsapp-suporte-api"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp do suporte</button>
+                    ` : ''}
                 </div>
             </div>`}
 
@@ -357,6 +364,14 @@ const Configuracoes = (() => {
                         <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Criar loja</button></div>
                     </form>
                 </div>
+                <div class="panel" style="max-width:640px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Cobrança da plataforma</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Credenciais do <strong>seu</strong> Mercado Pago, usadas quando alguém compra um
+                        plano na página inicial (essa cobrança é sua, separada do Mercado Pago de cada loja).
+                    </p>
+                    <div id="pagamento-plataforma-body"><div class="store-payment-loading"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div></div>
+                </div>
                 <div class="panel" style="max-width:640px;">
                     <h3 style="font-size:0.95rem;margin-bottom:14px;">Lojas criadas</h3>
                     <div id="lojas-list"><span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span></div>
@@ -414,6 +429,8 @@ const Configuracoes = (() => {
             document.getElementById('btn-add-insta-card').addEventListener('click', () => openInstaCardForm());
             document.getElementById('f-pgto-ativo').addEventListener('change', (e) => alternarPagamentoAtivo(e.target.checked));
             carregarPagamentoStatus();
+            const btnWhatsSuporte = document.getElementById('btn-whatsapp-suporte-api');
+            if (btnWhatsSuporte) btnWhatsSuporte.addEventListener('click', abrirWhatsappSuporte);
         }
 
         if (!souSuporteAcesso) {
@@ -494,6 +511,7 @@ const Configuracoes = (() => {
         if (souSuperAdmin) {
             document.getElementById('nova-loja-form').addEventListener('submit', criarLoja);
             loadLojas();
+            carregarPagamentoPlataforma();
         }
 
         render();
@@ -512,6 +530,25 @@ const Configuracoes = (() => {
             await Loja.ref().set(data, { merge: true });
             Utils.toast('Dados da loja atualizados.', 'success');
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    async function abrirWhatsappSuporte() {
+        const btn = document.getElementById('btn-whatsapp-suporte-api');
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Abrindo...';
+        try {
+            const snap = await window.db.collection('lojas').doc('root').get();
+            const tel = ((snap.exists && snap.data().telefone) || '').replace(/\D/g, '');
+            if (!tel) { Utils.toast('O suporte ainda não configurou um WhatsApp de contato.', 'error'); return; }
+            const texto = `Olá! Sou administrador(a) da loja "${Store.config.nomeLoja || Loja.id}" e preciso de ajuda para configurar uma API.`;
+            window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`, '_blank');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
     }
 
     async function carregarPagamentoStatus() {
@@ -747,6 +784,74 @@ const Configuracoes = (() => {
             Utils.toast('Configuração salva.', 'success');
         } catch (err) {
             Utils.toast('Erro: ' + err.message, 'error');
+            btn.disabled = false;
+        }
+    }
+
+    async function carregarPagamentoPlataforma() {
+        const body = document.getElementById('pagamento-plataforma-body');
+        if (!body) return;
+        let dados = { publicKey: '', accessToken: '', webhookSecret: '' };
+        try {
+            const snap = await window.db.collection('lojas').doc('root').collection('config').doc('pagamentoPlataforma').get();
+            if (snap.exists) dados = { ...dados, ...snap.data() };
+        } catch (err) {
+            body.innerHTML = `<span style="color:var(--danger);font-size:0.85rem;">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
+            return;
+        }
+        renderPagamentoPlataformaBody(dados);
+    }
+
+    function renderPagamentoPlataformaBody(dados) {
+        const body = document.getElementById('pagamento-plataforma-body');
+        if (!body) return;
+        const configurado = !!(dados.publicKey && dados.accessToken);
+        const webhookUrl = `${location.origin}/api/webhook-compra-plano`;
+        body.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
+                <strong style="font-size:0.9rem;"><i class="fa-solid fa-credit-card"></i> Mercado Pago</strong>
+                <span class="pgto-status-chip ${configurado ? 'on' : ''}">${configurado ? 'Configurado' : 'Não configurado'}</span>
+            </div>
+            <div class="form-group"><label>Public Key</label><input type="text" id="f-plataforma-public-key" placeholder="APP_USR-..." value="${Utils.escapeHtml(dados.publicKey || '')}"></div>
+            <div class="form-group"><label>Access Token</label><input type="text" id="f-plataforma-access-token" placeholder="APP_USR-..." value="${Utils.escapeHtml(dados.accessToken || '')}"></div>
+            <div class="form-group"><label>Chave secreta do Webhook <span style="font-weight:400;color:var(--text-muted);">(opcional, mas recomendado)</span></label><input type="text" id="f-plataforma-webhook-secret" placeholder="Gerada ao cadastrar o webhook no Mercado Pago" value="${Utils.escapeHtml(dados.webhookSecret || '')}"></div>
+            <div class="form-group">
+                <label>URL para cadastrar no Mercado Pago (notificações → Pagamentos)</label>
+                <div class="add-chip-row" style="max-width:none;">
+                    <input type="text" id="plataforma-webhook-url" readonly value="${webhookUrl}">
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-copiar-webhook-plataforma"><i class="fa-solid fa-copy"></i> Copiar</button>
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top:16px;">
+                <button type="button" class="btn btn-primary" id="btn-salvar-plataforma-pagamento"><i class="fa-solid fa-check"></i> Salvar</button>
+            </div>
+        `;
+        const copyBtn = document.getElementById('btn-copiar-webhook-plataforma');
+        if (copyBtn) copyBtn.addEventListener('click', () => {
+            const input = document.getElementById('plataforma-webhook-url');
+            input.select();
+            (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject())
+                .then(() => Utils.toast('URL copiada!', 'success'))
+                .catch(() => { try { document.execCommand('copy'); Utils.toast('URL copiada!', 'success'); } catch (e) { Utils.toast('Não foi possível copiar.', 'error'); } });
+        });
+        document.getElementById('btn-salvar-plataforma-pagamento').addEventListener('click', salvarPagamentoPlataforma);
+    }
+
+    async function salvarPagamentoPlataforma() {
+        const publicKey = document.getElementById('f-plataforma-public-key').value.trim();
+        const accessToken = document.getElementById('f-plataforma-access-token').value.trim();
+        const webhookSecret = document.getElementById('f-plataforma-webhook-secret').value.trim();
+        const btn = document.getElementById('btn-salvar-plataforma-pagamento');
+        btn.disabled = true;
+        try {
+            await window.db.collection('lojas').doc('root').collection('config').doc('pagamentoPlataforma').set({
+                publicKey, accessToken, webhookSecret,
+                atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            Utils.toast('Credenciais salvas.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
             btn.disabled = false;
         }
     }
@@ -1363,8 +1468,22 @@ const Configuracoes = (() => {
             <form id="plano-form">
                 <div class="form-row">
                     <div class="form-group"><label>Nome do plano *</label><input type="text" id="f-plano-nome" required maxlength="40" value="${c ? Utils.escapeHtml(c.nome || '') : ''}" placeholder="Ex: Profissional"></div>
-                    <div class="form-group"><label>Preço *</label><input type="text" id="f-plano-valor" required maxlength="30" value="${c ? Utils.escapeHtml(c.valor || '') : ''}" placeholder="Ex: R$ 97/mês"></div>
+                    <div class="form-group"><label>Preço exibido *</label><input type="text" id="f-plano-valor" required maxlength="30" value="${c ? Utils.escapeHtml(c.valor || '') : ''}" placeholder="Ex: R$ 97"></div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de cobrança</label>
+                        <input type="text" id="f-plano-tipo" maxlength="20" value="${c ? Utils.escapeHtml(c.tipo || '') : ''}" placeholder="Ex: Mensal, Anual, Semanal, Único">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor cobrado (R$) *</label>
+                        <input type="number" id="f-plano-valor-cobranca" required min="0.01" step="0.01" value="${c && c.valorCobranca ? c.valorCobranca : ''}" placeholder="Ex: 97.00">
+                    </div>
+                </div>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin:-8px 0 14px;">
+                    O "Preço exibido" é só o texto do card. Quem clicar em "Quero esse plano" paga sempre o
+                    <strong>Valor cobrado</strong> — pode ser diferente se você quiser mostrar um preço promocional.
+                </p>
                 <div class="loja-admin-cores" style="margin:0 0 14px;">
                     <label>Cor de destaque<input type="color" id="f-plano-cor" value="${c && c.cor ? c.cor : '#C9962B'}"></label>
                 </div>
@@ -1397,6 +1516,8 @@ const Configuracoes = (() => {
                 const data = {
                     nome: document.getElementById('f-plano-nome').value.trim(),
                     valor: document.getElementById('f-plano-valor').value.trim(),
+                    tipo: document.getElementById('f-plano-tipo').value.trim(),
+                    valorCobranca: Number(document.getElementById('f-plano-valor-cobranca').value) || 0,
                     cor: document.getElementById('f-plano-cor').value,
                     itens
                 };
