@@ -1295,16 +1295,65 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
 .store-payment-result strong { font-size: 1rem; }
 #store-payment-brick-container, #checkout-payment-brick-container { min-height: 300px; }
 
-.checkout-progress { display: flex; flex-wrap: wrap; gap: 6px; }
-.checkout-progress-step {
-    font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
-    background: var(--neutral-bg); color: var(--neutral-text);
+/* Checkout — cartão "espelhado" (glass), herda a paleta da página inicial
+   (ver Checkout.abrirModal em js/checkout.js, que seta essas variáveis por
+   cima do var(--orange-500) etc. padrão só dentro deste modal). */
+.modal.checkout-modal {
+    background: linear-gradient(160deg, rgba(255,255,255,0.94), rgba(255,255,255,0.74));
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.75);
+    position: relative;
+    overflow: hidden;
 }
-.checkout-progress-step.done { background: var(--success-bg); color: var(--success); }
-.checkout-progress-step.active { background: var(--orange-500); color: #fff; }
+.modal.checkout-modal::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%);
+    pointer-events: none;
+}
+.modal.checkout-modal::after {
+    content: '';
+    position: absolute; top: -70%; left: -25%; width: 75%; height: 240%;
+    background: radial-gradient(circle, var(--orange-200) 0%, transparent 70%);
+    opacity: 0.4; pointer-events: none; filter: blur(14px);
+}
+.modal.checkout-modal > * { position: relative; z-index: 1; }
+
+.checkout-timeline { display: flex; align-items: flex-start; }
+.checkout-timeline-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+.checkout-timeline-step .dot {
+    width: 30px; height: 30px; min-width: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 2px solid var(--border); color: var(--text-muted);
+    font-size: 0.78rem; font-weight: 800; transition: all 0.2s;
+}
+.checkout-timeline-step .label {
+    font-size: 0.66rem; font-weight: 700; color: var(--text-muted); margin-top: 6px; text-align: center; line-height: 1.2;
+}
+.checkout-timeline-step.active .dot { background: var(--orange-500); border-color: var(--orange-500); color: #fff; box-shadow: 0 0 0 4px var(--orange-100); }
+.checkout-timeline-step.active .label { color: var(--orange-600); }
+.checkout-timeline-step.done .dot { background: var(--success); border-color: var(--success); color: #fff; }
+.checkout-timeline-step.done .label { color: var(--success); }
+.checkout-timeline-connector { flex: 0 1 44px; height: 2px; background: var(--border); margin-top: 15px; }
+.checkout-timeline-connector.done { background: var(--success); }
+
 .checkout-conta-error {
     background: var(--danger-bg); color: var(--danger); font-size: 0.82rem;
     padding: 10px 12px; border-radius: var(--radius-sm); margin-bottom: 14px;
+}
+
+.checkout-pronto { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 4px; }
+.checkout-pronto-icon { font-size: 3rem; color: var(--success); margin-bottom: 8px; }
+.checkout-pronto h3 { font-size: 1.3rem; margin-bottom: 8px; font-family: 'Fredoka', sans-serif; }
+.checkout-pronto p { font-size: 0.88rem; color: var(--text-body); line-height: 1.6; margin-bottom: 16px; }
+.checkout-pronto-label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); align-self: flex-start; margin-bottom: 6px; }
+.checkout-pronto .store-pix-code-row { width: 100%; }
+.checkout-pronto .store-pix-code-row input { font-size: 0.8rem; color: var(--text-main); }
+
+@media (max-width: 480px) {
+    .checkout-timeline-step .label { display: none; }
+    .checkout-timeline-connector { flex-basis: 24px; }
 }
 
 @media (max-width: 900px) {
