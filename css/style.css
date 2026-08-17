@@ -455,14 +455,14 @@ ul { list-style: none; }
     border-bottom: 1px solid var(--border);
 }
 .sidebar-brand-img { max-width: 190px; max-height: 64px; width: auto; height: auto; }
-.sidebar-brand .logo-tag { font-size: 0.68rem; color: var(--text-muted); margin-top: 6px; }
+.sidebar-brand .logo-tag { font-size: 0.68rem; color: var(--painel-sidebar-text-muted, var(--text-muted)); margin-top: 6px; }
 
 .nav-links { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 3px; }
 .nav-item {
     display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--radius-sm);
-    color: var(--text-body); font-size: 0.92rem; font-weight: 500; cursor: pointer; transition: 0.15s;
+    color: var(--painel-sidebar-text, var(--text-body)); font-size: 0.92rem; font-weight: 500; cursor: pointer; transition: 0.15s;
 }
-.nav-item i { width: 18px; text-align: center; font-size: 1rem; color: var(--brown-500); transition: 0.15s; }
+.nav-item i { width: 18px; text-align: center; font-size: 1rem; color: var(--painel-sidebar-text-muted, var(--brown-500)); transition: 0.15s; }
 .nav-item:hover { background: var(--orange-50); color: var(--orange-600); }
 .nav-item:hover i { color: var(--orange-500); }
 .nav-item.active { background: var(--orange-500); color: #fff; box-shadow: 0 4px 10px rgba(245,130,31,0.35); }
@@ -479,9 +479,9 @@ ul { list-style: none; }
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sidebar-user .who { line-height: 1.25; overflow: hidden; }
-.sidebar-user .who strong { display: block; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sidebar-user .who span { font-size: 0.72rem; color: var(--text-muted); }
-.btn-logout { margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 6px; border-radius: 6px; }
+.sidebar-user .who strong { display: block; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--painel-sidebar-text, var(--text-main)); }
+.sidebar-user .who span { font-size: 0.72rem; color: var(--painel-sidebar-text-muted, var(--text-muted)); }
+.btn-logout { margin-left: auto; background: none; border: none; color: var(--painel-sidebar-text-muted, var(--text-muted)); cursor: pointer; font-size: 1rem; padding: 6px; border-radius: 6px; }
 .btn-logout:hover { color: var(--danger); background: var(--danger-bg); }
 
 .main {
@@ -491,8 +491,8 @@ ul { list-style: none; }
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     padding: 18px 30px; background: var(--painel-topbar-bg, var(--surface)); border-bottom: 1px solid var(--border);
 }
-.topbar h1 { font-size: 1.35rem; font-family: var(--font-family, 'Fredoka', sans-serif); color: var(--text-main); }
-.topbar .greet-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+.topbar h1 { font-size: 1.35rem; font-family: var(--font-family, 'Fredoka', sans-serif); color: var(--painel-topbar-text, var(--text-main)); }
+.topbar .greet-sub { font-size: 0.85rem; color: var(--painel-topbar-text-muted, var(--text-muted)); margin-top: 2px; }
 .topbar-right { display: flex; align-items: center; gap: 14px; }
 .date-pill {
     display: flex; align-items: center; gap: 8px; background: var(--surface-soft);
@@ -529,7 +529,7 @@ ul { list-style: none; }
 .mobile-tabbar .nav-item.active, .mobile-tabbar .tabbar-more.active { background: var(--orange-50); color: var(--orange-600); }
 .mobile-tabbar .nav-item.active i, .mobile-tabbar .tabbar-more.active i { color: var(--orange-500); }
 
-.view { flex: 1; overflow-y: auto; padding: 26px 30px 60px; }
+.view { flex: 1; overflow-y: auto; padding: 26px 30px 60px; background: var(--bg); }
 .view-section { display: none; animation: fadeIn 0.25s ease; }
 .view-section.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -1295,22 +1295,23 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
 .store-payment-result strong { font-size: 1rem; }
 #store-payment-brick-container, #checkout-payment-brick-container { min-height: 300px; }
 
-/* Checkout — cartão "espelhado" (glass), herda a paleta da página inicial
-   (ver Checkout.abrirModal em js/checkout.js, que seta essas variáveis por
-   cima do var(--orange-500) etc. padrão só dentro deste modal). */
+/* Checkout — cartão "espelhado" (glass) com cores próprias, independentes
+   da página inicial (ver Checkout.abrirModal em js/checkout.js, que seta
+   essas variáveis por cima do padrão só dentro deste modal; editável em
+   Configurações → Página inicial → "Cores do checkout"). */
 .modal.checkout-modal {
-    background: linear-gradient(160deg, rgba(255,255,255,0.94), rgba(255,255,255,0.74));
+    background: linear-gradient(160deg, color-mix(in srgb, var(--checkout-fundo, #fff) 96%, transparent), color-mix(in srgb, var(--checkout-fundo, #fff) 78%, transparent));
     backdrop-filter: blur(28px) saturate(180%);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 24px 70px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.75);
+    border: 1px solid color-mix(in srgb, var(--checkout-fundo, #fff) 65%, transparent);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.32), inset 0 1px 0 color-mix(in srgb, var(--checkout-fundo, #fff) 80%, transparent);
     position: relative;
     overflow: hidden;
 }
 .modal.checkout-modal::before {
     content: '';
     position: absolute; inset: 0;
-    background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%);
+    background: linear-gradient(120deg, transparent 35%, color-mix(in srgb, var(--checkout-fundo, #fff) 55%, transparent) 50%, transparent 65%);
     pointer-events: none;
 }
 .modal.checkout-modal::after {
@@ -1320,6 +1321,17 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
     opacity: 0.4; pointer-events: none; filter: blur(14px);
 }
 .modal.checkout-modal > * { position: relative; z-index: 1; }
+.checkout-modal .form-group input,
+.checkout-modal .form-group select,
+.checkout-modal .form-group textarea {
+    background: var(--checkout-input-bg, var(--surface-soft));
+    color: var(--checkout-input-text, var(--text-main));
+}
+.checkout-modal .btn-primary {
+    background: var(--checkout-botao-bg, var(--orange-500));
+    color: var(--checkout-botao-text, #fff);
+}
+.checkout-modal .btn-primary:hover { filter: brightness(0.92); }
 
 .checkout-timeline { display: flex; align-items: flex-start; }
 .checkout-timeline-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
@@ -1331,8 +1343,12 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
 .checkout-timeline-step .label {
     font-size: 0.66rem; font-weight: 700; color: var(--text-muted); margin-top: 6px; text-align: center; line-height: 1.2;
 }
-.checkout-timeline-step.active .dot { background: var(--orange-500); border-color: var(--orange-500); color: #fff; box-shadow: 0 0 0 4px var(--orange-100); }
-.checkout-timeline-step.active .label { color: var(--orange-600); }
+.checkout-timeline-step.active .dot {
+    background: var(--checkout-bolinha-bg, var(--orange-500)); border-color: var(--checkout-bolinha-bg, var(--orange-500));
+    color: var(--checkout-bolinha-text, #fff);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--checkout-bolinha-bg, var(--orange-500)) 25%, transparent);
+}
+.checkout-timeline-step.active .label { color: var(--checkout-bolinha-bg, var(--orange-600)); }
 .checkout-timeline-step.done .dot { background: var(--success); border-color: var(--success); color: #fff; }
 .checkout-timeline-step.done .label { color: var(--success); }
 .checkout-timeline-connector { flex: 0 1 44px; height: 2px; background: var(--border); margin-top: 15px; }
