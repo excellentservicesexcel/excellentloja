@@ -12,6 +12,7 @@
 
 const { getAdmin } = require('./admin');
 const { inferRecorrencia } = require('./planos');
+const { marcarLeadConvertido } = require('./leads');
 
 async function criarOuReaproveitarCompra({ planoNome, planoValor, planoTipo, dadosComprador, uidComprador }) {
     const admin = getAdmin();
@@ -78,7 +79,7 @@ async function confirmarCompra(compraId, cicloId, extra = {}) {
     const compraRef = db.collection('compras').doc(compraId);
     const cicloRef = compraRef.collection('ciclos').doc(cicloId);
 
-    return db.runTransaction(async (tx) => {
+    const resultado = await db.runTransaction(async (tx) => {
         const [compraSnap, cicloSnap] = await Promise.all([tx.get(compraRef), tx.get(cicloRef)]);
         if (!compraSnap.exists || !cicloSnap.exists) throw new Error('Compra não encontrada.');
         const compra = compraSnap.data();
@@ -116,6 +117,12 @@ async function confirmarCompra(compraId, cicloId, extra = {}) {
 
         return { jaProcessado: false, lojaId: compra.lojaId || null, emailComprador: compra.emailComprador };
     });
+
+    if (!resultado.jaProcessado) {
+        try { await marcarLeadConvertido(resultado.emailComprador, compraId); }
+        catch (err) { console.error('marcarLeadConvertido', err); }
+    }
+    return resultado;
 }
 
 module.exports = { criarOuReaproveitarCompra, confirmarCompra };
