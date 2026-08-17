@@ -234,9 +234,13 @@ const Configuracoes = (() => {
                         <label>Fundo das bolinhas<input type="color" class="js-checkout-cor" data-campo="checkoutCorBolinha" value="${Store.config.checkoutCorBolinha || Store.config.checkoutCorBotao || '#C9962B'}"></label>
                         <label>Texto das bolinhas<input type="color" class="js-checkout-cor" data-campo="checkoutCorBolinhaTexto" value="${Store.config.checkoutCorBolinhaTexto || '#FFFFFF'}"></label>
                     </div>
-                    <div class="loja-admin-cores" style="margin:0;">
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
                         <label>Fundo da barra de preencher<input type="color" class="js-checkout-cor" data-campo="checkoutCorInputFundo" value="${Store.config.checkoutCorInputFundo || '#FBF6EC'}"></label>
                         <label>Letras da barra de preencher<input type="color" class="js-checkout-cor" data-campo="checkoutCorInputTexto" value="${Store.config.checkoutCorInputTexto || '#1C1A16'}"></label>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0;">
+                        <label>Botão "Cancelar"<input type="color" class="js-checkout-cor" data-campo="checkoutCorBotaoSecundario" value="${Store.config.checkoutCorBotaoSecundario || Store.config.checkoutCorFundo || '#FFFFFF'}"></label>
+                        <label>Texto do botão "Cancelar"<input type="color" class="js-checkout-cor" data-campo="checkoutCorBotaoSecundarioTexto" value="${Store.config.checkoutCorBotaoSecundarioTexto || Store.config.checkoutCorTexto || '#1C1A16'}"></label>
                     </div>
                 </div>` : `
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
@@ -373,8 +377,9 @@ const Configuracoes = (() => {
                 <div class="panel" style="max-width:640px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Personalize seu painel</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
-                        Cores e frase do <strong>seu</strong> painel de gestão e da tela de login — não
-                        afeta a página inicial nem o painel de nenhuma loja criada.
+                        Cores e frase do <strong>seu</strong> painel de gestão — não afeta a página
+                        inicial, a tela de login (tem seção própria logo abaixo) nem o painel de
+                        nenhuma loja criada.
                     </p>
                     <div class="form-group" style="max-width:420px;">
                         <label>Frase abaixo da logo (barra lateral e login)</label>
@@ -396,6 +401,36 @@ const Configuracoes = (() => {
                         <label>Texto do botão<input type="color" class="js-root-painel-cor" data-campo="painelCorBotaoTexto" value="${Store.config.painelCorBotaoTexto || '#FFFFFF'}"></label>
                         <label>Cards<input type="color" class="js-root-painel-cor" data-campo="painelCorCard" value="${Store.config.painelCorCard || '#FFFFFF'}"></label>
                         <label>Texto dos cards<input type="color" class="js-root-painel-cor" data-campo="painelCorCardTexto" value="${Store.config.painelCorCardTexto || Store.config.painelCorTexto || '#1C1A16'}"></label>
+                    </div>
+                </div>
+                <div class="panel" style="max-width:820px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Personalize a tela de login</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cores da tela de entrar/cadastrar (excellentloja.vercel.app) — independente
+                        do painel e da página inicial.
+                    </p>
+                    <span class="loja-admin-grupo-label"><i class="fa-solid fa-image"></i> Lado da logo</span>
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
+                        <label>Fundo<input type="color" class="js-login-cor" data-campo="loginCorEsquerdaFundo" value="${Store.config.loginCorEsquerdaFundo || '#FAF5EB'}"></label>
+                        <label>Destaque (brilho e círculos)<input type="color" class="js-login-cor" data-campo="loginCorEsquerdaDestaque" value="${Store.config.loginCorEsquerdaDestaque || '#C9962B'}"></label>
+                        <label>Frase abaixo da logo<input type="color" class="js-login-cor" data-campo="loginCorFrase" value="${Store.config.loginCorFrase || '#4A4136'}"></label>
+                        <button type="button" class="js-loja-cor-reset" id="btn-reset-login-cores" title="Restaurar cores padrão da tela de login"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                    </div>
+                    <span class="loja-admin-grupo-label"><i class="fa-solid fa-right-to-bracket"></i> Lado do formulário</span>
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
+                        <label>Fundo<input type="color" class="js-login-cor" data-campo="loginCorDireitaFundo" value="${Store.config.loginCorDireitaFundo || '#FFFFFF'}"></label>
+                        <label>Título ("Entrar no painel")<input type="color" class="js-login-cor" data-campo="loginCorTitulo" value="${Store.config.loginCorTitulo || '#1C1A16'}"></label>
+                        <label>Texto secundário (subtítulo, rótulos, "voltar")<input type="color" class="js-login-cor" data-campo="loginCorTextoSecundario" value="${Store.config.loginCorTextoSecundario || '#8C8275'}"></label>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
+                        <label>Fundo dos campos<input type="color" class="js-login-cor" data-campo="loginCorCampoFundo" value="${Store.config.loginCorCampoFundo || '#FBF6EC'}"></label>
+                        <label>Letras dos campos<input type="color" class="js-login-cor" data-campo="loginCorCampoTexto" value="${Store.config.loginCorCampoTexto || '#1C1A16'}"></label>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0;">
+                        <label>Botão "Entrar"<input type="color" class="js-login-cor" data-campo="loginCorBotao" value="${Store.config.loginCorBotao || '#C9962B'}"></label>
+                        <label>Texto do botão "Entrar"<input type="color" class="js-login-cor" data-campo="loginCorBotaoTexto" value="${Store.config.loginCorBotaoTexto || '#FFFFFF'}"></label>
+                        <label>Botão "Cadastrar"<input type="color" class="js-login-cor" data-campo="loginCorBotaoSecundario" value="${Store.config.loginCorBotaoSecundario || '#FFFFFF'}"></label>
+                        <label>Texto do botão "Cadastrar"<input type="color" class="js-login-cor" data-campo="loginCorBotaoSecundarioTexto" value="${Store.config.loginCorBotaoSecundarioTexto || '#4A4136'}"></label>
                     </div>
                 </div>
                 <div class="panel" style="max-width:640px;margin-bottom:20px;">
@@ -571,6 +606,8 @@ const Configuracoes = (() => {
                 try { await Loja.ref().update({ painelTagline: e.target.value.trim() }); }
                 catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
             });
+            document.querySelectorAll('.js-login-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja('root', e.target.dataset.campo, e.target.value)));
+            document.getElementById('btn-reset-login-cores').addEventListener('click', resetarCoresLogin);
         }
 
         render();
@@ -981,7 +1018,7 @@ const Configuracoes = (() => {
     }
 
     function resetarPainelRoot() {
-        Utils.confirmDialog('Restaurar as cores e a frase padrão do seu painel e da tela de login?', async () => {
+        Utils.confirmDialog('Restaurar as cores e a frase padrão do seu painel?', async () => {
             try {
                 await Loja.ref().update({
                     painelCorPrincipal: firebase.firestore.FieldValue.delete(),
@@ -1000,6 +1037,28 @@ const Configuracoes = (() => {
                 });
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Restaurar painel padrão', 'Sim, restaurar');
+    }
+
+    function resetarCoresLogin() {
+        Utils.confirmDialog('Restaurar as cores padrão da tela de login?', async () => {
+            try {
+                await Loja.ref().update({
+                    loginCorEsquerdaFundo: firebase.firestore.FieldValue.delete(),
+                    loginCorEsquerdaDestaque: firebase.firestore.FieldValue.delete(),
+                    loginCorFrase: firebase.firestore.FieldValue.delete(),
+                    loginCorDireitaFundo: firebase.firestore.FieldValue.delete(),
+                    loginCorTitulo: firebase.firestore.FieldValue.delete(),
+                    loginCorTextoSecundario: firebase.firestore.FieldValue.delete(),
+                    loginCorCampoFundo: firebase.firestore.FieldValue.delete(),
+                    loginCorCampoTexto: firebase.firestore.FieldValue.delete(),
+                    loginCorBotao: firebase.firestore.FieldValue.delete(),
+                    loginCorBotaoTexto: firebase.firestore.FieldValue.delete(),
+                    loginCorBotaoSecundario: firebase.firestore.FieldValue.delete(),
+                    loginCorBotaoSecundarioTexto: firebase.firestore.FieldValue.delete()
+                });
+                Utils.toast('Cores da tela de login restauradas.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Restaurar cores padrão', 'Sim, restaurar');
     }
 
     async function uploadLojaLogo(e, lojaId) {
@@ -1275,7 +1334,9 @@ const Configuracoes = (() => {
                     checkoutCorBolinha: firebase.firestore.FieldValue.delete(),
                     checkoutCorBolinhaTexto: firebase.firestore.FieldValue.delete(),
                     checkoutCorInputFundo: firebase.firestore.FieldValue.delete(),
-                    checkoutCorInputTexto: firebase.firestore.FieldValue.delete()
+                    checkoutCorInputTexto: firebase.firestore.FieldValue.delete(),
+                    checkoutCorBotaoSecundario: firebase.firestore.FieldValue.delete(),
+                    checkoutCorBotaoSecundarioTexto: firebase.firestore.FieldValue.delete()
                 });
                 Utils.closeModal();
                 Utils.toast('Cores do checkout restauradas.', 'success');
@@ -1903,6 +1964,14 @@ const Configuracoes = (() => {
         };
         document.querySelectorAll('.js-root-painel-cor').forEach(input => { input.value = c[input.dataset.campo] || painelRootDefaults[input.dataset.campo]; });
         setVal('f-root-painel-tagline', c.painelTagline || 'Excelência em cada venda 🏆');
+        const loginDefaults = {
+            loginCorEsquerdaFundo: '#FAF5EB', loginCorEsquerdaDestaque: '#C9962B', loginCorFrase: '#4A4136',
+            loginCorDireitaFundo: '#FFFFFF', loginCorTitulo: '#1C1A16', loginCorTextoSecundario: '#8C8275',
+            loginCorCampoFundo: '#FBF6EC', loginCorCampoTexto: '#1C1A16',
+            loginCorBotao: '#C9962B', loginCorBotaoTexto: '#FFFFFF',
+            loginCorBotaoSecundario: '#FFFFFF', loginCorBotaoSecundarioTexto: '#4A4136'
+        };
+        document.querySelectorAll('.js-login-cor').forEach(input => { input.value = c[input.dataset.campo] || loginDefaults[input.dataset.campo]; });
         setVal('f-cor-landing-principal', c.corPrincipal || '#C9962B');
         setVal('f-cor-landing-fundo', c.corFundo || '#FAF5EB');
         setVal('f-cor-landing-texto', c.corTexto || '#1C1A16');
@@ -1916,7 +1985,8 @@ const Configuracoes = (() => {
             checkoutCorFundo: '#FFFFFF', checkoutCorTexto: '#1C1A16',
             checkoutCorBotao: '#C9962B', checkoutCorBotaoTexto: '#FFFFFF',
             checkoutCorBolinha: c.checkoutCorBotao || '#C9962B', checkoutCorBolinhaTexto: '#FFFFFF',
-            checkoutCorInputFundo: '#FBF6EC', checkoutCorInputTexto: '#1C1A16'
+            checkoutCorInputFundo: '#FBF6EC', checkoutCorInputTexto: '#1C1A16',
+            checkoutCorBotaoSecundario: c.checkoutCorFundo || '#FFFFFF', checkoutCorBotaoSecundarioTexto: c.checkoutCorTexto || '#1C1A16'
         };
         document.querySelectorAll('.js-checkout-cor').forEach(input => { input.value = c[input.dataset.campo] || checkoutDefaults[input.dataset.campo]; });
         const fundoDegradeEl = document.getElementById('f-landing-fundo-degrade');

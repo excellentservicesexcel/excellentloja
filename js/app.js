@@ -249,7 +249,7 @@ function bindStoreSubscriptions() {
     Store.on('financeiro', () => Financeiro.render());
     Store.on('producao', () => Producao.render());
     Store.on('receitas', () => Precificacao.render());
-    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); });
+    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); applyLoginTema(); });
     Store.on('capas', () => Configuracoes.render());
     Store.on('instaCards', () => Configuracoes.render());
     Store.on('beneficios', () => Configuracoes.render());
@@ -322,6 +322,7 @@ function applyPainelTema() {
         '--painel-btn-bg-hover': Utils.darkenColor(botao, 0.15),
         '--painel-btn-text': c.painelCorBotaoTexto || '#ffffff',
         '--painel-card-text': c.painelCorCardTexto || text,
+        '--painel-card-text-muted': Utils.lightenColor(c.painelCorCardTexto || text, 0.45),
         '--painel-sidebar-text': sidebarText,
         '--painel-sidebar-text-muted': Utils.lightenColor(sidebarText, 0.45),
         '--painel-topbar-text': topbarText,
@@ -332,20 +333,35 @@ function applyPainelTema() {
     const fontFamily = Utils.fontFamilyById(c.fonteId);
     if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
     else raiz.style.removeProperty('--font-family');
+}
 
-    // a tela de login só existe na página raiz — segue a mesma paleta do
-    // painel do dono da plataforma, pra dar pra personalizar as duas juntas.
-    if (Loja.isRoot) {
-        const loginScreen = document.getElementById('login-screen');
-        if (loginScreen) {
-            Object.entries(tema).forEach(([k, v]) => {
-                if (k.startsWith('--painel-')) return;
-                loginScreen.style.setProperty(k, v);
-            });
-            if (fontFamily) loginScreen.style.setProperty('--font-family', fontFamily);
-            else loginScreen.style.removeProperty('--font-family');
-        }
-    }
+// Tela de login — paleta própria e independente (do painel e da página
+// inicial), só existe na página raiz. Configurações → Página inicial →
+// "Personalize a tela de login".
+function applyLoginTema() {
+    if (!Loja.isRoot) return;
+    const loginScreen = document.getElementById('login-screen');
+    if (!loginScreen) return;
+    const c = Store.config;
+    const tema = {
+        '--login-esquerda-fundo': c.loginCorEsquerdaFundo || '#FAF5EB',
+        '--login-esquerda-destaque': c.loginCorEsquerdaDestaque || '#C9962B',
+        '--login-frase': c.loginCorFrase || '#4A4136',
+        '--login-direita-fundo': c.loginCorDireitaFundo || '#FFFFFF',
+        '--login-titulo': c.loginCorTitulo || '#1C1A16',
+        '--login-texto-secundario': c.loginCorTextoSecundario || '#8C8275',
+        '--login-campo-fundo': c.loginCorCampoFundo || '#FBF6EC',
+        '--login-campo-texto': c.loginCorCampoTexto || '#1C1A16',
+        '--login-botao': c.loginCorBotao || '#C9962B',
+        '--login-botao-texto': c.loginCorBotaoTexto || '#FFFFFF',
+        '--login-botao-secundario': c.loginCorBotaoSecundario || '#FFFFFF',
+        '--login-botao-secundario-text': c.loginCorBotaoSecundarioTexto || '#4A4136'
+    };
+    Object.entries(tema).forEach(([k, v]) => loginScreen.style.setProperty(k, v));
+
+    const fontFamily = Utils.fontFamilyById(c.fonteId);
+    if (fontFamily) loginScreen.style.setProperty('--font-family', fontFamily);
+    else loginScreen.style.removeProperty('--font-family');
 }
 
 function applyPainelTagline() {
@@ -814,6 +830,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyLandingBranding();
         applyPainelTema();
         applyPainelTagline();
+        applyLoginTema();
     } else if (!Loja.isRoot) {
         document.getElementById('app-loading').style.display = 'none';
         showLojaNaoEncontrada();
@@ -838,6 +855,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     applyLandingBranding();
                     applyPainelTema();
                     applyPainelTagline();
+                    applyLoginTema();
                 } catch (err) { console.error('bootstrap loja root', err); }
             } else {
                 document.getElementById('app-loading').style.display = 'none';

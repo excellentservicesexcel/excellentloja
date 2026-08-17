@@ -111,7 +111,9 @@ const Checkout = (() => {
             '--checkout-bolinha-bg': c.checkoutCorBolinha || botao,
             '--checkout-bolinha-text': c.checkoutCorBolinhaTexto || '#FFFFFF',
             '--checkout-input-bg': inputFundo,
-            '--checkout-input-text': c.checkoutCorInputTexto || '#1C1A16'
+            '--checkout-input-text': c.checkoutCorInputTexto || '#1C1A16',
+            '--checkout-botao-secundario': c.checkoutCorBotaoSecundario || fundo,
+            '--checkout-botao-secundario-text': c.checkoutCorBotaoSecundarioTexto || text
         };
         Object.entries(vars).forEach(([k, v]) => box.style.setProperty(k, v));
     }
