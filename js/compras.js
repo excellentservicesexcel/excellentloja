@@ -11,6 +11,7 @@ const Compras = (() => {
     let comprasCache = [];
     let lojasCache = {};
     let busca = '';
+    let unsub = null;
 
     function mount() {
         const el = document.getElementById('view-compras');
@@ -20,11 +21,9 @@ const Compras = (() => {
                 <div class="toolbar">
                     <input type="text" id="compras-busca" placeholder="Buscar por nome, e-mail ou plano..." style="min-width:260px;">
                 </div>
-                <button class="btn btn-outline btn-sm" id="btn-atualizar-compras"><i class="fa-solid fa-rotate"></i> Atualizar</button>
             </div>
             <div id="compras-list" class="compras-list"><span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span></div>
         `;
-        document.getElementById('btn-atualizar-compras').addEventListener('click', carregar);
         document.getElementById('compras-busca').addEventListener('input', (e) => { busca = e.target.value.trim().toLowerCase(); renderList(); });
         el.addEventListener('click', (e) => {
             const pausar = e.target.closest('.js-compra-pausar');
@@ -34,24 +33,27 @@ const Compras = (() => {
         });
     }
 
-    async function carregar() {
+    function carregar() {
         const souSuperAdmin = Loja.isRoot && Loja.isSuperAdmin(Auth.currentUser()?.email);
         if (!souSuperAdmin) return;
+        if (unsub) { unsub(); unsub = null; }
         const box = document.getElementById('compras-list');
-        if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span>`;
-        try {
-            const snap = await window.db.collection('compras').orderBy('criadoEm', 'desc').get();
+        if (box && !comprasCache.length) box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span>`;
+        unsub = window.db.collection('compras').orderBy('criadoEm', 'desc').onSnapshot(async snap => {
             comprasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
             const lojaIds = [...new Set(comprasCache.map(c => c.lojaId).filter(Boolean))];
-            const lojaSnaps = await Promise.all(lojaIds.map(id => window.db.collection('lojas').doc(id).get()));
-            lojasCache = {};
-            lojaSnaps.forEach(s => { if (s.exists) lojasCache[s.id] = { id: s.id, ...s.data() }; });
+            const faltantes = lojaIds.filter(id => !lojasCache[id]);
+            if (faltantes.length) {
+                const lojaSnaps = await Promise.all(faltantes.map(id => window.db.collection('lojas').doc(id).get()));
+                lojaSnaps.forEach(s => { if (s.exists) lojasCache[s.id] = { id: s.id, ...s.data() }; });
+            }
 
             renderList();
-        } catch (err) {
+        }, err => {
+            const box = document.getElementById('compras-list');
             if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--danger);">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
-        }
+        });
     }
 
     function render() {
@@ -126,8 +128,9 @@ const Compras = (() => {
     async function alternarPausaLoja(lojaId, pausadaAtual) {
         try {
             await window.db.collection('lojas').doc(lojaId).update({ pausadaManual: !pausadaAtual });
+            if (lojasCache[lojaId]) lojasCache[lojaId].pausadaManual = !pausadaAtual;
             Utils.toast(!pausadaAtual ? 'Loja pausada.' : 'Loja despausada.', 'success');
-            await carregar();
+            renderList();
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
     }
 
