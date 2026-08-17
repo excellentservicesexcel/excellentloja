@@ -1,0 +1,184 @@
+rules_version = '2';
+
+// Regras de segurança — Excellent Loja (multi-loja)
+//
+// - Cada loja vive em lojas/{lojaId}, com as configurações da loja (nome,
+//   telefone, categorias, usuários autorizados, etc.) no próprio documento
+//   e todo o resto do negócio (produtos, pedidos, clientes, estoque,
+//   financeiro, produção, fichas técnicas, capas, cards do Instagram,
+//   newsletter) em subcoleções — lojas/{lojaId}/produtos, etc.
+// - Só quem está em usuariosAutorizados daquela loja (ou o super admin,
+//   dono da plataforma) pode gerenciar os dados dela. Uma loja nunca
+//   consegue ler/escrever dados de outra.
+// - Só o super admin pode criar ou excluir lojas; quem já é autorizado
+//   numa loja pode editar as configurações dela (inclusive adicionar
+//   outro e-mail autorizado para a própria loja).
+// - Catálogo de produtos e dados públicos da loja: qualquer pessoa pode ler
+//   (é o que abastece a loja virtual pública e a página de login/landing).
+// - Cada usuário só lê/edita o próprio perfil (usuarios/{uid}).
+// - Clientes da loja virtual (não admins) têm um cadastro em
+//   lojas/{lojaId}/clientes/{uid} (mesmo id do login) e podem criar pedidos
+//   próprios, que entram no mesmo fluxo do painel de gestão daquela loja.
+//
+// Publique com: firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return signedIn() && request.auth.token.email == 'excellentservices.excel@gmail.com';
+    }
+
+    function lojaAuthorized(lojaId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/lojas/$(lojaId))
+        && ('usuariosAutorizados' in get(/databases/$(database)/documents/lojas/$(lojaId)).data)
+        && request.auth.token.email in get(/databases/$(database)/documents/lojas/$(lojaId)).data.usuariosAutorizados;
+    }
+
+    function isLojaAdmin(lojaId) {
+      return lojaAuthorized(lojaId) || isSuperAdmin();
+    }
+
+    match /lojas/{lojaId} {
+      allow read: if true;
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      // quem administra a própria loja pode editar tudo dela, menos os
+      // campos de pausa (automática por falta de pagamento, ou manual) —
+      // só o super admin liga/desliga esses dois.
+      allow update: if isLojaAdmin(lojaId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pausadaAutomatica', 'pausadaManual']);
+      allow delete: if isSuperAdmin();
+
+      match /produtos/{id} {
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /capas/{id} {
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /instaCards/{id} {
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /beneficios/{id} {
+        // cards de benefícios da página inicial (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /equipe/{id} {
+        // cards "Conheça nossa equipe" da página inicial (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /planos/{id} {
+        // cards de planos (Básico/Profissional/Empresarial) da página inicial,
+        // mostrados ao clicar em "Quero minha loja" (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /capasLanding/{id} {
+        // fotos do carrossel de capa da página inicial (só existem na loja "root")
+        allow read: if true;
+        allow write: if isLojaAdmin(lojaId);
+      }
+
+      match /clientes/{id} {
+        allow read, write: if isLojaAdmin(lojaId);
+        // cliente da loja virtual cadastra/edita o próprio registro (doc id = uid)
+        allow read, write: if signedIn() && request.auth.uid == id;
+      }
+
+      match /pedidos/{id} {
+        allow read, update, delete: if isLojaAdmin(lojaId);
+        // qualquer pessoa logada pode criar seu próprio pedido pela loja virtual
+        allow create: if signedIn();
+        allow read: if signedIn() && resource.data.clienteId == request.auth.uid;
+      }
+
+      match /financeiro/{id} {
+        allow read, update, delete: if isLojaAdmin(lojaId);
+        allow create: if signedIn();
+      }
+
+      match /producao/{id} {
+        allow read, update, delete: if isLojaAdmin(lojaId);
+        allow create: if signedIn();
+      }
+
+      match /estoque/{id} { allow read, write: if isLojaAdmin(lojaId); }
+      match /receitas/{id} { allow read, write: if isLojaAdmin(lojaId); }
+
+      match /config/{id} {
+        // guarda dados sensíveis (ex: chave de API de pagamento) — nunca público,
+        // só o super admin (dono da plataforma) lê ou escreve aqui, pra manter o
+        // controle das configurações sensíveis. As funções serverless em /api leem
+        // isso pelo Admin SDK, que ignora estas regras.
+        allow read, write: if isSuperAdmin();
+      }
+
+      match /config/pagamentoStatus {
+        // versão "segura" (sem chave nenhuma) do status do pagamento online —
+        // quem administra a própria loja pode ler (pra saber se está liberado) e
+        // ligar/desligar o próprio uso (campo "ativo"), mas não pode mexer em
+        // "liberado" nem em nenhuma chave — só o super admin libera isso.
+        allow read: if isLojaAdmin(lojaId);
+        allow update: if isLojaAdmin(lojaId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ativo', 'atualizadoEm']);
+      }
+
+      match /pagamentosPendentes/{id} {
+        // criado e atualizado só pelas funções serverless (Admin SDK, ignora
+        // regras) — o cliente só acompanha o status do próprio pagamento.
+        allow read: if isLojaAdmin(lojaId);
+        allow read: if signedIn() && request.auth.uid == resource.data.uidCliente;
+        allow write: if false;
+      }
+
+      match /meta/{id} {
+        // contador sequencial de número de pedido daquela loja
+        allow read, write: if signedIn();
+      }
+
+      match /newsletter/{id} {
+        allow create: if request.resource.data.email is string;
+        allow read, update, delete: if isLojaAdmin(lojaId);
+      }
+    }
+
+    match /usuarios/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read: if isSuperAdmin();
+    }
+
+    match /compras/{compraId} {
+      // compra de um plano da plataforma — não pertence a nenhuma loja
+      // (a loja normalmente nem existe ainda quando a compra é criada).
+      // Só as funções serverless (Admin SDK, ignora estas regras) criam e
+      // atualizam; o comprador só acompanha o status da própria compra
+      // (mesmo esquema de lojas/{id}/pagamentosPendentes) e o super admin
+      // vê tudo, pro painel de Compras.
+      allow read: if isSuperAdmin();
+      allow read: if signedIn() && request.auth.uid == resource.data.uidComprador;
+      allow write: if false;
+
+      match /ciclos/{cicloId} {
+        allow read: if isSuperAdmin();
+        allow read: if signedIn()
+          && request.auth.uid == get(/databases/$(database)/documents/compras/$(compraId)).data.uidComprador;
+        allow write: if false;
+      }
+    }
+  }
+}
