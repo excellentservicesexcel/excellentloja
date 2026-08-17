@@ -46,7 +46,12 @@ service cloud.firestore {
     match /lojas/{lojaId} {
       allow read: if true;
       allow create: if isSuperAdmin();
-      allow update: if isLojaAdmin(lojaId);
+      allow update: if isSuperAdmin();
+      // quem administra a própria loja pode editar tudo dela, menos os
+      // campos de pausa (automática por falta de pagamento, ou manual) —
+      // só o super admin liga/desliga esses dois.
+      allow update: if isLojaAdmin(lojaId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pausadaAutomatica', 'pausadaManual']);
       allow delete: if isSuperAdmin();
 
       match /produtos/{id} {
@@ -155,6 +160,25 @@ service cloud.firestore {
     match /usuarios/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
       allow read: if isSuperAdmin();
+    }
+
+    match /compras/{compraId} {
+      // compra de um plano da plataforma — não pertence a nenhuma loja
+      // (a loja normalmente nem existe ainda quando a compra é criada).
+      // Só as funções serverless (Admin SDK, ignora estas regras) criam e
+      // atualizam; o comprador só acompanha o status da própria compra
+      // (mesmo esquema de lojas/{id}/pagamentosPendentes) e o super admin
+      // vê tudo, pro painel de Compras.
+      allow read: if isSuperAdmin();
+      allow read: if signedIn() && request.auth.uid == resource.data.uidComprador;
+      allow write: if false;
+
+      match /ciclos/{cicloId} {
+        allow read: if isSuperAdmin();
+        allow read: if signedIn()
+          && request.auth.uid == get(/databases/$(database)/documents/compras/$(compraId)).data.uidComprador;
+        allow write: if false;
+      }
     }
   }
 }

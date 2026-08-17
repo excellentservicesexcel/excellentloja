@@ -37,6 +37,8 @@ js/relatorios.js            aba Relatórios
 js/configuracoes.js         aba Configurações (inclui "Gerenciar lojas" pro dono da plataforma)
 js/onboarding.js            assistente de boas-vindas (primeiro login de um usuário autorizado)
 js/storefront.js            loja virtual pública (login autenticado mas fora da lista de autorizados)
+js/checkout.js               compra de um plano na página inicial (pagamento + configurar loja + criar conta)
+js/compras.js                aba "Compras" — assinaturas dos planos, comprovantes, pausar loja (só dono da plataforma)
 firestore.rules            regras de segurança do Firestore
 storage.rules               regras do Storage (não usado hoje — fotos vão em base64 no Firestore)
 package.json                dependências das funções de pagamento (só usado pela Vercel, no /api)
@@ -45,6 +47,13 @@ api/pagar-pix.js            gera o QR Code Pix na Mercado Pago
 api/pagar-cartao.js         efetiva a cobrança de cartão (token já vem tokenizado do navegador)
 api/consultar-pagamento.js  o navegador consulta isso enquanto espera o pagamento confirmar
 api/webhook-mercadopago.js  a Mercado Pago avisa aqui quando o status de um pagamento muda
+api/iniciar-compra-plano.js   1º passo da compra de um plano (não é por loja — é da plataforma)
+api/pagar-plano-pix.js        gera o QR Code Pix da compra de um plano
+api/pagar-plano-cartao.js     cobra o cartão — assinatura recorrente (PreApproval) ou avulso, conforme o plano
+api/consultar-compra-plano.js o navegador consulta isso enquanto espera o pagamento do plano confirmar
+api/webhook-compra-plano.js   a Mercado Pago avisa aqui pagamentos e renovações de assinatura de plano
+api/cron-cobranca-planos.js   rotina diária: renova Pix perto do vencimento, pausa quem atrasou 7+ dias
+api/criar-loja-pos-compra.js  cria a loja de verdade, depois que o plano foi pago e a conta criada
 api/_lib/                   código interno compartilhado entre as funções acima
 ```
 
@@ -302,6 +311,59 @@ O Mercado Pago cobra uma taxa por transação (consulte as condições atuais na
 e é quem efetivamente custodia e repassa o dinheiro — a Excellent Loja só orquestra a
 integração. Eu não tenho como testar esse fluxo de ponta a ponta com dinheiro de verdade;
 teste com as credenciais de teste do Mercado Pago antes de ativar em produção.
+
+## Cobrança dos planos da plataforma (assinaturas)
+
+Além do pagamento online de cada loja (seção acima), existe uma cobrança separada: a
+**sua própria**, quando alguém compra um dos planos (Básico/Profissional/Empresarial) na
+página inicial. Usa o **seu** Mercado Pago (não o de nenhuma loja), configurado à parte.
+
+### Configurar
+
+1. No seu painel → Configurações → **Gerenciar lojas** → painel **"Cobrança da plataforma"**
+   (fica acima de "Lojas criadas") → cole a **Public Key** e o **Access Token** da sua conta
+   Mercado Pago (mesmos passos de criação de credenciais da seção anterior) e salve.
+2. Copie a **URL de webhook** que aparece nesse mesmo painel e cadastre no Mercado Pago
+   (Sua aplicação → Webhooks → Configurar notificações), marcando os eventos **"Pagamentos"**
+   e **"Assinaturas"** (`subscription_authorized_payment`) — esse segundo evento é o que avisa
+   quando uma assinatura de cartão cobra automaticamente numa renovação.
+3. Em cada plano (Configurações → Página inicial → Planos), preencha o campo **"Valor
+   cobrado (R$)"** — é o valor numérico realmente cobrado (o "Preço exibido" é só o texto
+   do card, pode ser diferente).
+4. (Opcional, mas recomendado) Defina `CRON_SECRET` nas variáveis de ambiente da Vercel — uma
+   string aleatória qualquer — para proteger o endpoint que roda a rotina diária de cobrança.
+
+### Como funciona
+
+- **Pix**: cada renovação gera um novo código Pix — não existe Pix recorrente automático no
+  Mercado Pago. Uma rotina diária (`vercel.json` → `crons`, chama `/api/cron-cobranca-planos`
+  uma vez por dia) gera o novo código com alguns dias de antecedência do vencimento.
+- **Cartão**: usa **assinatura automática** do Mercado Pago (PreApproval) — depois do primeiro
+  pagamento aprovado, as renovações seguintes descontam sozinhas, sem o cliente precisar fazer
+  nada. Planos com o tipo "Único" (ou parecido) cobram uma vez só, sem assinatura.
+- Se não pagar em até **7 dias após o vencimento**, a loja é pausada automaticamente
+  (assim que o pagamento cair, ela volta sozinha). Você também pode pausar/despausar qualquer
+  loja manualmente a qualquer momento, pelo painel **Compras** (barra lateral, só aparece pra
+  você) — cada compra mostra a contagem até o próximo pagamento, o comprovante mais recente e
+  o histórico completo com busca.
+- Se a mesma pessoa comprar de novo com o mesmo e-mail (loja já existente), o sistema reconhece
+  e reaproveita a assinatura — se for o mesmo plano, nada muda; se for outro, atualiza o plano
+  dela, sem duplicar loja.
+- Depois do primeiro pagamento aprovado, a pessoa responde algumas perguntas pra configurar a
+  loja e cria a conta (Google ou e-mail/senha) — a loja é criada automaticamente na hora. Se
+  ela fechar a aba no meio do processo, ao voltar o navegador retoma exatamente de onde parou.
+
+### Importante antes de usar em produção
+
+- **Nunca testei esse fluxo com uma conta real do Mercado Pago** (rodo num ambiente sem acesso
+  à internet para chamadas externas) — o código segue exatamente o formato oficial da SDK
+  (`mercadopago` v3, incluindo a classe `PreApproval` para assinaturas), mas teste com
+  **credenciais de teste** antes de ativar de verdade, principalmente o fluxo de cartão
+  recorrente.
+- Republique as **regras do Firestore** (`firestore.rules` mudou — nova coleção `compras`) e,
+  na primeira vez que um webhook de pagamento avulso (Pix) chegar, o Firestore provavelmente
+  vai pedir pra criar um índice (aparece um link direto no log de erro da função `/api/webhook-
+  compra-plano` na Vercel) — é só clicar, ele cria sozinho.
 
 ## Publicar
 
