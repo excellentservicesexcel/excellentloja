@@ -8,6 +8,7 @@
 
 const { getPagamentoPlataformaConfig } = require('./_lib/config');
 const { criarOuReaproveitarCompra } = require('./_lib/compra');
+const { registrarLead } = require('./_lib/leads');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') { res.status(405).json({ erro: 'Método não permitido.' }); return; }
@@ -38,6 +39,11 @@ module.exports = async (req, res) => {
     try {
         const config = await getPagamentoPlataformaConfig();
         if (!config) { res.status(400).json({ erro: 'O pagamento de planos ainda não foi configurado.' }); return; }
+
+        // registra o interesse já aqui — mesmo que a pessoa desista antes de pagar,
+        // isso fica salvo pra permitir follow-up manual (aba Leads no painel).
+        try { await registrarLead({ ...dadosComprador, planoNome, planoValor, planoTipo }); }
+        catch (err) { console.error('registrarLead', err); }
 
         const { compraId, cicloId, reaproveitada, lojaId } = await criarOuReaproveitarCompra({ planoNome, planoValor, planoTipo, dadosComprador, uidComprador });
         res.status(200).json({ compraId, cicloId, total: planoValor, publicKey: config.publicKey, reaproveitada, lojaId });
