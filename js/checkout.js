@@ -45,13 +45,16 @@ const Checkout = (() => {
     function init() {
         if (!Loja.isRoot) return;
         const salvo = carregarEstado();
-        if (!salvo) return;
+        // só retoma a partir de uma etapa pós-pagamento — qualquer outra coisa salva
+        // (inclusive resquício de uma versão antiga) é descartada, nunca retomada.
+        if (!salvo || !['loja', 'conta'].includes(salvo.etapa)) { limparEstado(); return; }
         estado = salvo;
         abrirEtapaAtual();
     }
 
     async function abrir(plano) {
         limparRecursos();
+        limparEstado();
         let user = Auth.currentUser();
         if (!user) {
             const cred = await window.auth.signInAnonymously();

@@ -142,7 +142,7 @@ window.nextPedidoNumero = nextPedidoNumero;
 /* ---------------------------------------------------------------------- */
 /* Navegação                                                               */
 /* ---------------------------------------------------------------------- */
-const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'configuracoes', 'compras'];
+const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'configuracoes', 'compras', 'leads'];
 
 const TITLES = {
     dashboard: ['Olá, {nome}! 👋', 'Confira o resumo do seu negócio hoje.'],
@@ -156,7 +156,8 @@ const TITLES = {
     precificacao: ['Precificação', 'Calcule o custo e o preço ideal dos seus produtos.'],
     relatorios: ['Relatórios', 'Indicadores e desempenho de vendas.'],
     configuracoes: ['Configurações', 'Dados da loja, categorias e preferências.'],
-    compras: ['Compras', 'Assinaturas dos planos da plataforma — pagamentos, renovações e comprovantes.']
+    compras: ['Compras', 'Assinaturas dos planos da plataforma — pagamentos, renovações e comprovantes.'],
+    leads: ['Leads', 'Quem demonstrou interesse num plano — faça o follow-up antes que esfrie.']
 };
 
 let _currentView = 'dashboard';
@@ -236,6 +237,7 @@ function mountAllModules() {
     Relatorios.mount();
     Configuracoes.mount();
     Compras.mount();
+    Leads.mount();
 }
 
 function bindStoreSubscriptions() {
@@ -362,14 +364,14 @@ function showApp() {
     const modoPlataforma = Loja.isRoot && souSuperAdmin;
     applyNavMode(modoPlataforma);
     document.getElementById('btn-back-my-panel').style.display = (souSuperAdmin && !Loja.isRoot) ? 'flex' : 'none';
-    if (modoPlataforma) Compras.carregar();
+    if (modoPlataforma) { Compras.carregar(); Leads.carregar(); }
     goToView(modoPlataforma ? 'configuracoes' : 'dashboard');
 }
 
 function applyNavMode(plataforma) {
     document.querySelectorAll('#nav-links .nav-item, #mobile-tabbar .nav-item').forEach(el => {
         const view = el.dataset.view;
-        if (view === 'compras') { el.style.display = plataforma ? '' : 'none'; return; }
+        if (view === 'compras' || view === 'leads') { el.style.display = plataforma ? '' : 'none'; return; }
         el.style.display = (!plataforma || view === 'configuracoes') ? '' : 'none';
     });
     document.getElementById('btn-view-store').style.display = plataforma ? 'none' : '';
