@@ -49,6 +49,7 @@ module.exports = async (req, res) => {
         res.status(200).json({ compraId, cicloId, total: planoValor, publicKey: config.publicKey, reaproveitada, lojaId });
     } catch (err) {
         console.error('iniciar-compra-plano', err);
-        res.status(500).json({ erro: 'Erro ao iniciar a compra. Tente novamente.' });
+        const msg = (err && err.message) ? err.message : 'tente novamente.';
+        res.status(500).json({ erro: 'Erro ao iniciar a compra: ' + msg });
     }
 };
