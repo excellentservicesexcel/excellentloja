@@ -910,6 +910,25 @@ input[type="number"] { -moz-appearance: textfield; }
 .compra-loja-link { font-size: 0.78rem; color: var(--text-body); margin-top: 4px; }
 .compra-card-actions { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
 
+.leads-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.lead-card {
+    position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; transition: box-shadow 0.15s, transform 0.15s;
+}
+.lead-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.lead-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-right: 30px; }
+.lead-card-who { display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+.lead-card-who strong { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lead-card-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.lead-card-tags .pgto-status-chip { margin-left: 0; }
+.lead-card-body { display: flex; flex-direction: column; gap: 4px; margin-bottom: 2px; }
+.js-lead-remove {
+    position: absolute; top: 14px; right: 14px; width: 26px; height: 26px; border-radius: 50%;
+    border: none; background: var(--surface-soft); color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 0.76rem; transition: 0.15s;
+}
+.js-lead-remove:hover { background: var(--danger-bg); color: var(--danger); }
+
 .comprovante-box { display: flex; flex-direction: column; gap: 10px; }
 .comprovante-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.85rem; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
 .comprovante-row span { color: var(--text-muted); }
