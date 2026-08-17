@@ -348,6 +348,32 @@ const Configuracoes = (() => {
             ${souSuperAdmin ? `
             <div class="settings-panel" id="panel-lojas">
                 <div class="panel" style="max-width:640px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Personalize seu painel</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cores e frase do <strong>seu</strong> painel de gestão e da tela de login — não
+                        afeta a página inicial nem o painel de nenhuma loja criada.
+                    </p>
+                    <div class="form-group" style="max-width:420px;">
+                        <label>Frase abaixo da logo (barra lateral e login)</label>
+                        <input type="text" id="f-root-painel-tagline" maxlength="60" value="${Utils.escapeHtml(Store.config.painelTagline || 'Excelência em cada venda 🏆')}">
+                    </div>
+                    <div class="loja-admin-cores" style="margin:14px 0 10px;">
+                        <label>Cor principal<input type="color" class="js-root-painel-cor" data-campo="painelCorPrincipal" value="${Store.config.painelCorPrincipal || '#C9962B'}"></label>
+                        <label>Cor de fundo<input type="color" class="js-root-painel-cor" data-campo="painelCorFundo" value="${Store.config.painelCorFundo || '#FAF5EB'}"></label>
+                        <label>Cor do texto<input type="color" class="js-root-painel-cor" data-campo="painelCorTexto" value="${Store.config.painelCorTexto || '#1C1A16'}"></label>
+                        <button type="button" class="js-loja-cor-reset" id="btn-reset-painel-root" title="Restaurar cores e frase padrão"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0;">
+                        <label>Barra lateral<input type="color" class="js-root-painel-cor" data-campo="painelCorSidebar" value="${Store.config.painelCorSidebar || '#FFFFFF'}"></label>
+                        <label>Cabeçalho<input type="color" class="js-root-painel-cor" data-campo="painelCorCabecalho" value="${Store.config.painelCorCabecalho || '#FFFFFF'}"></label>
+                        <label>Rodapé (menu mobile)<input type="color" class="js-root-painel-cor" data-campo="painelCorRodape" value="${Store.config.painelCorRodape || '#FFFFFF'}"></label>
+                        <label>Botão<input type="color" class="js-root-painel-cor" data-campo="painelCorBotao" value="${Store.config.painelCorBotao || Store.config.painelCorPrincipal || '#C9962B'}"></label>
+                        <label>Texto do botão<input type="color" class="js-root-painel-cor" data-campo="painelCorBotaoTexto" value="${Store.config.painelCorBotaoTexto || '#FFFFFF'}"></label>
+                        <label>Cards<input type="color" class="js-root-painel-cor" data-campo="painelCorCard" value="${Store.config.painelCorCard || '#FFFFFF'}"></label>
+                        <label>Texto dos cards<input type="color" class="js-root-painel-cor" data-campo="painelCorCardTexto" value="${Store.config.painelCorCardTexto || Store.config.painelCorTexto || '#1C1A16'}"></label>
+                    </div>
+                </div>
+                <div class="panel" style="max-width:640px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Criar nova loja</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
                         Cada loja criada aqui tem seus próprios produtos, pedidos, clientes e
@@ -512,6 +538,12 @@ const Configuracoes = (() => {
             document.getElementById('nova-loja-form').addEventListener('submit', criarLoja);
             loadLojas();
             carregarPagamentoPlataforma();
+            document.querySelectorAll('.js-root-painel-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLoja('root', e.target.dataset.campo, e.target.value)));
+            document.getElementById('btn-reset-painel-root').addEventListener('click', resetarPainelRoot);
+            document.getElementById('f-root-painel-tagline').addEventListener('change', async (e) => {
+                try { await Loja.ref().update({ painelTagline: e.target.value.trim() }); }
+                catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+            });
         }
 
         render();
@@ -919,6 +951,26 @@ const Configuracoes = (() => {
                 await loadLojas();
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Restaurar cores do painel', 'Sim, restaurar');
+    }
+
+    function resetarPainelRoot() {
+        Utils.confirmDialog('Restaurar as cores e a frase padrão do seu painel e da tela de login?', async () => {
+            try {
+                await Loja.ref().update({
+                    painelCorPrincipal: firebase.firestore.FieldValue.delete(),
+                    painelCorFundo: firebase.firestore.FieldValue.delete(),
+                    painelCorTexto: firebase.firestore.FieldValue.delete(),
+                    painelCorSidebar: firebase.firestore.FieldValue.delete(),
+                    painelCorCabecalho: firebase.firestore.FieldValue.delete(),
+                    painelCorRodape: firebase.firestore.FieldValue.delete(),
+                    painelCorBotao: firebase.firestore.FieldValue.delete(),
+                    painelCorBotaoTexto: firebase.firestore.FieldValue.delete(),
+                    painelCorCard: firebase.firestore.FieldValue.delete(),
+                    painelCorCardTexto: firebase.firestore.FieldValue.delete(),
+                    painelTagline: firebase.firestore.FieldValue.delete()
+                });
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Restaurar painel padrão', 'Sim, restaurar');
     }
 
     async function uploadLojaLogo(e, lojaId) {
@@ -1793,6 +1845,14 @@ const Configuracoes = (() => {
         set('plano-card-grid', planoCardGridHtml(Store.planos));
 
         const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        const painelRootDefaults = {
+            painelCorPrincipal: '#C9962B', painelCorFundo: '#FAF5EB', painelCorTexto: '#1C1A16',
+            painelCorSidebar: '#FFFFFF', painelCorCabecalho: '#FFFFFF', painelCorRodape: '#FFFFFF',
+            painelCorBotao: c.painelCorPrincipal || '#C9962B', painelCorBotaoTexto: '#FFFFFF',
+            painelCorCard: '#FFFFFF', painelCorCardTexto: c.painelCorTexto || '#1C1A16'
+        };
+        document.querySelectorAll('.js-root-painel-cor').forEach(input => { input.value = c[input.dataset.campo] || painelRootDefaults[input.dataset.campo]; });
+        setVal('f-root-painel-tagline', c.painelTagline || 'Excelência em cada venda 🏆');
         setVal('f-cor-landing-principal', c.corPrincipal || '#C9962B');
         setVal('f-cor-landing-fundo', c.corFundo || '#FAF5EB');
         setVal('f-cor-landing-texto', c.corTexto || '#1C1A16');

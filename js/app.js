@@ -247,7 +247,7 @@ function bindStoreSubscriptions() {
     Store.on('financeiro', () => Financeiro.render());
     Store.on('producao', () => Producao.render());
     Store.on('receitas', () => Precificacao.render());
-    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); });
+    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); });
     Store.on('capas', () => Configuracoes.render());
     Store.on('instaCards', () => Configuracoes.render());
     Store.on('beneficios', () => Configuracoes.render());
@@ -292,15 +292,11 @@ function applyPainelTema() {
     const raiz = document.getElementById('app-shell');
     if (!raiz) return;
     const c = Store.config;
-    // no painel do dono da plataforma (loja "root") não faz sentido ter uma
-    // paleta separada da página inicial — aqui ele segue as mesmas cores.
-    // As lojas criadas continuam com a paleta de painel própria de sempre.
-    const souRoot = Loja.isRoot;
-    const accent = (souRoot ? c.corPrincipal : c.painelCorPrincipal) || '#C9962B';
-    const bg = (souRoot ? c.corFundo : c.painelCorFundo) || '#FAF5EB';
-    const text = (souRoot ? c.corTexto : c.painelCorTexto) || '#1C1A16';
-    const card = (souRoot ? c.corCard : c.painelCorCard) || '#FFFFFF';
-    const botao = (souRoot ? c.corBotao : c.painelCorBotao) || accent;
+    const accent = c.painelCorPrincipal || '#C9962B';
+    const bg = c.painelCorFundo || '#FAF5EB';
+    const text = c.painelCorTexto || '#1C1A16';
+    const card = c.painelCorCard || '#FFFFFF';
+    const botao = c.painelCorBotao || accent;
     const tema = {
         '--orange-50': Utils.lightenColor(accent, 0.90),
         '--orange-100': Utils.lightenColor(accent, 0.75),
@@ -315,19 +311,42 @@ function applyPainelTema() {
         '--text-main': text,
         '--text-body': Utils.lightenColor(text, 0.30),
         '--text-muted': Utils.lightenColor(text, 0.55),
-        '--painel-sidebar-bg': (souRoot ? c.corCabecalho : c.painelCorSidebar) || '#FFFFFF',
-        '--painel-topbar-bg': (souRoot ? c.corCabecalho : c.painelCorCabecalho) || '#FFFFFF',
-        '--painel-tabbar-bg': (souRoot ? c.corRodape : c.painelCorRodape) || '#FFFFFF',
+        '--painel-sidebar-bg': c.painelCorSidebar || '#FFFFFF',
+        '--painel-topbar-bg': c.painelCorCabecalho || '#FFFFFF',
+        '--painel-tabbar-bg': c.painelCorRodape || '#FFFFFF',
         '--painel-btn-bg': botao,
         '--painel-btn-bg-hover': Utils.darkenColor(botao, 0.15),
-        '--painel-btn-text': (souRoot ? c.corBotaoTexto : c.painelCorBotaoTexto) || '#ffffff',
-        '--painel-card-text': (souRoot ? c.corCardTexto : c.painelCorCardTexto) || text
+        '--painel-btn-text': c.painelCorBotaoTexto || '#ffffff',
+        '--painel-card-text': c.painelCorCardTexto || text
     };
     Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
 
     const fontFamily = Utils.fontFamilyById(c.fonteId);
     if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
     else raiz.style.removeProperty('--font-family');
+
+    // a tela de login só existe na página raiz — segue a mesma paleta do
+    // painel do dono da plataforma, pra dar pra personalizar as duas juntas.
+    if (Loja.isRoot) {
+        const loginScreen = document.getElementById('login-screen');
+        if (loginScreen) {
+            Object.entries(tema).forEach(([k, v]) => {
+                if (k.startsWith('--painel-')) return;
+                loginScreen.style.setProperty(k, v);
+            });
+            if (fontFamily) loginScreen.style.setProperty('--font-family', fontFamily);
+            else loginScreen.style.removeProperty('--font-family');
+        }
+    }
+}
+
+function applyPainelTagline() {
+    if (!Loja.isRoot) return;
+    const texto = Store.config.painelTagline || 'Excelência em cada venda 🏆';
+    const sidebar = document.getElementById('sidebar-tagline');
+    if (sidebar) sidebar.textContent = texto;
+    const login = document.getElementById('login-tagline');
+    if (login) login.textContent = texto;
 }
 
 function showApp() {
@@ -577,22 +596,9 @@ function applyLandingTheme() {
     };
     Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
 
-    // A tela de login só existe na página raiz — aplica a mesma paleta base
-    // (sem os tokens específicos da landing, tipo o fundo em camadas abaixo).
-    const loginScreen = document.getElementById('login-screen');
-    if (loginScreen) {
-        ['--orange-50', '--orange-100', '--orange-200', '--orange-500', '--orange-600', '--orange-700',
-            '--bg', '--surface-soft', '--border', '--text-main', '--text-body', '--text-muted']
-            .forEach(k => loginScreen.style.setProperty(k, tema[k]));
-    }
-
     const fontFamily = Utils.fontFamilyById(Store.config.fonteId);
     if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
     else raiz.style.removeProperty('--font-family');
-    if (loginScreen) {
-        if (fontFamily) loginScreen.style.setProperty('--font-family', fontFamily);
-        else loginScreen.style.removeProperty('--font-family');
-    }
 
     // Monta o fundo da página em camadas (grade + degradê/cor sólida) via background-image —
     // uma cor sólida também vira gradiente (mesma cor nas duas pontas) pra poder ficar na
@@ -798,6 +804,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (lojaExiste) {
         Store.config = { ...DEFAULT_CONFIG, ...lojaSnap.data() };
         applyLandingBranding();
+        applyPainelTema();
+        applyPainelTagline();
     } else if (!Loja.isRoot) {
         document.getElementById('app-loading').style.display = 'none';
         showLojaNaoEncontrada();
@@ -820,6 +828,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await Loja.ref().set(dadosIniciais);
                     Store.config = { ...DEFAULT_CONFIG, ...dadosIniciais };
                     applyLandingBranding();
+                    applyPainelTema();
+                    applyPainelTagline();
                 } catch (err) { console.error('bootstrap loja root', err); }
             } else {
                 document.getElementById('app-loading').style.display = 'none';
