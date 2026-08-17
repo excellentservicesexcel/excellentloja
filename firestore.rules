@@ -180,5 +180,13 @@ service cloud.firestore {
         allow write: if false;
       }
     }
+
+    match /leads/{leadId} {
+      // gente que chegou a preencher os dados pra comprar um plano mas pode
+      // nunca ter pago — só o super admin vê, pra fazer follow-up manual.
+      // Só as funções serverless criam/atualizam (Admin SDK, ignora regras).
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
   }
 }
