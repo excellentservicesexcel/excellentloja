@@ -808,6 +808,24 @@ td.strong { color: var(--text-main); font-weight: 600; }
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--orange-500); background: #fff; box-shadow: 0 0 0 3px rgba(245,130,31,0.12); }
 
+/* Painel/onboarding têm cor de fundo e de texto próprias pros campos de
+   preencher (--painel-input-bg/text), independentes da cor geral do texto —
+   evita letra "sumindo" quando o fundo do card fica escuro/claro por opção
+   da própria pessoa. Mantém a mesma cor no foco pra não voltar a colidir
+   com um branco fixo. */
+#app-shell .form-group input, #app-shell .form-group select, #app-shell .form-group textarea,
+#app-shell input[type="date"], #app-shell input[type="month"], #app-shell input[type="number"],
+#onboarding-screen .form-group input, #onboarding-screen .form-group select, #onboarding-screen .form-group textarea {
+    background: var(--painel-input-bg, var(--surface-soft));
+    color: var(--painel-input-text, var(--text-main));
+}
+#app-shell .form-group input:focus, #app-shell .form-group select:focus, #app-shell .form-group textarea:focus,
+#app-shell input[type="date"]:focus, #app-shell input[type="month"]:focus, #app-shell input[type="number"]:focus,
+#onboarding-screen .form-group input:focus, #onboarding-screen .form-group select:focus, #onboarding-screen .form-group textarea:focus {
+    background: var(--painel-input-bg, #fff);
+    color: var(--painel-input-text, var(--text-main));
+}
+
 /* Estiliza campos de data/mês/número nativos (fora de .form-group também,
    ex.: filtros de data em Relatórios/Financeiro/Produção e Qtd. em
    Precificação) para não ficarem com a cara padrão "antiga" do navegador. */
