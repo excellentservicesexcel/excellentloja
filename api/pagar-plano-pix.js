@@ -1,52 +1,51 @@
 /* ==========================================================================
-   POST /api/pagar-pix?loja=<id>
-   Gera (ou regenera) uma cobrança Pix no Mercado Pago para um pagamento
-   pendente já criado por /api/iniciar-pagamento, e devolve o QR code.
+   POST /api/pagar-plano-pix
+   Gera a cobrança Pix (avulsa — a Pix não tem recorrência automática no
+   Mercado Pago; cada renovação gera um novo código, ver api/cron-cobranca-
+   planos.js) pra um ciclo de compra de plano já criado.
    ========================================================================== */
 
 const crypto = require('crypto');
 const { getAdmin } = require('./_lib/admin');
-const { getPagamentoConfig } = require('./_lib/config');
+const { getPagamentoPlataformaConfig } = require('./_lib/config');
 const { getPaymentClient } = require('./_lib/mercadopago');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') { res.status(405).json({ erro: 'Método não permitido.' }); return; }
 
-    const lojaId = String(req.query.loja || '').trim();
-    const pendingId = String((req.body || {}).pendingId || '').trim();
-    if (!lojaId || !pendingId) { res.status(400).json({ erro: 'Requisição inválida.' }); return; }
+    const body = req.body || {};
+    const compraId = String(body.compraId || '').trim();
+    const cicloId = String(body.cicloId || '').trim();
+    if (!compraId || !cicloId) { res.status(400).json({ erro: 'Requisição inválida.' }); return; }
 
     try {
-        const config = await getPagamentoConfig(lojaId);
-        if (!config || !config.ativo || !config.accessToken) {
-            res.status(400).json({ erro: 'Pagamento online não está disponível nesta loja.' });
-            return;
-        }
+        const config = await getPagamentoPlataformaConfig();
+        if (!config) { res.status(400).json({ erro: 'O pagamento de planos ainda não foi configurado.' }); return; }
 
         const admin = getAdmin();
         const db = admin.firestore();
-        const lojaRef = db.collection('lojas').doc(lojaId);
-        const pendingRef = lojaRef.collection('pagamentosPendentes').doc(pendingId);
-        const [pendingSnap, lojaSnap] = await Promise.all([pendingRef.get(), lojaRef.get()]);
-        if (!pendingSnap.exists) { res.status(404).json({ erro: 'Pagamento não encontrado.' }); return; }
-        const pending = pendingSnap.data();
-        if (pending.pedidoId) { res.status(400).json({ erro: 'Este pedido já foi pago.' }); return; }
+        const compraRef = db.collection('compras').doc(compraId);
+        const cicloRef = compraRef.collection('ciclos').doc(cicloId);
+        const [compraSnap, cicloSnap] = await Promise.all([compraRef.get(), cicloRef.get()]);
+        if (!compraSnap.exists || !cicloSnap.exists) { res.status(404).json({ erro: 'Compra não encontrada.' }); return; }
+        const compra = compraSnap.data();
+        const ciclo = cicloSnap.data();
+        if (ciclo.status === 'aprovado') { res.status(400).json({ erro: 'Este ciclo já foi pago.' }); return; }
 
-        const nomeLoja = (lojaSnap.exists && lojaSnap.data().nomeLoja) || lojaId;
-        const partesNome = String(pending.dadosCliente.nome || 'Cliente').trim().split(/\s+/);
+        const partesNome = String(compra.nomeComprador || 'Cliente').trim().split(/\s+/);
         const payment = getPaymentClient(config.accessToken);
 
         const resposta = await payment.create({
             body: {
-                transaction_amount: Number(pending.total),
-                description: `Pedido — ${nomeLoja}`,
+                transaction_amount: Number(ciclo.valor),
+                description: `Plano ${ciclo.planoNome} — Excellent Loja`,
                 payment_method_id: 'pix',
                 payer: {
-                    email: `pedido.${pendingId}@excellentloja.app`,
+                    email: compra.emailComprador,
                     first_name: partesNome[0] || 'Cliente',
                     last_name: partesNome.slice(1).join(' ') || '-'
                 },
-                external_reference: pendingId
+                external_reference: `${compraId}:${cicloId}`
             },
             requestOptions: { idempotencyKey: crypto.randomUUID() }
         });
@@ -57,7 +56,7 @@ module.exports = async (req, res) => {
             return;
         }
 
-        await pendingRef.update({
+        await cicloRef.update({
             metodo: 'pix',
             mpPaymentId: String(resposta.id),
             qrCode: dadosTransacao.qr_code,
@@ -68,7 +67,7 @@ module.exports = async (req, res) => {
 
         res.status(200).json({ qrCode: dadosTransacao.qr_code, qrCodeBase64: dadosTransacao.qr_code_base64 });
     } catch (err) {
-        console.error('pagar-pix', err);
+        console.error('pagar-plano-pix', err);
         const msg = (err && err.message) ? err.message : 'Erro ao gerar o Pix.';
         res.status(502).json({ erro: 'Não foi possível gerar o Pix agora: ' + msg });
     }
