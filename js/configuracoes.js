@@ -217,6 +217,21 @@ const Configuracoes = (() => {
                     </button>
                 </div>
 
+                <div class="panel" style="max-width:680px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Card "Quer ter sua própria loja?"</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Card de contato no fim da página inicial. Só aparece com um telefone
+                        cadastrado (aba "Minha conta"). Mude o título, o texto e a mensagem que
+                        chega pronta no WhatsApp pra usar esse card com o objetivo que quiser.
+                    </p>
+                    <form id="landing-contato-form">
+                        <div class="form-group"><label>Título</label><input type="text" id="f-landing-contato-titulo" maxlength="80" placeholder="Quer ter sua própria loja?"></div>
+                        <div class="form-group"><label>Texto</label><textarea id="f-landing-contato-texto" rows="2" placeholder="Fale com a gente e comece a vender com o seu próprio painel de gestão."></textarea></div>
+                        <div class="form-group"><label>Mensagem que abre no WhatsApp</label><textarea id="f-landing-contato-mensagem" rows="2" placeholder="Olá! Quero ter minha própria loja na Excellent Loja."></textarea></div>
+                        <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                    </form>
+                </div>
+
                 <div class="panel" style="max-width:820px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Cores do checkout</h3>
                     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
@@ -401,6 +416,8 @@ const Configuracoes = (() => {
                         <label>Texto do botão<input type="color" class="js-root-painel-cor" data-campo="painelCorBotaoTexto" value="${Store.config.painelCorBotaoTexto || '#FFFFFF'}"></label>
                         <label>Cards<input type="color" class="js-root-painel-cor" data-campo="painelCorCard" value="${Store.config.painelCorCard || '#FFFFFF'}"></label>
                         <label>Texto dos cards<input type="color" class="js-root-painel-cor" data-campo="painelCorCardTexto" value="${Store.config.painelCorCardTexto || Store.config.painelCorTexto || '#1C1A16'}"></label>
+                        <label>Barra dos campos de preencher<input type="color" class="js-root-painel-cor" data-campo="painelCorCampoFundo" value="${Store.config.painelCorCampoFundo || Utils.lightenColor(Store.config.painelCorFundo || '#FAF5EB', 0.3)}"></label>
+                        <label>Texto da barra dos campos<input type="color" class="js-root-painel-cor" data-campo="painelCorCampoTexto" value="${Store.config.painelCorCampoTexto || Store.config.painelCorTexto || '#1C1A16'}"></label>
                     </div>
                 </div>
                 <div class="panel" style="max-width:820px;margin-bottom:20px;">
@@ -498,6 +515,7 @@ const Configuracoes = (() => {
             document.querySelectorAll('.js-checkout-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLanding(e.target.dataset.campo, e.target.value)));
             document.getElementById('btn-reset-checkout-cores').addEventListener('click', resetarCoresCheckout);
             document.getElementById('landing-textos-form').addEventListener('submit', salvarTextosLanding);
+            document.getElementById('landing-contato-form').addEventListener('submit', salvarTextosContato);
             document.getElementById('apresentacao-input').addEventListener('change', uploadApresentacaoImagem);
             document.getElementById('f-apresentacao-tamanho').addEventListener('input', (e) => {
                 document.getElementById('apresentacao-tamanho-valor').textContent = `(${e.target.value}%)`;
@@ -1033,6 +1051,8 @@ const Configuracoes = (() => {
                     painelCorBotaoTexto: firebase.firestore.FieldValue.delete(),
                     painelCorCard: firebase.firestore.FieldValue.delete(),
                     painelCorCardTexto: firebase.firestore.FieldValue.delete(),
+                    painelCorCampoFundo: firebase.firestore.FieldValue.delete(),
+                    painelCorCampoTexto: firebase.firestore.FieldValue.delete(),
                     painelTagline: firebase.firestore.FieldValue.delete()
                 });
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
@@ -1355,6 +1375,24 @@ const Configuracoes = (() => {
                 apresentacaoTexto: document.getElementById('f-landing-ap-texto').value.trim()
             }, { merge: true });
             Utils.toast('Textos atualizados.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function salvarTextosContato(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+            await Loja.ref().set({
+                contatoTitulo: document.getElementById('f-landing-contato-titulo').value.trim(),
+                contatoTexto: document.getElementById('f-landing-contato-texto').value.trim(),
+                contatoMensagem: document.getElementById('f-landing-contato-mensagem').value.trim()
+            }, { merge: true });
+            Utils.toast('Card de contato atualizado.', 'success');
         } catch (err) {
             Utils.toast('Erro: ' + err.message, 'error');
         } finally {
@@ -1960,7 +1998,9 @@ const Configuracoes = (() => {
             painelCorCabecalho: '#FFFFFF', painelCorCabecalhoTexto: c.painelCorTexto || '#1C1A16',
             painelCorRodape: '#FFFFFF',
             painelCorBotao: c.painelCorPrincipal || '#C9962B', painelCorBotaoTexto: '#FFFFFF',
-            painelCorCard: '#FFFFFF', painelCorCardTexto: c.painelCorTexto || '#1C1A16'
+            painelCorCard: '#FFFFFF', painelCorCardTexto: c.painelCorTexto || '#1C1A16',
+            painelCorCampoFundo: Utils.lightenColor(c.painelCorFundo || '#FAF5EB', 0.3),
+            painelCorCampoTexto: c.painelCorTexto || '#1C1A16'
         };
         document.querySelectorAll('.js-root-painel-cor').forEach(input => { input.value = c[input.dataset.campo] || painelRootDefaults[input.dataset.campo]; });
         setVal('f-root-painel-tagline', c.painelTagline || 'Excelência em cada venda 🏆');
@@ -2000,6 +2040,9 @@ const Configuracoes = (() => {
         setVal('f-landing-eyebrow', c.heroEyebrow || '');
         setVal('f-landing-ap-titulo', c.apresentacaoTitulo || '');
         setVal('f-landing-ap-texto', c.apresentacaoTexto || '');
+        setVal('f-landing-contato-titulo', c.contatoTitulo || '');
+        setVal('f-landing-contato-texto', c.contatoTexto || '');
+        setVal('f-landing-contato-mensagem', c.contatoMensagem || '');
         setVal('f-apresentacao-tamanho', c.apresentacaoImagemTamanho || 100);
         const tamanhoLabel = document.getElementById('apresentacao-tamanho-valor');
         if (tamanhoLabel) tamanhoLabel.textContent = `(${c.apresentacaoImagemTamanho || 100}%)`;

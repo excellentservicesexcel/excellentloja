@@ -15,15 +15,25 @@ const Onboarding = (() => {
         return mode === 'admin' ? window.db.collection('usuarios') : Loja.col('clientes');
     }
 
+    function cacheKey(uid) {
+        return `onboard_ok_${mode}_${uid}`;
+    }
+
     async function start(user, targetMode, cb) {
         currentUser = user;
         onDone = cb;
         mode = targetMode;
+        if (localStorage.getItem(cacheKey(user.uid)) === '1') { cb(); return; }
         try {
             const snap = await targetCollection().doc(user.uid).get();
-            if (snap.exists) { cb(); return; }
+            if (snap.exists) { localStorage.setItem(cacheKey(user.uid), '1'); cb(); return; }
         } catch (err) {
+            // Uma falha na checagem (rede instável, corrida do token logo após o
+            // reload) nunca deve reexibir o onboarding pra quem já concluiu —
+            // melhor pular do que incomodar de novo quem já configurou.
             console.error('onboarding check', err);
+            cb();
+            return;
         }
         step = 1;
         chosenPhotoUrl = user.photoURL || null;
@@ -158,6 +168,7 @@ const Onboarding = (() => {
             };
             if (mode === 'cliente') { payload.endereco = ''; payload.observacoes = ''; }
             await targetCollection().doc(currentUser.uid).set(payload, { merge: true });
+            localStorage.setItem(cacheKey(currentUser.uid), '1');
             document.getElementById('onboarding-screen').style.display = 'none';
             document.getElementById('onboarding-screen').innerHTML = '';
             if (onDone) onDone();

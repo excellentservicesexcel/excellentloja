@@ -301,6 +301,8 @@ function applyPainelTema() {
     const botao = c.painelCorBotao || accent;
     const sidebarText = c.painelCorSidebarTexto || text;
     const topbarText = c.painelCorCabecalhoTexto || text;
+    const campoFundo = c.painelCorCampoFundo || Utils.lightenColor(bg, 0.3);
+    const campoTexto = c.painelCorCampoTexto || text;
     const tema = {
         '--orange-50': Utils.lightenColor(accent, 0.90),
         '--orange-100': Utils.lightenColor(accent, 0.75),
@@ -326,13 +328,19 @@ function applyPainelTema() {
         '--painel-sidebar-text': sidebarText,
         '--painel-sidebar-text-muted': Utils.lightenColor(sidebarText, 0.45),
         '--painel-topbar-text': topbarText,
-        '--painel-topbar-text-muted': Utils.lightenColor(topbarText, 0.45)
+        '--painel-topbar-text-muted': Utils.lightenColor(topbarText, 0.45),
+        '--painel-input-bg': campoFundo,
+        '--painel-input-text': campoTexto
     };
-    Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
-
     const fontFamily = Utils.fontFamilyById(c.fonteId);
-    if (fontFamily) raiz.style.setProperty('--font-family', fontFamily);
-    else raiz.style.removeProperty('--font-family');
+    // O onboarding fica fora de #app-shell (é um overlay irmão dele), então
+    // recebe a mesma paleta separadamente pra também seguir a personalização.
+    [raiz, document.getElementById('onboarding-screen')].forEach(el => {
+        if (!el) return;
+        Object.entries(tema).forEach(([k, v]) => el.style.setProperty(k, v));
+        if (fontFamily) el.style.setProperty('--font-family', fontFamily);
+        else el.style.removeProperty('--font-family');
+    });
 }
 
 // Tela de login — paleta própria e independente (do painel e da página
@@ -580,7 +588,12 @@ function applyLandingBranding() {
     const contatoSection = document.getElementById('landing-contato');
     if (!contatoSection) return;
     if (!tel) { contatoSection.style.display = 'none'; return; }
-    document.getElementById('landing-contato-btn').href = `https://wa.me/55${tel}?text=${encodeURIComponent('Olá! Quero ter minha própria loja na Excellent Loja.')}`;
+    const contatoTitulo = document.getElementById('landing-contato-titulo');
+    if (contatoTitulo) contatoTitulo.textContent = Store.config.contatoTitulo || 'Quer ter sua própria loja?';
+    const contatoTexto = document.getElementById('landing-contato-texto');
+    if (contatoTexto) contatoTexto.textContent = Store.config.contatoTexto || 'Fale com a gente e comece a vender com o seu próprio painel de gestão.';
+    const contatoMensagem = Store.config.contatoMensagem || 'Olá! Quero ter minha própria loja na Excellent Loja.';
+    document.getElementById('landing-contato-btn').href = `https://wa.me/55${tel}?text=${encodeURIComponent(contatoMensagem)}`;
     contatoSection.style.display = 'block';
 }
 
