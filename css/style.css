@@ -1337,6 +1337,7 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
 .store-pix-code-row input { flex: 1; font-size: 0.72rem; color: var(--text-muted); }
 .store-payment-result {
     display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 30px 10px; font-size: 0.9rem;
+    color: var(--text-main);
 }
 .store-payment-result i { font-size: 2.2rem; }
 .store-payment-result.success i { color: var(--success); }
@@ -1355,7 +1356,8 @@ input[type="range"]::-moz-range-track { background: var(--border); height: 6px; 
     border: 1px solid color-mix(in srgb, var(--checkout-fundo, #fff) 65%, transparent);
     box-shadow: 0 24px 70px rgba(0,0,0,0.32), inset 0 1px 0 color-mix(in srgb, var(--checkout-fundo, #fff) 80%, transparent);
     position: relative;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 .modal.checkout-modal::before {
     content: '';
