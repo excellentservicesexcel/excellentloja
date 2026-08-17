@@ -299,6 +299,8 @@ function applyPainelTema() {
     const text = c.painelCorTexto || '#1C1A16';
     const card = c.painelCorCard || '#FFFFFF';
     const botao = c.painelCorBotao || accent;
+    const sidebarText = c.painelCorSidebarTexto || text;
+    const topbarText = c.painelCorCabecalhoTexto || text;
     const tema = {
         '--orange-50': Utils.lightenColor(accent, 0.90),
         '--orange-100': Utils.lightenColor(accent, 0.75),
@@ -319,7 +321,11 @@ function applyPainelTema() {
         '--painel-btn-bg': botao,
         '--painel-btn-bg-hover': Utils.darkenColor(botao, 0.15),
         '--painel-btn-text': c.painelCorBotaoTexto || '#ffffff',
-        '--painel-card-text': c.painelCorCardTexto || text
+        '--painel-card-text': c.painelCorCardTexto || text,
+        '--painel-sidebar-text': sidebarText,
+        '--painel-sidebar-text-muted': Utils.lightenColor(sidebarText, 0.45),
+        '--painel-topbar-text': topbarText,
+        '--painel-topbar-text-muted': Utils.lightenColor(topbarText, 0.45)
     };
     Object.entries(tema).forEach(([k, v]) => raiz.style.setProperty(k, v));
 

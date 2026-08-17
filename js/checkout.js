@@ -79,7 +79,8 @@ const Checkout = (() => {
     }
 
     /* ---------------------------------------------------------------- */
-    /* Modal com tema da página inicial + linha do tempo                   */
+    /* Modal com tema próprio (independente da página inicial) + linha       */
+    /* do tempo — cores editáveis em Configurações → Página inicial.        */
     /* ---------------------------------------------------------------- */
     function abrirModal(html, opts = {}) {
         Utils.openModal(html, opts);
@@ -87,22 +88,30 @@ const Checkout = (() => {
         if (!box) return;
         box.classList.add('checkout-modal');
         const c = Store.config;
-        const accent = c.corPrincipal || '#C9962B';
-        const bg = c.corFundo || '#FAF5EB';
-        const text = c.corTexto || '#1C1A16';
+        const fundo = c.checkoutCorFundo || '#FFFFFF';
+        const text = c.checkoutCorTexto || '#1C1A16';
+        const botao = c.checkoutCorBotao || '#C9962B';
+        const inputFundo = c.checkoutCorInputFundo || '#FBF6EC';
         const vars = {
-            '--orange-50': Utils.lightenColor(accent, 0.90),
-            '--orange-100': Utils.lightenColor(accent, 0.75),
-            '--orange-200': Utils.lightenColor(accent, 0.55),
-            '--orange-500': accent,
-            '--orange-600': Utils.darkenColor(accent, 0.15),
-            '--orange-700': Utils.darkenColor(accent, 0.30),
-            '--surface': c.corCard || '#FFFFFF',
-            '--surface-soft': Utils.lightenColor(bg, 0.3),
-            '--border': Utils.darkenColor(bg, 0.08),
+            '--orange-50': Utils.lightenColor(botao, 0.90),
+            '--orange-100': Utils.lightenColor(botao, 0.75),
+            '--orange-200': Utils.lightenColor(botao, 0.55),
+            '--orange-500': botao,
+            '--orange-600': Utils.darkenColor(botao, 0.15),
+            '--orange-700': Utils.darkenColor(botao, 0.30),
+            '--surface': fundo,
+            '--surface-soft': inputFundo,
+            '--border': Utils.darkenColor(inputFundo, 0.08),
             '--text-main': text,
             '--text-body': Utils.lightenColor(text, 0.30),
-            '--text-muted': Utils.lightenColor(text, 0.55)
+            '--text-muted': Utils.lightenColor(text, 0.55),
+            '--checkout-fundo': fundo,
+            '--checkout-botao-bg': botao,
+            '--checkout-botao-text': c.checkoutCorBotaoTexto || '#FFFFFF',
+            '--checkout-bolinha-bg': c.checkoutCorBolinha || botao,
+            '--checkout-bolinha-text': c.checkoutCorBolinhaTexto || '#FFFFFF',
+            '--checkout-input-bg': inputFundo,
+            '--checkout-input-text': c.checkoutCorInputTexto || '#1C1A16'
         };
         Object.entries(vars).forEach(([k, v]) => box.style.setProperty(k, v));
     }

@@ -215,6 +215,29 @@ const Configuracoes = (() => {
                     <button type="button" class="btn btn-outline btn-sm" id="btn-add-plano-card" style="margin-top:14px;">
                         <i class="fa-solid fa-plus"></i> Adicionar plano
                     </button>
+                </div>
+
+                <div class="panel" style="max-width:820px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Cores do checkout</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+                        Cores da tela de pagamento que abre quando alguém clica em "Quero esse
+                        plano" — independentes das cores da página inicial.
+                    </p>
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
+                        <label>Fundo do card<input type="color" class="js-checkout-cor" data-campo="checkoutCorFundo" value="${Store.config.checkoutCorFundo || '#FFFFFF'}"></label>
+                        <label>Texto<input type="color" class="js-checkout-cor" data-campo="checkoutCorTexto" value="${Store.config.checkoutCorTexto || '#1C1A16'}"></label>
+                        <button type="button" class="js-loja-cor-reset" id="btn-reset-checkout-cores" title="Restaurar cores padrão do checkout"><i class="fa-solid fa-rotate-left"></i> Padrão</button>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0 0 10px;">
+                        <label>Botões<input type="color" class="js-checkout-cor" data-campo="checkoutCorBotao" value="${Store.config.checkoutCorBotao || '#C9962B'}"></label>
+                        <label>Texto dos botões<input type="color" class="js-checkout-cor" data-campo="checkoutCorBotaoTexto" value="${Store.config.checkoutCorBotaoTexto || '#FFFFFF'}"></label>
+                        <label>Fundo das bolinhas<input type="color" class="js-checkout-cor" data-campo="checkoutCorBolinha" value="${Store.config.checkoutCorBolinha || Store.config.checkoutCorBotao || '#C9962B'}"></label>
+                        <label>Texto das bolinhas<input type="color" class="js-checkout-cor" data-campo="checkoutCorBolinhaTexto" value="${Store.config.checkoutCorBolinhaTexto || '#FFFFFF'}"></label>
+                    </div>
+                    <div class="loja-admin-cores" style="margin:0;">
+                        <label>Fundo da barra de preencher<input type="color" class="js-checkout-cor" data-campo="checkoutCorInputFundo" value="${Store.config.checkoutCorInputFundo || '#FBF6EC'}"></label>
+                        <label>Letras da barra de preencher<input type="color" class="js-checkout-cor" data-campo="checkoutCorInputTexto" value="${Store.config.checkoutCorInputTexto || '#1C1A16'}"></label>
+                    </div>
                 </div>` : `
                 <div class="panel" style="max-width:680px;margin-bottom:20px;">
                     <h3 style="font-size:0.95rem;margin-bottom:4px;">Capa da loja (início)</h3>
@@ -365,7 +388,9 @@ const Configuracoes = (() => {
                     </div>
                     <div class="loja-admin-cores" style="margin:0;">
                         <label>Barra lateral<input type="color" class="js-root-painel-cor" data-campo="painelCorSidebar" value="${Store.config.painelCorSidebar || '#FFFFFF'}"></label>
+                        <label>Texto da barra lateral<input type="color" class="js-root-painel-cor" data-campo="painelCorSidebarTexto" value="${Store.config.painelCorSidebarTexto || Store.config.painelCorTexto || '#1C1A16'}"></label>
                         <label>Cabeçalho<input type="color" class="js-root-painel-cor" data-campo="painelCorCabecalho" value="${Store.config.painelCorCabecalho || '#FFFFFF'}"></label>
+                        <label>Texto do cabeçalho<input type="color" class="js-root-painel-cor" data-campo="painelCorCabecalhoTexto" value="${Store.config.painelCorCabecalhoTexto || Store.config.painelCorTexto || '#1C1A16'}"></label>
                         <label>Rodapé (menu mobile)<input type="color" class="js-root-painel-cor" data-campo="painelCorRodape" value="${Store.config.painelCorRodape || '#FFFFFF'}"></label>
                         <label>Botão<input type="color" class="js-root-painel-cor" data-campo="painelCorBotao" value="${Store.config.painelCorBotao || Store.config.painelCorPrincipal || '#C9962B'}"></label>
                         <label>Texto do botão<input type="color" class="js-root-painel-cor" data-campo="painelCorBotaoTexto" value="${Store.config.painelCorBotaoTexto || '#FFFFFF'}"></label>
@@ -435,6 +460,8 @@ const Configuracoes = (() => {
             document.getElementById('f-landing-textura').addEventListener('change', (e) => salvarCorLanding('texturaGrade', e.target.checked));
             document.getElementById('f-fonte-landing').addEventListener('change', (e) => salvarCorLanding('fonteId', e.target.value));
             document.getElementById('btn-reset-cor-landing').addEventListener('click', resetarCorLanding);
+            document.querySelectorAll('.js-checkout-cor').forEach(input => input.addEventListener('change', (e) => salvarCorLanding(e.target.dataset.campo, e.target.value)));
+            document.getElementById('btn-reset-checkout-cores').addEventListener('click', resetarCoresCheckout);
             document.getElementById('landing-textos-form').addEventListener('submit', salvarTextosLanding);
             document.getElementById('apresentacao-input').addEventListener('change', uploadApresentacaoImagem);
             document.getElementById('f-apresentacao-tamanho').addEventListener('input', (e) => {
@@ -961,7 +988,9 @@ const Configuracoes = (() => {
                     painelCorFundo: firebase.firestore.FieldValue.delete(),
                     painelCorTexto: firebase.firestore.FieldValue.delete(),
                     painelCorSidebar: firebase.firestore.FieldValue.delete(),
+                    painelCorSidebarTexto: firebase.firestore.FieldValue.delete(),
                     painelCorCabecalho: firebase.firestore.FieldValue.delete(),
+                    painelCorCabecalhoTexto: firebase.firestore.FieldValue.delete(),
                     painelCorRodape: firebase.firestore.FieldValue.delete(),
                     painelCorBotao: firebase.firestore.FieldValue.delete(),
                     painelCorBotaoTexto: firebase.firestore.FieldValue.delete(),
@@ -1231,6 +1260,25 @@ const Configuracoes = (() => {
                 });
                 Utils.closeModal();
                 Utils.toast('Cores e fonte restauradas.', 'success');
+            } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+        }, 'Restaurar cores padrão', 'Sim, restaurar');
+    }
+
+    function resetarCoresCheckout() {
+        Utils.confirmDialog('Restaurar as cores padrão do checkout dos planos?', async () => {
+            try {
+                await Loja.ref().update({
+                    checkoutCorFundo: firebase.firestore.FieldValue.delete(),
+                    checkoutCorTexto: firebase.firestore.FieldValue.delete(),
+                    checkoutCorBotao: firebase.firestore.FieldValue.delete(),
+                    checkoutCorBotaoTexto: firebase.firestore.FieldValue.delete(),
+                    checkoutCorBolinha: firebase.firestore.FieldValue.delete(),
+                    checkoutCorBolinhaTexto: firebase.firestore.FieldValue.delete(),
+                    checkoutCorInputFundo: firebase.firestore.FieldValue.delete(),
+                    checkoutCorInputTexto: firebase.firestore.FieldValue.delete()
+                });
+                Utils.closeModal();
+                Utils.toast('Cores do checkout restauradas.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Restaurar cores padrão', 'Sim, restaurar');
     }
@@ -1847,7 +1895,9 @@ const Configuracoes = (() => {
         const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
         const painelRootDefaults = {
             painelCorPrincipal: '#C9962B', painelCorFundo: '#FAF5EB', painelCorTexto: '#1C1A16',
-            painelCorSidebar: '#FFFFFF', painelCorCabecalho: '#FFFFFF', painelCorRodape: '#FFFFFF',
+            painelCorSidebar: '#FFFFFF', painelCorSidebarTexto: c.painelCorTexto || '#1C1A16',
+            painelCorCabecalho: '#FFFFFF', painelCorCabecalhoTexto: c.painelCorTexto || '#1C1A16',
+            painelCorRodape: '#FFFFFF',
             painelCorBotao: c.painelCorPrincipal || '#C9962B', painelCorBotaoTexto: '#FFFFFF',
             painelCorCard: '#FFFFFF', painelCorCardTexto: c.painelCorTexto || '#1C1A16'
         };
@@ -1862,6 +1912,13 @@ const Configuracoes = (() => {
         setVal('f-cor-landing-botao-texto', c.corBotaoTexto || '#FFFFFF');
         setVal('f-cor-landing-card', c.corCard || '#FFFFFF');
         setVal('f-cor-landing-card-texto', c.corCardTexto || c.corTexto || '#1C1A16');
+        const checkoutDefaults = {
+            checkoutCorFundo: '#FFFFFF', checkoutCorTexto: '#1C1A16',
+            checkoutCorBotao: '#C9962B', checkoutCorBotaoTexto: '#FFFFFF',
+            checkoutCorBolinha: c.checkoutCorBotao || '#C9962B', checkoutCorBolinhaTexto: '#FFFFFF',
+            checkoutCorInputFundo: '#FBF6EC', checkoutCorInputTexto: '#1C1A16'
+        };
+        document.querySelectorAll('.js-checkout-cor').forEach(input => { input.value = c[input.dataset.campo] || checkoutDefaults[input.dataset.campo]; });
         const fundoDegradeEl = document.getElementById('f-landing-fundo-degrade');
         if (fundoDegradeEl) fundoDegradeEl.checked = !!c.fundoDegrade;
         const fundo2WrapEl = document.getElementById('wrap-cor-landing-fundo2');
