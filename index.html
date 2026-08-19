@@ -25,6 +25,37 @@
 <!-- Loading -->
 <div id="app-loading"><div class="spinner"></div></div>
 
+<!-- Rede de segurança: se algum script travar antes da página terminar de
+     carregar, mostra o erro de verdade na tela em vez de ficar em branco
+     pra sempre — assim dá pra mandar um print direto, sem precisar abrir
+     o Console do navegador. Só aparece se o carregamento não terminou
+     (não interfere em nada depois que a página já abriu normalmente). -->
+<script>
+(function () {
+    function mostrarErroDeBoot(msg) {
+        var el = document.getElementById('app-loading');
+        if (!el || el.style.display === 'none') return;
+        el.innerHTML =
+            '<div style="max-width:480px;margin:60px auto;padding:20px 22px;background:#fff;' +
+            'border:1px solid #e5b4b4;border-radius:12px;color:#7a1f1f;font-family:sans-serif;' +
+            'font-size:14px;line-height:1.5;text-align:left;">' +
+            '<strong>Não foi possível carregar a página.</strong><br><br>' +
+            'Manda um print desta caixa pro suporte:<br>' +
+            '<code style="display:block;margin-top:8px;padding:10px;background:#fdf0f0;' +
+            'border-radius:6px;white-space:pre-wrap;word-break:break-word;">' +
+            String(msg).replace(/</g, '&lt;') + '</code><br>' +
+            '<button onclick="location.reload()" style="margin-top:6px;padding:9px 16px;' +
+            'border-radius:8px;border:none;background:#C9962B;color:#fff;cursor:pointer;' +
+            'font-weight:600;">Tentar de novo</button></div>';
+    }
+    window.addEventListener('error', function (e) { mostrarErroDeBoot((e && e.message) || 'Erro desconhecido'); });
+    window.addEventListener('unhandledrejection', function (e) {
+        var motivo = e && e.reason;
+        mostrarErroDeBoot((motivo && motivo.message) ? motivo.message : String(motivo));
+    });
+})();
+</script>
+
 <!-- Loja não encontrada -->
 <div id="not-found-screen" style="display:none;">
   <div class="not-found-card">
