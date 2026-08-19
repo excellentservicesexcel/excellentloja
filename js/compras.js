@@ -215,6 +215,6 @@ const Compras = (() => {
         document.getElementById('historico-busca').addEventListener('input', (e) => renderHistorico(e.target.value));
     }
 
-    return { mount, render };
+    return { mount, render, carregar };
 })();
 window.Compras = Compras;
