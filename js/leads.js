@@ -3,16 +3,18 @@
    (preencheu os dados e avançou pro pagamento) mas pode nunca ter chegado
    a pagar. Serve pra fazer follow-up manual antes que a pessoa esfrie.
 
-   Lista em tempo real (onSnapshot) — abrir a aba já basta, nunca precisa
-   clicar em "Atualizar". Exclusão é permitida direto pelo cliente pro
-   super admin (ver firestore.rules), só remove o registro de follow-up,
-   não mexe em compras nem em nada relacionado a pagamento.
+   Busca de novo (Loja.col().get()) toda vez que a aba é aberta — ver o
+   hook em goToView() (js/app.js), que chama Leads.carregar() de novo a
+   cada entrada na aba, sem precisar de botão "Atualizar" nem de listener
+   em tempo real (onSnapshot trava em algumas redes/navegadores, então
+   evitamos aqui). Exclusão é permitida direto pelo cliente pro super
+   admin (ver firestore.rules), só remove o registro de follow-up, não
+   mexe em compras nem em nada relacionado a pagamento.
    ========================================================================== */
 
 const Leads = (() => {
     let leadsCache = [];
     let busca = '';
-    let unsub = null;
 
     function mount() {
         const el = document.getElementById('view-leads');
@@ -32,19 +34,18 @@ const Leads = (() => {
         });
     }
 
-    function carregar() {
+    async function carregar() {
         const souSuperAdmin = Loja.isRoot && Loja.isSuperAdmin(Auth.currentUser()?.email);
         if (!souSuperAdmin) return;
-        if (unsub) { unsub(); unsub = null; }
         const box = document.getElementById('leads-list');
-        if (box && !leadsCache.length) box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span>`;
-        unsub = window.db.collection('leads').orderBy('atualizadoEm', 'desc').onSnapshot(snap => {
+        if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span>`;
+        try {
+            const snap = await window.db.collection('leads').orderBy('atualizadoEm', 'desc').get();
             leadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderList();
-        }, err => {
-            const box = document.getElementById('leads-list');
+        } catch (err) {
             if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--danger);">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
-        });
+        }
     }
 
     function render() {
@@ -107,6 +108,8 @@ const Leads = (() => {
         Utils.confirmDialog(`Excluir o lead de "${nome}"? Isso só remove esse registro da sua lista de follow-up — não afeta nenhuma compra já feita.`, async () => {
             try {
                 await window.db.collection('leads').doc(id).delete();
+                leadsCache = leadsCache.filter(l => l.id !== id);
+                renderList();
                 Utils.toast('Lead excluído.', 'success');
             } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
         }, 'Excluir lead', 'Sim, excluir');
