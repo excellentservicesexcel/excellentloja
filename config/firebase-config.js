@@ -20,12 +20,3 @@ firebase.initializeApp(firebaseConfig);
 window.auth = firebase.auth();
 window.db = firebase.firestore();
 window.storage = firebase.storage ? firebase.storage() : null;
-
-// Cache local (IndexedDB) — sem isso, toda vez que o painel abre precisa
-// esperar uma ida e volta até o servidor antes de mostrar qualquer dado,
-// mesmo o que já tinha sido carregado antes. Com persistência, o Firestore
-// mostra na hora o que já tem salvo localmente (de uma visita anterior)
-// enquanto busca a versão mais nova em segundo plano — só a primeiríssima
-// vez (aparelho/navegador novo) ainda precisa esperar a ida ao servidor.
-// synchronizeTabs evita erro quando o painel está aberto em mais de uma aba.
-window.db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
