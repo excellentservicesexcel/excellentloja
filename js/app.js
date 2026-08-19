@@ -184,6 +184,11 @@ function goToView(name) {
     document.getElementById('topbar-sub').textContent = sub;
     document.getElementById('view').scrollTop = 0;
     closeMobileSidebar();
+    // Compras/Leads só buscam os dados uma vez no login — força buscar de
+    // novo toda vez que a pessoa entra numa dessas abas, pra nunca mostrar
+    // informação desatualizada sem precisar de um botão "Atualizar".
+    if (name === 'compras') Compras.carregar();
+    else if (name === 'leads') Leads.carregar();
 }
 
 function closeMobileSidebar() {
@@ -894,6 +899,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             watchProfile(user.uid);
             Configuracoes.mount(); // remonta agora que já sabemos quem logou (a aba "Gerenciar lojas" depende disso)
             Onboarding.start(user, 'admin', () => showApp());
+        } else if (user.isAnonymous) {
+            // Clientes (loja) e quem está comprando um plano (página inicial) nunca
+            // fazem login de verdade: a sessão anônima é criada silenciosamente no
+            // checkout. Por isso essa checagem tem que vir ANTES da de "e-mail não
+            // administra loja nenhuma" logo abaixo — aquela é só pra login de
+            // verdade (com e-mail) tentando entrar como admin; sessão anônima sem
+            // e-mail nenhum sempre caía nela e era deslogada no meio do checkout.
+            if (!Loja.isRoot) showStorefrontScreen();
+            // na página inicial não precisa fazer nada — o próprio Checkout cuida do resto
         } else if (Loja.isRoot) {
             // login na página inicial é só para quem administra alguma loja
             let outraLoja = null;
@@ -909,10 +923,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.auth.signOut();
             Utils.toast('Esse e-mail não administra nenhuma loja aqui. Fale com quem administra a Excellent Loja.', 'error');
             showLanding();
-        } else if (user.isAnonymous) {
-            // clientes nunca fazem login de verdade: a sessão anônima é criada silenciosamente
-            // no checkout, então não faz sentido pedir dados de novo aqui
-            showStorefrontScreen();
         } else {
             Onboarding.start(user, 'cliente', () => showStorefrontScreen());
         }

@@ -5,13 +5,16 @@
    próximo pagamento (+ 7 dias de tolerância) e valor. Clicar mostra o
    comprovante mais recente; de lá dá pra abrir o histórico completo de
    comprovantes daquela compra, com busca.
+
+   Busca de novo toda vez que a aba é aberta — ver o hook em goToView()
+   (js/app.js), que chama Compras.carregar() de novo a cada entrada na
+   aba, sem precisar de botão "Atualizar".
    ========================================================================== */
 
 const Compras = (() => {
     let comprasCache = [];
     let lojasCache = {};
     let busca = '';
-    let unsub = null;
 
     function mount() {
         const el = document.getElementById('view-compras');
@@ -33,27 +36,24 @@ const Compras = (() => {
         });
     }
 
-    function carregar() {
+    async function carregar() {
         const souSuperAdmin = Loja.isRoot && Loja.isSuperAdmin(Auth.currentUser()?.email);
         if (!souSuperAdmin) return;
-        if (unsub) { unsub(); unsub = null; }
         const box = document.getElementById('compras-list');
-        if (box && !comprasCache.length) box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span>`;
-        unsub = window.db.collection('compras').orderBy('criadoEm', 'desc').onSnapshot(async snap => {
+        if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">Carregando...</span>`;
+        try {
+            const snap = await window.db.collection('compras').orderBy('criadoEm', 'desc').get();
             comprasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
             const lojaIds = [...new Set(comprasCache.map(c => c.lojaId).filter(Boolean))];
-            const faltantes = lojaIds.filter(id => !lojasCache[id]);
-            if (faltantes.length) {
-                const lojaSnaps = await Promise.all(faltantes.map(id => window.db.collection('lojas').doc(id).get()));
-                lojaSnaps.forEach(s => { if (s.exists) lojasCache[s.id] = { id: s.id, ...s.data() }; });
-            }
+            const lojaSnaps = await Promise.all(lojaIds.map(id => window.db.collection('lojas').doc(id).get()));
+            lojasCache = {};
+            lojaSnaps.forEach(s => { if (s.exists) lojasCache[s.id] = { id: s.id, ...s.data() }; });
 
             renderList();
-        }, err => {
-            const box = document.getElementById('compras-list');
+        } catch (err) {
             if (box) box.innerHTML = `<span style="font-size:0.82rem;color:var(--danger);">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
-        });
+        }
     }
 
     function render() {
