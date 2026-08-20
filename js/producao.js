@@ -33,8 +33,10 @@ const Producao = (() => {
         el.addEventListener('click', (e) => {
             const adv = e.target.closest('.js-advance-prod');
             const del = e.target.closest('.js-del-prod');
+            const entregador = e.target.closest('.js-chamar-entregador');
             if (adv) advance(adv.dataset.id);
             if (del) remove(del.dataset.id);
+            if (entregador) chamarEntregador();
         });
         render();
     }
@@ -55,8 +57,12 @@ const Producao = (() => {
                     <div class="kanban-card" style="cursor:default;">
                         <strong>${Utils.escapeHtml(i.produtoNome)}</strong>
                         <div class="meta"><span>${i.quantidade} unidade(s)</span>${i.pedidoId ? '<span>Pedido</span>' : '<span>Manual</span>'}</div>
-                        <div style="display:flex;gap:6px;margin-top:10px;">
-                            ${NEXT_LABEL[status] ? `<button class="btn btn-sm btn-primary js-advance-prod" data-id="${i.id}" style="flex:1;">${NEXT_LABEL[status]}</button>` : '<span style="font-size:0.75rem;color:var(--success);"><i class="fa-solid fa-check"></i> Concluído</span>'}
+                        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+                            ${NEXT_LABEL[status]
+                                ? `<button class="btn btn-sm btn-primary js-advance-prod" data-id="${i.id}" style="flex:1;">${NEXT_LABEL[status]}</button>`
+                                : (Store.config.integracaoIfoodAtiva && i.pedidoId
+                                    ? `<button class="btn btn-sm btn-outline js-chamar-entregador" data-id="${i.pedidoId}" style="flex:1;"><i class="fa-solid fa-motorcycle"></i> Chamar entregador</button>`
+                                    : '<span style="font-size:0.75rem;color:var(--success);"><i class="fa-solid fa-check"></i> Concluído</span>')}
                             <button class="btn btn-sm btn-outline js-del-prod" data-id="${i.id}"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
@@ -73,6 +79,14 @@ const Producao = (() => {
         try {
             await Loja.col('producao').doc(id).update({ status: FLOW[idx + 1] });
         } catch (err) { Utils.toast('Erro: ' + err.message, 'error'); }
+    }
+
+    // O acionamento de verdade da entrega pelo iFood ainda é um próximo
+    // passo, pendente das credenciais/documentação da API — por enquanto
+    // só avisa que a integração está conectada mas essa parte ainda não
+    // está pronta, sem fingir que chamou o entregador de verdade.
+    function chamarEntregador() {
+        Utils.toast('Integração com o iFood conectada — o acionamento automático do entregador ainda está em construção.', 'info');
     }
 
     function remove(id) {

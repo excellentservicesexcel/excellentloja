@@ -142,7 +142,7 @@ window.nextPedidoNumero = nextPedidoNumero;
 /* ---------------------------------------------------------------------- */
 /* Navegação                                                               */
 /* ---------------------------------------------------------------------- */
-const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'configuracoes', 'compras', 'leads'];
+const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'whatsapp', 'configuracoes', 'compras', 'leads'];
 
 const TITLES = {
     dashboard: ['Olá, {nome}! 👋', 'Confira o resumo do seu negócio hoje.'],
@@ -155,6 +155,7 @@ const TITLES = {
     financeiro: ['Financeiro', 'Receitas, despesas e saúde financeira do negócio.'],
     precificacao: ['Precificação', 'Calcule o custo e o preço ideal dos seus produtos.'],
     relatorios: ['Relatórios', 'Indicadores e desempenho de vendas.'],
+    whatsapp: ['WhatsApp', 'Receba e responda mensagens dos seus clientes direto por aqui.'],
     configuracoes: ['Configurações', 'Dados da loja, categorias e preferências.'],
     compras: ['Compras', 'Assinaturas dos planos da plataforma — pagamentos, renovações e comprovantes.'],
     leads: ['Leads', 'Quem demonstrou interesse num plano — faça o follow-up antes que esfrie.']
@@ -240,6 +241,7 @@ function mountAllModules() {
     Financeiro.mount();
     Precificacao.mount();
     Relatorios.mount();
+    Whatsapp.mount();
     Configuracoes.mount();
     Compras.mount();
     Leads.mount();
@@ -254,7 +256,7 @@ function bindStoreSubscriptions() {
     Store.on('financeiro', () => Financeiro.render());
     Store.on('producao', () => Producao.render());
     Store.on('receitas', () => Precificacao.render());
-    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); applyLoginTema(); });
+    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); Producao.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); applyLoginTema(); applyWhatsappNavVisibility(); });
     Store.on('capas', () => Configuracoes.render());
     Store.on('instaCards', () => Configuracoes.render());
     Store.on('beneficios', () => Configuracoes.render());
@@ -407,9 +409,20 @@ function applyNavMode(plataforma) {
     document.querySelectorAll('#nav-links .nav-item, #mobile-tabbar .nav-item').forEach(el => {
         const view = el.dataset.view;
         if (view === 'compras' || view === 'leads') { el.style.display = plataforma ? '' : 'none'; return; }
+        if (view === 'whatsapp') return; // controlado à parte por applyWhatsappNavVisibility()
         el.style.display = (!plataforma || view === 'configuracoes') ? '' : 'none';
     });
     document.getElementById('btn-view-store').style.display = plataforma ? 'none' : '';
+    applyWhatsappNavVisibility();
+}
+
+// A aba WhatsApp só existe pra quem administra uma loja de verdade (nunca na
+// página raiz) e só depois que a própria loja ativou a integração — ver
+// "Integrações" em Configurações.
+function applyWhatsappNavVisibility() {
+    const ativa = !Loja.isRoot && !!Store.config.integracaoWhatsappAtiva;
+    document.querySelectorAll('.nav-item[data-view="whatsapp"]').forEach(el => { el.style.display = ativa ? '' : 'none'; });
+    if (!ativa && _currentView === 'whatsapp') goToView('dashboard');
 }
 
 function showLogin() {
