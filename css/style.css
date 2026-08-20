@@ -936,6 +936,44 @@ input[type="number"] { -moz-appearance: textfield; }
 .pgto-toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-body); margin: 4px 0 6px; cursor: pointer; }
 .pgto-toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--orange-500); cursor: pointer; }
 
+/* ---------------------------------------------------------------------- */
+/* Integrações — cards em acordeão (Configurações → Integrações)          */
+/* ---------------------------------------------------------------------- */
+.integracao-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.15s;
+}
+.integracao-card.open { box-shadow: var(--shadow); }
+.integracao-card-head {
+    width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    background: none; border: none; cursor: pointer; text-align: left; font-family: inherit;
+}
+.integracao-card-logo {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.05rem; color: #fff;
+}
+.integracao-card-logo.mp { background: linear-gradient(135deg, #00B1EA, #0084C7); }
+.integracao-card-logo.whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); }
+.integracao-card-logo.ifood { background: linear-gradient(135deg, #EA1D2C, #B3121C); }
+.integracao-card-title { flex: 1; display: flex; flex-direction: column; font-weight: 700; font-size: 0.92rem; color: var(--text-main); min-width: 0; }
+.integracao-card-title small { font-weight: 400; font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+.integracao-card-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+.integracao-card.open .integracao-card-chevron { transform: rotate(180deg); }
+.integracao-card-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.25s ease, padding 0.25s ease;
+    padding: 0 16px;
+}
+.integracao-card.open .integracao-card-body { max-height: 600px; padding: 0 16px 16px; }
+
+.whatsapp-placeholder {
+    max-width: 420px; margin: 60px auto; text-align: center; padding: 32px 28px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+.whatsapp-placeholder i { font-size: 2.4rem; color: #25D366; margin-bottom: 12px; }
+.whatsapp-placeholder h3 { font-family: 'Fredoka', sans-serif; font-size: 1.1rem; color: var(--text-main); margin-bottom: 8px; }
+.whatsapp-placeholder p { font-size: 0.85rem; color: var(--text-body); margin-bottom: 8px; }
+.whatsapp-placeholder-sub { color: var(--text-muted) !important; line-height: 1.6; }
+
 .slug-input-wrap {
     display: flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--surface-soft); overflow: hidden;
