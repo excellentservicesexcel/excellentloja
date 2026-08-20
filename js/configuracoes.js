@@ -19,7 +19,7 @@ const Configuracoes = (() => {
                 ${souSuperAdmin ? '' : `
                 <div class="settings-tab" data-tab="categorias">Categorias de produtos</div>
                 <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>
-                <div class="settings-tab" data-tab="pagamento-online"><i class="fa-solid fa-credit-card"></i> Pagamento online</div>`}
+                ${Store.config.integracoesLiberadas ? '<div class="settings-tab" data-tab="integracoes"><i class="fa-solid fa-plug"></i> Integrações</div>' : ''}`}
                 <div class="settings-tab" data-tab="imagens">${souSuperAdmin ? 'Página inicial' : 'Imagens da loja'}</div>
                 <div class="settings-tab" data-tab="usuarios">Usuários autorizados</div>
                 <div class="settings-tab" data-tab="conta">Minha conta</div>
@@ -64,26 +64,87 @@ const Configuracoes = (() => {
                 </div>
             </div>
 
-            <div class="settings-panel" id="panel-pagamento-online">
-                <div class="panel" style="max-width:640px;">
-                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Pagamento online <span class="pgto-status-chip" id="pgto-status-chip">Carregando...</span></h3>
-                    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
-                        Com isso ativado, quem compra na sua loja virtual paga direto dentro do site — Pix
-                        (com QR Code) ou cartão — numa tela própria, e o pedido só aparece aqui no painel,
-                        em "Pedidos", depois que o pagamento for confirmado. Desativado, a loja continua
-                        funcionando como hoje (o pedido é combinado direto pelo WhatsApp).
+            <div class="settings-panel" id="panel-integracoes">
+                <div style="max-width:640px;">
+                    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
+                        Conecte serviços externos à sua loja. Clique no nome de cada um pra abrir os
+                        detalhes — só aparecem aqui as integrações que quem administra a Excellent
+                        Loja liberou pra essa loja.
                     </p>
-                    <div id="pgto-sem-liberar" style="display:none;font-size:0.85rem;color:var(--text-muted);background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
-                        Ainda não disponível pra essa loja — fale com quem administra a Excellent Loja pra liberar.
+                    <span id="integracoes-vazio" style="display:none;font-size:0.85rem;color:var(--text-muted);">Nenhuma integração liberada ainda — fale com quem administra a Excellent Loja.</span>
+
+                    <div class="integracao-card" id="integracao-mp-card" style="display:none;">
+                        <button type="button" class="integracao-card-head">
+                            <span class="integracao-card-logo mp"><i class="fa-solid fa-credit-card"></i></span>
+                            <span class="integracao-card-title">Mercado Pago<small>Pagamentos na loja (Pix e cartão)</small></span>
+                            <span class="pgto-status-chip" id="pgto-status-chip">Carregando...</span>
+                            <i class="fa-solid fa-chevron-down integracao-card-chevron"></i>
+                        </button>
+                        <div class="integracao-card-body">
+                            <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                                Com isso ativado, quem compra na sua loja virtual paga direto dentro do site — Pix
+                                (com QR Code) ou cartão — numa tela própria, e o pedido só aparece aqui no painel,
+                                em "Pedidos", depois que o pagamento for confirmado. Desativado, a loja continua
+                                funcionando como hoje (o pedido é combinado direto pelo WhatsApp).
+                            </p>
+                            <label class="pgto-toggle-row" id="pgto-ativo-row">
+                                <input type="checkbox" id="f-pgto-ativo">
+                                <span>Usar pagamento online nesta loja</span>
+                            </label>
+                        </div>
                     </div>
-                    <label class="pgto-toggle-row" id="pgto-ativo-row" style="display:none;">
-                        <input type="checkbox" id="f-pgto-ativo">
-                        <span>Usar pagamento online nesta loja</span>
-                    </label>
+
+                    <div class="integracao-card" id="integracao-whatsapp-card" style="display:none;">
+                        <button type="button" class="integracao-card-head">
+                            <span class="integracao-card-logo whatsapp"><i class="fa-brands fa-whatsapp"></i></span>
+                            <span class="integracao-card-title">WhatsApp<small>Receba e responda mensagens direto na loja</small></span>
+                            <span class="pgto-status-chip" id="whatsapp-status-chip"></span>
+                            <i class="fa-solid fa-chevron-down integracao-card-chevron"></i>
+                        </button>
+                        <div class="integracao-card-body">
+                            <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                                Cadastre seu número e o token de acesso da sua API de WhatsApp. Com isso
+                                ativado, aparece uma aba "WhatsApp" no menu lateral pra você receber e
+                                responder mensagens direto por aqui.
+                            </p>
+                            <div class="form-group"><label>Número (com DDI e DDD)</label><input type="text" id="f-whatsapp-numero" placeholder="55 11 91234-5678"></div>
+                            <div class="form-group"><label>Token de acesso</label><input type="text" id="f-whatsapp-token" placeholder="Cole aqui o token da sua API"></div>
+                            <div class="form-actions" style="margin:0 0 14px;"><button type="button" class="btn btn-primary btn-sm" id="btn-salvar-whatsapp"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                            <label class="pgto-toggle-row" id="whatsapp-ativo-row">
+                                <input type="checkbox" id="f-whatsapp-ativo">
+                                <span>Usar WhatsApp nesta loja</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="integracao-card" id="integracao-ifood-card" style="display:none;">
+                        <button type="button" class="integracao-card-head">
+                            <span class="integracao-card-logo ifood"><i class="fa-solid fa-motorcycle"></i></span>
+                            <span class="integracao-card-title">iFood (entrega)<small>Usar o entregador do iFood nos pedidos</small></span>
+                            <span class="pgto-status-chip" id="ifood-status-chip"></span>
+                            <i class="fa-solid fa-chevron-down integracao-card-chevron"></i>
+                        </button>
+                        <div class="integracao-card-body">
+                            <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                                Cadastre as credenciais da sua conta de parceiro iFood. Com isso ativado,
+                                assim que um pedido chegar em "Concluído" na Produção, aparece um botão
+                                "Chamar entregador" pra acionar a entrega pelo iFood direto no endereço do cliente.
+                            </p>
+                            <div class="form-group"><label>Client ID</label><input type="text" id="f-ifood-client-id"></div>
+                            <div class="form-group"><label>Client Secret</label><input type="text" id="f-ifood-client-secret"></div>
+                            <div class="form-group"><label>ID da loja (Merchant ID)</label><input type="text" id="f-ifood-merchant-id"></div>
+                            <div class="form-actions" style="margin:0 0 14px;"><button type="button" class="btn btn-primary btn-sm" id="btn-salvar-ifood"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                            <label class="pgto-toggle-row" id="ifood-ativo-row">
+                                <input type="checkbox" id="f-ifood-ativo">
+                                <span>Usar entrega iFood nesta loja</span>
+                            </label>
+                        </div>
+                    </div>
+
                     ${Store.config.planoAtual ? `
                     <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
                     <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">
-                        Precisa de ajuda pra configurar alguma API (Mercado Pago ou outra)? Fale direto com o suporte.
+                        Precisa de ajuda pra configurar alguma integração? Fale direto com o suporte.
                     </p>
                     <button type="button" class="btn btn-outline btn-sm" id="btn-whatsapp-suporte-api"><i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp do suporte</button>
                     ` : ''}
@@ -534,7 +595,14 @@ const Configuracoes = (() => {
             document.getElementById('fundoloja-input').addEventListener('change', uploadFundoLoja);
             document.getElementById('btn-add-insta-card').addEventListener('click', () => openInstaCardForm());
             document.getElementById('f-pgto-ativo').addEventListener('change', (e) => alternarPagamentoAtivo(e.target.checked));
+            document.getElementById('f-whatsapp-ativo').addEventListener('change', (e) => alternarWhatsappAtivo(e.target.checked));
+            document.getElementById('btn-salvar-whatsapp').addEventListener('click', salvarWhatsapp);
+            document.getElementById('f-ifood-ativo').addEventListener('change', (e) => alternarIfoodAtivo(e.target.checked));
+            document.getElementById('btn-salvar-ifood').addEventListener('click', salvarIfood);
+            bindAccordionIntegracoes();
             carregarPagamentoStatus();
+            carregarWhatsappStatus();
+            carregarIfoodStatus();
             const btnWhatsSuporte = document.getElementById('btn-whatsapp-suporte-api');
             if (btnWhatsSuporte) btnWhatsSuporte.addEventListener('click', abrirWhatsappSuporte);
         }
@@ -665,23 +733,29 @@ const Configuracoes = (() => {
         }
     }
 
+    // Card fica escondido por completo se não estiver liberado — só quem
+    // libera (super admin) decide o que aparece pro dono da loja.
+    function atualizarChipIntegracao(chipId, liberado, ativo) {
+        const chip = document.getElementById(chipId);
+        if (!chip) return;
+        chip.textContent = ativo ? 'Ativo' : 'Disponível, mas inativo';
+        chip.classList.toggle('on', liberado && !!ativo);
+    }
+
     async function carregarPagamentoStatus() {
-        const chip = document.getElementById('pgto-status-chip');
+        const card = document.getElementById('integracao-mp-card');
         try {
             const snap = await Loja.col('config').doc('pagamentoStatus').get();
             const s = snap.exists ? snap.data() : {};
             const liberado = !!s.liberado;
-            document.getElementById('pgto-sem-liberar').style.display = liberado ? 'none' : 'block';
-            document.getElementById('pgto-ativo-row').style.display = liberado ? 'flex' : 'none';
+            if (card) card.style.display = liberado ? '' : 'none';
             const ativoInput = document.getElementById('f-pgto-ativo');
             if (ativoInput) ativoInput.checked = !!s.ativo;
-            if (chip) {
-                chip.textContent = !liberado ? 'Não disponível' : (s.ativo ? 'Ativo' : 'Disponível, mas inativo');
-                chip.classList.toggle('on', liberado && !!s.ativo);
-            }
+            atualizarChipIntegracao('pgto-status-chip', liberado, s.ativo);
         } catch (err) {
-            if (chip) chip.textContent = 'Erro ao carregar';
+            if (card) card.style.display = 'none';
         }
+        atualizarIntegracoesVazio();
     }
 
     async function alternarPagamentoAtivo(ativo) {
@@ -698,6 +772,136 @@ const Configuracoes = (() => {
             await Loja.ref().update({ 'pagamentoOnline.ativo': ativo });
             Utils.toast(ativo ? 'Pagamento online ativado.' : 'Pagamento online desativado.', 'success');
             await carregarPagamentoStatus();
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+            input.checked = !ativo;
+        } finally {
+            input.disabled = false;
+        }
+    }
+
+    // Um único card aberto por vez — abrir um fecha qualquer outro que
+    // estivesse aberto (igual pediu: WhatsApp abre e o Mercado Pago fecha).
+    function bindAccordionIntegracoes() {
+        document.querySelectorAll('#panel-integracoes .integracao-card-head').forEach(head => {
+            head.addEventListener('click', () => {
+                const card = head.closest('.integracao-card');
+                const jaAberto = card.classList.contains('open');
+                document.querySelectorAll('#panel-integracoes .integracao-card').forEach(c => c.classList.remove('open'));
+                if (!jaAberto) card.classList.add('open');
+            });
+        });
+    }
+
+    function atualizarIntegracoesVazio() {
+        const vazio = document.getElementById('integracoes-vazio');
+        if (!vazio) return;
+        const algumVisivel = ['integracao-mp-card', 'integracao-whatsapp-card', 'integracao-ifood-card']
+            .some(id => document.getElementById(id) && document.getElementById(id).style.display !== 'none');
+        vazio.style.display = algumVisivel ? 'none' : 'block';
+    }
+
+    async function carregarWhatsappStatus() {
+        const card = document.getElementById('integracao-whatsapp-card');
+        try {
+            const snap = await Loja.col('config').doc('whatsapp').get();
+            const s = snap.exists ? snap.data() : {};
+            const liberado = !!s.liberado;
+            if (card) card.style.display = liberado ? '' : 'none';
+            const numeroInput = document.getElementById('f-whatsapp-numero');
+            const tokenInput = document.getElementById('f-whatsapp-token');
+            const ativoInput = document.getElementById('f-whatsapp-ativo');
+            if (numeroInput) numeroInput.value = s.numero || '';
+            if (tokenInput) tokenInput.value = s.token || '';
+            if (ativoInput) ativoInput.checked = !!s.ativo;
+            atualizarChipIntegracao('whatsapp-status-chip', liberado, s.ativo);
+        } catch (err) {
+            if (card) card.style.display = 'none';
+        }
+        atualizarIntegracoesVazio();
+    }
+
+    async function salvarWhatsapp() {
+        const numero = document.getElementById('f-whatsapp-numero').value.trim();
+        const token = document.getElementById('f-whatsapp-token').value.trim();
+        const btn = document.getElementById('btn-salvar-whatsapp');
+        btn.disabled = true;
+        try {
+            await Loja.col('config').doc('whatsapp').update({
+                numero, token, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            Utils.toast('WhatsApp atualizado.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function alternarWhatsappAtivo(ativo) {
+        const input = document.getElementById('f-whatsapp-ativo');
+        input.disabled = true;
+        try {
+            await Loja.col('config').doc('whatsapp').update({ ativo, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            await Loja.ref().update({ integracaoWhatsappAtiva: ativo });
+            Utils.toast(ativo ? 'WhatsApp ativado.' : 'WhatsApp desativado.', 'success');
+            await carregarWhatsappStatus();
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+            input.checked = !ativo;
+        } finally {
+            input.disabled = false;
+        }
+    }
+
+    async function carregarIfoodStatus() {
+        const card = document.getElementById('integracao-ifood-card');
+        try {
+            const snap = await Loja.col('config').doc('ifood').get();
+            const s = snap.exists ? snap.data() : {};
+            const liberado = !!s.liberado;
+            if (card) card.style.display = liberado ? '' : 'none';
+            const clientIdInput = document.getElementById('f-ifood-client-id');
+            const clientSecretInput = document.getElementById('f-ifood-client-secret');
+            const merchantIdInput = document.getElementById('f-ifood-merchant-id');
+            const ativoInput = document.getElementById('f-ifood-ativo');
+            if (clientIdInput) clientIdInput.value = s.clientId || '';
+            if (clientSecretInput) clientSecretInput.value = s.clientSecret || '';
+            if (merchantIdInput) merchantIdInput.value = s.merchantId || '';
+            if (ativoInput) ativoInput.checked = !!s.ativo;
+            atualizarChipIntegracao('ifood-status-chip', liberado, s.ativo);
+        } catch (err) {
+            if (card) card.style.display = 'none';
+        }
+        atualizarIntegracoesVazio();
+    }
+
+    async function salvarIfood() {
+        const clientId = document.getElementById('f-ifood-client-id').value.trim();
+        const clientSecret = document.getElementById('f-ifood-client-secret').value.trim();
+        const merchantId = document.getElementById('f-ifood-merchant-id').value.trim();
+        const btn = document.getElementById('btn-salvar-ifood');
+        btn.disabled = true;
+        try {
+            await Loja.col('config').doc('ifood').update({
+                clientId, clientSecret, merchantId, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            Utils.toast('iFood atualizado.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function alternarIfoodAtivo(ativo) {
+        const input = document.getElementById('f-ifood-ativo');
+        input.disabled = true;
+        try {
+            await Loja.col('config').doc('ifood').update({ ativo, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            await Loja.ref().update({ integracaoIfoodAtiva: ativo });
+            Utils.toast(ativo ? 'Entrega iFood ativada.' : 'Entrega iFood desativada.', 'success');
+            await carregarIfoodStatus();
         } catch (err) {
             Utils.toast('Erro: ' + err.message, 'error');
             input.checked = !ativo;
@@ -741,7 +945,7 @@ const Configuracoes = (() => {
                         <strong>${Utils.escapeHtml(l.nomeLoja || l.id)}</strong>
                         <span class="loja-admin-slug">excellentloja.vercel.app/${Utils.escapeHtml(l.id)}</span>
                     </div>
-                    <button class="js-loja-apis" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="APIs / pagamento online"><i class="fa-solid fa-plug"></i></button>
+                    <button class="js-loja-apis" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Integrações (Mercado Pago, WhatsApp, iFood)"><i class="fa-solid fa-plug"></i></button>
                     <a href="/${l.id}" class="js-loja-enter" title="Entrar no painel desta loja"><i class="fa-solid fa-arrow-right-to-bracket"></i></a>
                     <button class="js-loja-remove" data-id="${l.id}" data-nome="${Utils.escapeHtml(l.nomeLoja || l.id)}" title="Excluir loja"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -796,43 +1000,62 @@ const Configuracoes = (() => {
 
     async function abrirApisLoja(lojaId, nome) {
         Utils.openModal(`
-            <div class="modal-head"><h3>APIs — ${Utils.escapeHtml(nome)}</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
-            <p style="font-size:0.85rem;color:var(--text-muted);margin:-8px 0 16px;">
-                Cada chave fica só aqui no seu painel — quem administra essa loja nunca vê ou edita
-                as chaves, só liga/desliga o uso depois que você libera.
+            <div class="modal-head"><h3>Integrações — ${Utils.escapeHtml(nome)}</h3><button class="modal-close" onclick="Utils.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin:-8px 0 14px;">
+                A chave do Mercado Pago fica só aqui — quem administra a loja nunca vê nem edita
+                essa, só liga/desliga o uso depois de liberada. WhatsApp e iFood usam a própria
+                conta da loja: você só decide se ela pode usar cada uma; quem cadastra as
+                credenciais é ela mesma, na aba Integrações do painel dela.
             </p>
+            <label class="pgto-toggle-row" style="margin-bottom:16px;">
+                <input type="checkbox" id="f-integracoes-liberadas">
+                <span>Mostrar a aba "Integrações" pra essa loja</span>
+            </label>
             <div id="apis-loja-body"><div class="store-payment-loading"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div></div>
         `, { wide: true });
 
-        let dados = { liberado: false, publicKey: '', accessToken: '', webhookSecret: '' };
+        let integracoesLiberadas = false;
+        let mp = { liberado: false, publicKey: '', accessToken: '', webhookSecret: '' };
+        let wa = { liberado: false };
+        let ifood = { liberado: false };
         try {
-            const snap = await window.db.collection('lojas').doc(lojaId).collection('config').doc('pagamento').get();
-            if (snap.exists) dados = { ...dados, ...snap.data() };
+            const lojaRef = window.db.collection('lojas').doc(lojaId);
+            const [lojaSnap, mpSnap, waSnap, ifoodSnap] = await Promise.all([
+                lojaRef.get(),
+                lojaRef.collection('config').doc('pagamento').get(),
+                lojaRef.collection('config').doc('whatsapp').get(),
+                lojaRef.collection('config').doc('ifood').get()
+            ]);
+            integracoesLiberadas = lojaSnap.exists && !!lojaSnap.data().integracoesLiberadas;
+            if (mpSnap.exists) mp = { ...mp, ...mpSnap.data() };
+            if (waSnap.exists) wa = { ...wa, ...waSnap.data() };
+            if (ifoodSnap.exists) ifood = { ...ifood, ...ifoodSnap.data() };
         } catch (err) {
             document.getElementById('apis-loja-body').innerHTML = `<span style="color:var(--danger);font-size:0.85rem;">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
             return;
         }
 
-        renderApisLojaBody(lojaId, dados);
+        document.getElementById('f-integracoes-liberadas').checked = integracoesLiberadas;
+        renderApisLojaBody(lojaId, mp, wa, ifood);
     }
 
-    function renderApisLojaBody(lojaId, dados) {
+    function renderApisLojaBody(lojaId, mp, wa, ifood) {
         const body = document.getElementById('apis-loja-body');
         if (!body) return;
         const webhookUrl = `${location.origin}/api/webhook-mercadopago?loja=${encodeURIComponent(lojaId)}`;
         body.innerHTML = `
-            <div class="panel" style="margin:0;padding:16px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:${dados.liberado ? '14px' : '0'};">
+            <div class="panel" style="margin:0 0 14px;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:${mp.liberado ? '14px' : '0'};">
                     <strong style="font-size:0.9rem;"><i class="fa-solid fa-credit-card"></i> Mercado Pago</strong>
                     <label class="pgto-toggle-row" style="margin:0;">
-                        <input type="checkbox" id="f-api-liberado" ${dados.liberado ? 'checked' : ''}>
+                        <input type="checkbox" id="f-api-liberado" ${mp.liberado ? 'checked' : ''}>
                         <span>Liberado pra essa loja</span>
                     </label>
                 </div>
-                <div id="apis-loja-campos" style="display:${dados.liberado ? 'block' : 'none'};">
-                    <div class="form-group"><label>Public Key</label><input type="text" id="f-api-public-key" placeholder="APP_USR-..." value="${Utils.escapeHtml(dados.publicKey || '')}"></div>
-                    <div class="form-group"><label>Access Token</label><input type="text" id="f-api-access-token" placeholder="APP_USR-..." value="${Utils.escapeHtml(dados.accessToken || '')}"></div>
-                    <div class="form-group"><label>Chave secreta do Webhook <span style="font-weight:400;color:var(--text-muted);">(opcional, mas recomendado)</span></label><input type="text" id="f-api-webhook-secret" placeholder="Gerada ao cadastrar o webhook no Mercado Pago" value="${Utils.escapeHtml(dados.webhookSecret || '')}"></div>
+                <div id="apis-loja-campos" style="display:${mp.liberado ? 'block' : 'none'};">
+                    <div class="form-group"><label>Public Key</label><input type="text" id="f-api-public-key" placeholder="APP_USR-..." value="${Utils.escapeHtml(mp.publicKey || '')}"></div>
+                    <div class="form-group"><label>Access Token</label><input type="text" id="f-api-access-token" placeholder="APP_USR-..." value="${Utils.escapeHtml(mp.accessToken || '')}"></div>
+                    <div class="form-group"><label>Chave secreta do Webhook <span style="font-weight:400;color:var(--text-muted);">(opcional, mas recomendado)</span></label><input type="text" id="f-api-webhook-secret" placeholder="Gerada ao cadastrar o webhook no Mercado Pago" value="${Utils.escapeHtml(mp.webhookSecret || '')}"></div>
                     <div class="form-group">
                         <label>URL para cadastrar no Mercado Pago (notificações → Pagamentos)</label>
                         <div class="add-chip-row" style="max-width:none;">
@@ -841,10 +1064,33 @@ const Configuracoes = (() => {
                         </div>
                     </div>
                 </div>
-                <div class="form-actions" style="margin-top:16px;">
-                    <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btn-salvar-api-loja"><i class="fa-solid fa-check"></i> Salvar</button>
+            </div>
+
+            <div class="panel" style="margin:0 0 14px;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <strong style="font-size:0.9rem;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</strong>
+                    <label class="pgto-toggle-row" style="margin:0;">
+                        <input type="checkbox" id="f-whatsapp-liberado" ${wa.liberado ? 'checked' : ''}>
+                        <span>Liberado pra essa loja</span>
+                    </label>
                 </div>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Pra receber e responder mensagens direto no painel. A loja cadastra o número e o token dela mesma.</p>
+            </div>
+
+            <div class="panel" style="margin:0;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <strong style="font-size:0.9rem;"><i class="fa-solid fa-motorcycle"></i> iFood (entrega)</strong>
+                    <label class="pgto-toggle-row" style="margin:0;">
+                        <input type="checkbox" id="f-ifood-liberado" ${ifood.liberado ? 'checked' : ''}>
+                        <span>Liberado pra essa loja</span>
+                    </label>
+                </div>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Só pra usar o entregador do iFood. A loja cadastra as credenciais dela mesma.</p>
+            </div>
+
+            <div class="form-actions" style="margin-top:16px;">
+                <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn-salvar-api-loja"><i class="fa-solid fa-check"></i> Salvar</button>
             </div>
         `;
 
@@ -867,6 +1113,9 @@ const Configuracoes = (() => {
         const publicKey = document.getElementById('f-api-public-key') ? document.getElementById('f-api-public-key').value.trim() : '';
         const accessToken = document.getElementById('f-api-access-token') ? document.getElementById('f-api-access-token').value.trim() : '';
         const webhookSecret = document.getElementById('f-api-webhook-secret') ? document.getElementById('f-api-webhook-secret').value.trim() : '';
+        const integracoesLiberadas = document.getElementById('f-integracoes-liberadas').checked;
+        const whatsappLiberado = document.getElementById('f-whatsapp-liberado').checked;
+        const ifoodLiberado = document.getElementById('f-ifood-liberado').checked;
         if (liberado && (!publicKey || !accessToken)) {
             Utils.toast('Preencha a Public Key e o Access Token antes de liberar.', 'error');
             return;
@@ -875,8 +1124,14 @@ const Configuracoes = (() => {
         btn.disabled = true;
         try {
             const lojaRef = window.db.collection('lojas').doc(lojaId);
-            const statusSnap = await lojaRef.collection('config').doc('pagamentoStatus').get();
+            const [statusSnap, waSnap, ifoodSnap] = await Promise.all([
+                lojaRef.collection('config').doc('pagamentoStatus').get(),
+                lojaRef.collection('config').doc('whatsapp').get(),
+                lojaRef.collection('config').doc('ifood').get()
+            ]);
             const ativoEscolhidoPelaLoja = statusSnap.exists ? !!statusSnap.data().ativo : false;
+            const whatsappAtivoEscolhido = waSnap.exists ? !!waSnap.data().ativo : false;
+            const ifoodAtivoEscolhido = ifoodSnap.exists ? !!ifoodSnap.data().ativo : false;
 
             const batch = window.db.batch();
             batch.set(lojaRef.collection('config').doc('pagamento'), {
@@ -886,11 +1141,22 @@ const Configuracoes = (() => {
             batch.set(lojaRef.collection('config').doc('pagamentoStatus'), {
                 liberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
+            batch.set(lojaRef.collection('config').doc('whatsapp'), {
+                liberado: whatsappLiberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            batch.set(lojaRef.collection('config').doc('ifood'), {
+                liberado: ifoodLiberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
             // a Public Key não é secreta (é usada no navegador do cliente), então fica
             // espelhada sempre que liberado — independe do interruptor "ativo" da loja,
-            // que ela liga/desliga sozinha sem precisar reenviar a chave.
+            // que ela liga/desliga sozinha sem precisar reenviar a chave. O mesmo vale
+            // pro "ativa" do WhatsApp/iFood: se você desliga o liberado aqui, a aba/botão
+            // some do painel da loja na hora, mesmo que ela tivesse deixado ligado.
             batch.set(lojaRef, {
-                pagamentoOnline: { ativo: liberado && ativoEscolhidoPelaLoja, publicKey: liberado ? publicKey : '' }
+                integracoesLiberadas,
+                pagamentoOnline: { ativo: liberado && ativoEscolhidoPelaLoja, publicKey: liberado ? publicKey : '' },
+                integracaoWhatsappAtiva: whatsappLiberado && whatsappAtivoEscolhido,
+                integracaoIfoodAtiva: ifoodLiberado && ifoodAtivoEscolhido
             }, { merge: true });
             await batch.commit();
 
