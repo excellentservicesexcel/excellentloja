@@ -89,12 +89,20 @@ const Compras = (() => {
         return alvo.includes(busca);
     }
 
+    // Só mostra depois do 1º pagamento de verdade — tentativas desistidas
+    // no meio do checkout (nunca chegaram a pagar) ficam de fora daqui;
+    // pra fazer follow-up com quem ainda não pagou, é a aba Leads.
+    function foiPaga(c) {
+        return !!c.ativadaEm;
+    }
+
     function renderList() {
         const box = document.getElementById('compras-list');
         if (!box) return;
-        const lista = comprasCache.filter(passaNaBusca);
+        const pagas = comprasCache.filter(foiPaga);
+        const lista = pagas.filter(passaNaBusca);
         if (!lista.length) {
-            box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">${comprasCache.length ? 'Nenhuma compra encontrada.' : 'Nenhuma compra ainda.'}</span>`;
+            box.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted);">${pagas.length ? 'Nenhuma compra encontrada.' : 'Nenhuma compra ainda.'}</span>`;
             return;
         }
         box.innerHTML = lista.map(c => {
