@@ -5,9 +5,11 @@
    compras/{compraId}/ciclos/{cicloId} — isso serve tanto de "pagamentos
    pendentes" quanto de histórico de comprovantes pro painel de Compras.
 
-   Se o mesmo e-mail já tem uma compra com onboarding concluído (loja já
-   criada), uma nova compra reaproveita o mesmo documento em vez de criar
-   uma loja duplicada — só entra um novo ciclo de cobrança nela.
+   Se o mesmo e-mail já tem uma compra (paga ou ainda pendente), uma nova
+   tentativa reaproveita o mesmo documento em vez de criar um registro
+   novo — só entra um novo ciclo de cobrança nela. Isso evita tanto lojas
+   duplicadas (quando já tem onboarding concluído) quanto poluir o painel
+   de Compras com várias tentativas nunca pagas da mesma pessoa.
    ========================================================================== */
 
 const { getAdmin } = require('./admin');
@@ -20,24 +22,40 @@ async function criarOuReaproveitarCompra({ planoNome, planoValor, planoTipo, dad
     const FieldValue = admin.firestore.FieldValue;
     const email = dadosComprador.email;
 
+    // Reaproveita QUALQUER compra já existente desse e-mail — mesmo que a
+    // pessoa ainda não tenha pago nenhuma vez. Sem isso, cada tentativa
+    // desistida no checkout (ex.: mudou de plano, fechou antes de pagar)
+    // criava um registro novo, poluindo o painel de Compras com várias
+    // linhas "Aguardando 1º pagamento" da mesma pessoa. Assim, todas as
+    // tentativas viram ciclos dentro da MESMA compra; o painel de Compras
+    // só mostra ela depois do primeiro pagamento de verdade (ver render()
+    // em js/compras.js, que filtra pelo campo ativadaEm).
     const existentesSnap = await db.collection('compras')
         .where('emailComprador', '==', email)
-        .where('onboardingConcluido', '==', true)
         .limit(1).get();
 
     let compraRef;
     let reaproveitada = false;
     let lojaId = null;
     if (!existentesSnap.empty) {
-        compraRef = existentesSnap.docs[0].ref;
-        reaproveitada = true;
-        lojaId = existentesSnap.docs[0].data().lojaId || null;
-        await compraRef.update({
+        const existente = existentesSnap.docs[0];
+        compraRef = existente.ref;
+        reaproveitada = !!existente.data().onboardingConcluido;
+        lojaId = existente.data().lojaId || null;
+        const atualizacao = {
             nomeComprador: dadosComprador.nome,
             whatsappComprador: dadosComprador.whatsapp,
             uidComprador,
             atualizadoEm: FieldValue.serverTimestamp()
-        });
+        };
+        // Ainda não pagou nenhuma vez: pode ter mudado de plano nessa nova
+        // tentativa, então atualiza o plano "atual" da compra também.
+        if (existente.data().status === 'pendente') {
+            atualizacao.planoNome = planoNome;
+            atualizacao.planoValor = planoValor;
+            atualizacao.planoTipo = planoTipo;
+        }
+        await compraRef.update(atualizacao);
     } else {
         compraRef = db.collection('compras').doc();
         await compraRef.set({
