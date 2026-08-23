@@ -876,8 +876,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     observeLandingReveals();
     Checkout.init();
 
+    // Nunca deixa a bolinha de carregamento girando pra sempre: se alguma
+    // chamada do Firebase (rede lenta, IndexedDB corrompido, extensão do
+    // navegador bloqueando etc.) travar sem nunca dar erro nem sucesso, os
+    // limites abaixo forçam a página a seguir em frente do mesmo jeito.
+    function comLimiteDeTempo(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('tempo esgotado')), ms))
+        ]);
+    }
+
     let lojaSnap;
-    try { lojaSnap = await Loja.ref().get(); } catch (err) { console.error('loja fetch', err); }
+    try { lojaSnap = await comLimiteDeTempo(Loja.ref().get(), 8000); } catch (err) { console.error('loja fetch', err); }
     const lojaExiste = !!(lojaSnap && lojaSnap.exists);
 
     if (lojaExiste) {
@@ -892,7 +903,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Se o Firebase Auth nunca chamar esse callback (acontece em alguns
+    // aparelhos/navegadores por bloqueio de terceiros), essa página ficaria
+    // com a bolinha girando pra sempre. Depois de um tempo, segue como se
+    // ninguém tivesse logado — quando o callback real chegar (mesmo atrasado),
+    // ele corrige a tela normalmente.
+    let entrouComCallbackReal = false;
+    const authFailsafe = setTimeout(() => {
+        if (entrouComCallbackReal) return;
+        teardownStoreListeners();
+        teardownProfile();
+        document.getElementById('app-loading').style.display = 'none';
+        if (Loja.isRoot) showLanding(); else showStorefrontScreen();
+    }, 8000);
+
     window.auth.onAuthStateChanged(async user => {
+        entrouComCallbackReal = true;
+        clearTimeout(authFailsafe);
         if (!lojaExiste) {
             // só chega aqui quando é a loja "root" (do dono da plataforma) e ela ainda não foi criada
             if (user && Loja.isSuperAdmin(user.email)) {
