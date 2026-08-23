@@ -53,6 +53,13 @@
         var motivo = e && e.reason;
         mostrarErroDeBoot((motivo && motivo.message) ? motivo.message : String(motivo));
     });
+    // Nem todo travamento dispara um erro (ex.: uma conexão que nunca
+    // responde, sem dar erro nem sucesso) — por isso, se depois de um tempo
+    // razoável o carregamento ainda não tiver terminado, mostra o aviso
+    // mesmo sem ter capturado nenhum erro específico.
+    setTimeout(function () {
+        mostrarErroDeBoot('O carregamento demorou demais e não terminou (mais de 15 segundos). Pode ser a internet do aparelho, ou algo travando no meio do carregamento.');
+    }, 15000);
 })();
 </script>
 
