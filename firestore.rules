@@ -48,10 +48,10 @@ service cloud.firestore {
       allow create: if isSuperAdmin();
       allow update: if isSuperAdmin();
       // quem administra a própria loja pode editar tudo dela, menos os
-      // campos de pausa (automática por falta de pagamento, ou manual) —
-      // só o super admin liga/desliga esses dois.
+      // campos de pausa (automática por falta de pagamento, ou manual) e o
+      // interruptor mestre da aba Integrações — só o super admin mexe nesses.
       allow update: if isLojaAdmin(lojaId)
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pausadaAutomatica', 'pausadaManual']);
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pausadaAutomatica', 'pausadaManual', 'integracoesLiberadas']);
       allow delete: if isSuperAdmin();
 
       match /produtos/{id} {
@@ -119,6 +119,7 @@ service cloud.firestore {
 
       match /estoque/{id} { allow read, write: if isLojaAdmin(lojaId); }
       match /receitas/{id} { allow read, write: if isLojaAdmin(lojaId); }
+      match /calendario/{id} { allow read, write: if isLojaAdmin(lojaId); }
 
       match /config/{id} {
         // guarda dados sensíveis (ex: chave de API de pagamento) — nunca público,
@@ -136,6 +137,27 @@ service cloud.firestore {
         allow read: if isLojaAdmin(lojaId);
         allow update: if isLojaAdmin(lojaId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ativo', 'atualizadoEm']);
+      }
+
+      match /config/whatsapp {
+        // WhatsApp e iFood (aba Integrações) são diferentes do Mercado Pago:
+        // as credenciais são da própria loja, não centralizadas pela Excellent
+        // Loja. Só "liberado" é exclusivo do super admin (decide se essa loja
+        // pode usar); número/token/ativo quem cadastra e liga/desliga é a
+        // própria loja, mas só depois de liberado.
+        allow read: if isLojaAdmin(lojaId);
+        allow update: if isLojaAdmin(lojaId)
+          && resource.data.liberado == true
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['liberado']);
+      }
+
+      match /config/ifood {
+        // mesmo esquema do WhatsApp acima — liberado é do super admin, o
+        // resto (clientId/clientSecret/merchantId/ativo) é da própria loja.
+        allow read: if isLojaAdmin(lojaId);
+        allow update: if isLojaAdmin(lojaId)
+          && resource.data.liberado == true
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['liberado']);
       }
 
       match /pagamentosPendentes/{id} {
