@@ -7,13 +7,15 @@ const DEFAULT_CONFIG = {
     nomeLoja: 'Excellent Loja',
     categoriasProdutos: ['Geral', 'Novidades', 'Mais vendidos', 'Promoções'],
     formasPagamento: ['Pix', 'Dinheiro', 'Cartão de Crédito', 'Cartão de Débito'],
+    categoriasReceita: ['Venda de produtos', 'Encomenda', 'Outros'],
+    categoriasDespesa: ['Ingredientes', 'Embalagens', 'Aluguel', 'Marketing', 'Transporte', 'Equipamentos', 'Taxas e impostos', 'Outros'],
     taxaEntregaPadrao: 0,
     usuariosAutorizados: ['excellentservices.excel@gmail.com']
 };
 
 const Store = {
     clientes: [], produtos: [], pedidos: [], estoque: [], financeiro: [], producao: [], receitas: [], capas: [], instaCards: [],
-    beneficios: [], equipe: [], capasLanding: [],
+    beneficios: [], equipe: [], capasLanding: [], calendario: [],
     profile: {},
     config: { ...DEFAULT_CONFIG },
     listeners: {},
@@ -56,6 +58,11 @@ function initStoreListeners() {
         Store.producao = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         Store.emit('producao');
     }, err => console.error('producao', err)));
+
+    _unsubscribers.push(Loja.col('calendario').orderBy('data').onSnapshot(snap => {
+        Store.calendario = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        Store.emit('calendario');
+    }, err => console.error('calendario', err)));
 
     _unsubscribers.push(Loja.col('receitas').onSnapshot(snap => {
         Store.receitas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -104,7 +111,7 @@ function teardownStoreListeners() {
     _unsubscribers = [];
     Store.clientes = []; Store.produtos = []; Store.pedidos = []; Store.estoque = [];
     Store.financeiro = []; Store.producao = []; Store.receitas = []; Store.capas = []; Store.instaCards = [];
-    Store.beneficios = []; Store.equipe = []; Store.planos = []; Store.capasLanding = [];
+    Store.beneficios = []; Store.equipe = []; Store.planos = []; Store.capasLanding = []; Store.calendario = [];
 }
 
 let _profileUnsub = null;
@@ -142,7 +149,7 @@ window.nextPedidoNumero = nextPedidoNumero;
 /* ---------------------------------------------------------------------- */
 /* Navegação                                                               */
 /* ---------------------------------------------------------------------- */
-const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'whatsapp', 'configuracoes', 'compras', 'leads'];
+const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'calendario', 'whatsapp', 'configuracoes', 'compras', 'leads'];
 
 const TITLES = {
     dashboard: ['Olá, {nome}! 👋', 'Confira o resumo do seu negócio hoje.'],
@@ -155,6 +162,7 @@ const TITLES = {
     financeiro: ['Financeiro', 'Receitas, despesas e saúde financeira do negócio.'],
     precificacao: ['Precificação', 'Calcule o custo e o preço ideal dos seus produtos.'],
     relatorios: ['Relatórios', 'Indicadores e desempenho de vendas.'],
+    calendario: ['Calendário', 'Organize compromissos e tarefas com data e horário.'],
     whatsapp: ['WhatsApp', 'Receba e responda mensagens dos seus clientes direto por aqui.'],
     configuracoes: ['Configurações', 'Dados da loja, categorias e preferências.'],
     compras: ['Compras', 'Assinaturas dos planos da plataforma — pagamentos, renovações e comprovantes.'],
@@ -162,6 +170,7 @@ const TITLES = {
 };
 
 let _currentView = 'dashboard';
+let _modoPlataforma = false;
 
 function greetingName() {
     return (Store.profile && Store.profile.nome) || Auth.firstName();
@@ -173,12 +182,16 @@ function updateGreeting() {
 }
 
 const TABBAR_VIEWS = ['dashboard', 'pedidos', 'producao', 'financeiro'];
+// No painel da plataforma (super admin, na página raiz) só existem 3 abas —
+// então a barra inferior mostra elas direto, em vez do "Mais" de sempre.
+const TABBAR_VIEWS_PLATAFORMA = ['configuracoes', 'compras', 'leads'];
 
 function goToView(name) {
     if (!VIEWS.includes(name)) return;
     _currentView = name;
     document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.view === name));
-    document.getElementById('tabbar-more').classList.toggle('active', !TABBAR_VIEWS.includes(name));
+    const tabbarViews = _modoPlataforma ? TABBAR_VIEWS_PLATAFORMA : TABBAR_VIEWS;
+    document.getElementById('tabbar-more').classList.toggle('active', !tabbarViews.includes(name));
     document.querySelectorAll('.view-section').forEach(el => el.classList.toggle('active', el.id === `view-${name}`));
     const [title, sub] = TITLES[name];
     document.getElementById('topbar-title').textContent = name === 'dashboard' ? title.replace('{nome}', greetingName()) : title;
@@ -241,6 +254,7 @@ function mountAllModules() {
     Financeiro.mount();
     Precificacao.mount();
     Relatorios.mount();
+    Calendario.mount();
     Whatsapp.mount();
     Configuracoes.mount();
     Compras.mount();
@@ -255,6 +269,7 @@ function bindStoreSubscriptions() {
     Store.on('estoque', () => { Estoque.render(); Precificacao.render(); });
     Store.on('financeiro', () => Financeiro.render());
     Store.on('producao', () => Producao.render());
+    Store.on('calendario', () => Calendario.render());
     Store.on('receitas', () => Precificacao.render());
     Store.on('config', () => { Configuracoes.render(); Pedidos.render(); Producao.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); applyLoginTema(); applyWhatsappNavVisibility(); });
     Store.on('capas', () => Configuracoes.render());
@@ -399,6 +414,7 @@ function showApp() {
     const user = Auth.currentUser();
     const souSuperAdmin = Loja.isSuperAdmin(user && user.email);
     const modoPlataforma = Loja.isRoot && souSuperAdmin;
+    _modoPlataforma = modoPlataforma;
     applyNavMode(modoPlataforma);
     document.getElementById('btn-back-my-panel').style.display = (souSuperAdmin && !Loja.isRoot) ? 'flex' : 'none';
     if (modoPlataforma) { Compras.carregar(); Leads.carregar(); }
@@ -406,11 +422,19 @@ function showApp() {
 }
 
 function applyNavMode(plataforma) {
-    document.querySelectorAll('#nav-links .nav-item, #mobile-tabbar .nav-item').forEach(el => {
+    document.querySelectorAll('#nav-links .nav-item').forEach(el => {
         const view = el.dataset.view;
         if (view === 'compras' || view === 'leads') { el.style.display = plataforma ? '' : 'none'; return; }
         if (view === 'whatsapp') return; // controlado à parte por applyWhatsappNavVisibility()
         el.style.display = (!plataforma || view === 'configuracoes') ? '' : 'none';
+    });
+    // Barra inferior do celular: no modo plataforma só existem 3 abas
+    // (Configurações, Compras, Leads), então elas ganham lugar fixo aqui —
+    // sem isso, tudo ficava escondido atrás do botão "Mais" à toa.
+    document.querySelectorAll('#mobile-tabbar .nav-item').forEach(el => {
+        const view = el.dataset.view;
+        const mostrar = plataforma ? TABBAR_VIEWS_PLATAFORMA.includes(view) : TABBAR_VIEWS.includes(view);
+        el.style.display = mostrar ? '' : 'none';
     });
     document.getElementById('btn-view-store').style.display = plataforma ? 'none' : '';
     applyWhatsappNavVisibility();

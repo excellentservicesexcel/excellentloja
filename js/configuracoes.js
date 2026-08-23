@@ -19,6 +19,7 @@ const Configuracoes = (() => {
                 ${souSuperAdmin ? '' : `
                 <div class="settings-tab" data-tab="categorias">Categorias de produtos</div>
                 <div class="settings-tab" data-tab="pagamento">Formas de pagamento</div>
+                <div class="settings-tab" data-tab="categorias-financeiro">Categorias financeiras</div>
                 ${Store.config.integracoesLiberadas ? '<div class="settings-tab" data-tab="integracoes"><i class="fa-solid fa-plug"></i> Integrações</div>' : ''}`}
                 <div class="settings-tab" data-tab="imagens">${souSuperAdmin ? 'Página inicial' : 'Imagens da loja'}</div>
                 <div class="settings-tab" data-tab="usuarios">Usuários autorizados</div>
@@ -60,6 +61,27 @@ const Configuracoes = (() => {
                     <div class="add-chip-row">
                         <input type="text" id="new-pagamento" placeholder="Nova forma (ex: Boleto)">
                         <button class="btn btn-primary btn-sm" id="btn-add-pagamento"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-panel" id="panel-categorias-financeiro">
+                <div class="panel" style="max-width:560px;margin-bottom:20px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Categorias de receita</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:6px;">Sugeridas ao registrar uma transação do tipo "Receita" em Financeiro.</p>
+                    <div class="chip-list" id="chips-cat-receita"></div>
+                    <div class="add-chip-row">
+                        <input type="text" id="new-cat-receita" placeholder="Nova categoria (ex: Venda de produtos)">
+                        <button class="btn btn-primary btn-sm" id="btn-add-cat-receita"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+                <div class="panel" style="max-width:560px;">
+                    <h3 style="font-size:0.95rem;margin-bottom:4px;">Categorias de despesa</h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:6px;">Sugeridas ao registrar uma transação do tipo "Despesa" em Financeiro.</p>
+                    <div class="chip-list" id="chips-cat-despesa"></div>
+                    <div class="add-chip-row">
+                        <input type="text" id="new-cat-despesa" placeholder="Nova categoria (ex: Ingredientes)">
+                        <button class="btn btn-primary btn-sm" id="btn-add-cat-despesa"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
             </div>
@@ -590,6 +612,10 @@ const Configuracoes = (() => {
             document.getElementById('btn-add-pagamento').addEventListener('click', () => addChip('formasPagamento', 'new-pagamento'));
             document.getElementById('new-categoria').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('categoriasProdutos', 'new-categoria'); } });
             document.getElementById('new-pagamento').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('formasPagamento', 'new-pagamento'); } });
+            document.getElementById('btn-add-cat-receita').addEventListener('click', () => addChip('categoriasReceita', 'new-cat-receita'));
+            document.getElementById('btn-add-cat-despesa').addEventListener('click', () => addChip('categoriasDespesa', 'new-cat-despesa'));
+            document.getElementById('new-cat-receita').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('categoriasReceita', 'new-cat-receita'); } });
+            document.getElementById('new-cat-despesa').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip('categoriasDespesa', 'new-cat-despesa'); } });
             document.getElementById('capa-input').addEventListener('change', uploadCapa);
             document.getElementById('banner-input').addEventListener('change', uploadBanner);
             document.getElementById('fundoloja-input').addEventListener('change', uploadFundoLoja);
@@ -2250,6 +2276,8 @@ const Configuracoes = (() => {
         set('insta-card-grid', instaCardGridHtml(Store.instaCards));
         set('chips-categorias', chipHtml('categoriasProdutos', c.categoriasProdutos));
         set('chips-pagamento', chipHtml('formasPagamento', c.formasPagamento));
+        set('chips-cat-receita', chipHtml('categoriasReceita', c.categoriasReceita));
+        set('chips-cat-despesa', chipHtml('categoriasDespesa', c.categoriasDespesa));
         set('chips-usuarios', chipHtml('usuariosAutorizados', c.usuariosAutorizados));
         set('capalanding-grid', capaLandingGridHtml(Store.capasLanding, c.capaLanding));
         set('apresentacao-grid', apresentacaoGridHtml(c.apresentacaoImagem));

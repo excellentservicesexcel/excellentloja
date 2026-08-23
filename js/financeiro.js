@@ -8,8 +8,6 @@ const Financeiro = (() => {
     let tipoFilter = '';
     let chart = null;
 
-    const CATEGORIAS_DESPESA = ['Ingredientes', 'Embalagens', 'Aluguel', 'Marketing', 'Transporte', 'Equipamentos', 'Taxas e impostos', 'Outros'];
-
     function mount() {
         const el = document.getElementById('view-financeiro');
         el.innerHTML = `
@@ -133,7 +131,7 @@ const Financeiro = (() => {
                 <div class="form-group"><label>Descrição *</label><input type="text" id="f-desc" required placeholder="Ex: Compra de embalagens"></div>
                 <div class="form-row">
                     <div class="form-group"><label>Categoria</label><input type="text" id="f-cat" list="cat-list" placeholder="Ex: Ingredientes">
-                        <datalist id="cat-list">${CATEGORIAS_DESPESA.map(c => `<option value="${c}">`).join('')}</datalist>
+                        <datalist id="cat-list"></datalist>
                     </div>
                     <div class="form-group"><label>Valor (R$) *</label><input type="number" step="0.01" min="0.01" id="f-valor" required></div>
                 </div>
@@ -149,6 +147,19 @@ const Financeiro = (() => {
                 </div>
             </form>
         `);
+
+        function atualizarCategorias() {
+            const tipo = document.getElementById('f-tipo').value;
+            const lista = tipo === 'receita' ? (Store.config.categoriasReceita || []) : (Store.config.categoriasDespesa || []);
+            document.getElementById('cat-list').innerHTML = lista.map(c => `<option value="${Utils.escapeHtml(c)}">`).join('');
+            // a categoria digitada era da lista antiga (outro tipo) — limpa pra
+            // não deixar uma categoria de despesa marcada numa receita (ou vice-versa)
+            const catInput = document.getElementById('f-cat');
+            if (catInput.value && !lista.includes(catInput.value)) catInput.value = '';
+        }
+        atualizarCategorias();
+        document.getElementById('f-tipo').addEventListener('change', atualizarCategorias);
+
         document.getElementById('fin-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
