@@ -9,6 +9,7 @@ const Storefront = (() => {
     let config = {};
     let capas = [];
     let instaCards = [];
+    let instaFeedAutomatico = null; // null = ainda não verificado; array = posts puxados da Graph API
     let cart = [];
     let catFilter = '';
     let searchTerm = '';
@@ -276,6 +277,7 @@ const Storefront = (() => {
         unsubs.push(Loja.ref().onSnapshot(snap => {
             config = snap.exists ? snap.data() : {};
             renderFooter();
+            carregarInstaFeedAutomatico();
         }, err => console.error('storefront config', err)));
         unsubs.push(Loja.col('capas').orderBy('criadoEm').onSnapshot(snap => {
             capas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -418,9 +420,37 @@ const Storefront = (() => {
         wrap.innerHTML = media + cta;
     }
 
+    // Se a loja conectou o Instagram (Configurações → Integrações), essa
+    // seção passa a puxar as publicações mais recentes sozinha — sem
+    // precisar cadastrar imagem/título/texto na mão. Busca uma vez só por
+    // sessão (o resultado já vem com cache de 30min no próprio servidor).
+    async function carregarInstaFeedAutomatico() {
+        if (instaFeedAutomatico !== null) return; // já buscou (ou já sabe que não tem)
+        if (!config.integracaoInstagramAtiva) { instaFeedAutomatico = false; return; }
+        try {
+            const resp = await fetch(`/api/instagram-posts?loja=${encodeURIComponent(Loja.id)}`);
+            const dados = await resp.json();
+            instaFeedAutomatico = (dados.conectado && dados.posts && dados.posts.length) ? dados.posts : false;
+        } catch (err) {
+            instaFeedAutomatico = false;
+        }
+        renderInstaCards();
+    }
+
     function renderInstaCards() {
         const box = document.getElementById('store-insta-grid');
         if (!box) return;
+
+        if (instaFeedAutomatico) {
+            box.innerHTML = instaFeedAutomatico.map(p => `
+                <a class="store-insta-card" href="${Utils.escapeHtml(p.link || '#')}" target="_blank" rel="noopener">
+                    <div class="store-insta-card-img"><img src="${p.imagem}" alt="" loading="lazy"></div>
+                    ${p.legenda ? `<div class="store-insta-card-body"><p>${Utils.escapeHtml(p.legenda.slice(0, 90))}</p></div>` : ''}
+                </a>
+            `).join('');
+            return;
+        }
+
         if (!instaCards.length) {
             box.innerHTML = [0, 1, 2, 3, 4].map(() => `<div class="store-insta-tile"><i class="fa-solid fa-image"></i></div>`).join('');
             return;

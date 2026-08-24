@@ -163,6 +163,64 @@ const Configuracoes = (() => {
                         </div>
                     </div>
 
+                    <div class="integracao-card" id="integracao-instagram-card" style="display:none;">
+                        <button type="button" class="integracao-card-head">
+                            <span class="integracao-card-logo instagram"><i class="fa-brands fa-instagram"></i></span>
+                            <span class="integracao-card-title">Instagram<small>Direct, publicações automáticas e métricas</small></span>
+                            <span class="pgto-status-chip" id="instagram-status-chip"></span>
+                            <i class="fa-solid fa-chevron-down integracao-card-chevron"></i>
+                        </button>
+                        <div class="integracao-card-body">
+                            <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                                Cadastre o id da sua conta comercial do Instagram e o token de acesso
+                                (gerados na Meta Business Suite). Com isso ativado, aparece uma aba
+                                "Instagram" no menu pra você ver mensagens e métricas, e a seção "Siga
+                                nosso Instagram" da sua loja passa a puxar suas publicações mais recentes
+                                sozinha, sem precisar cadastrar imagem/título/texto na mão.
+                            </p>
+                            <div class="form-group"><label>ID da conta comercial do Instagram</label><input type="text" id="f-instagram-iguserid" placeholder="17841400000000000"></div>
+                            <div class="form-group"><label>Token de acesso</label><input type="text" id="f-instagram-token" placeholder="Cole aqui o token de longa duração"></div>
+                            <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.5;margin:-6px 0 14px;">
+                                No app da Meta, cadastre o Webhook com a URL <code>${location.origin}/api/instagram-webhook</code>
+                                e o Verify Token <code>excellentloja_meta_webhook</code>.
+                            </p>
+                            <div class="form-actions" style="margin:0 0 14px;"><button type="button" class="btn btn-primary btn-sm" id="btn-salvar-instagram"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                            <label class="pgto-toggle-row" id="instagram-ativo-row">
+                                <input type="checkbox" id="f-instagram-ativo">
+                                <span>Usar Instagram nesta loja</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="integracao-card" id="integracao-facebook-card" style="display:none;">
+                        <button type="button" class="integracao-card-head">
+                            <span class="integracao-card-logo facebook"><i class="fa-brands fa-facebook-f"></i></span>
+                            <span class="integracao-card-title">Facebook<small>Messenger, métricas e campanhas de anúncios</small></span>
+                            <span class="pgto-status-chip" id="facebook-status-chip"></span>
+                            <i class="fa-solid fa-chevron-down integracao-card-chevron"></i>
+                        </button>
+                        <div class="integracao-card-body">
+                            <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:14px;">
+                                Cadastre o id da sua página do Facebook, o id da conta de anúncios (se
+                                quiser acompanhar campanhas) e o token de acesso. Com isso ativado,
+                                aparece uma aba "Facebook" no menu pra mensagens, métricas da página e
+                                a tabela de campanhas de anúncios com liga/desliga.
+                            </p>
+                            <div class="form-group"><label>ID da página do Facebook</label><input type="text" id="f-facebook-pageid" placeholder="100000000000000"></div>
+                            <div class="form-group"><label>ID da conta de anúncios (opcional)</label><input type="text" id="f-facebook-adaccountid" placeholder="123456789"></div>
+                            <div class="form-group"><label>Token de acesso</label><input type="text" id="f-facebook-token" placeholder="Cole aqui o token de longa duração"></div>
+                            <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.5;margin:-6px 0 14px;">
+                                No app da Meta, cadastre o Webhook com a URL <code>${location.origin}/api/facebook-webhook</code>
+                                e o Verify Token <code>excellentloja_meta_webhook</code>.
+                            </p>
+                            <div class="form-actions" style="margin:0 0 14px;"><button type="button" class="btn btn-primary btn-sm" id="btn-salvar-facebook"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                            <label class="pgto-toggle-row" id="facebook-ativo-row">
+                                <input type="checkbox" id="f-facebook-ativo">
+                                <span>Usar Facebook nesta loja</span>
+                            </label>
+                        </div>
+                    </div>
+
                     ${Store.config.planoAtual ? `
                     <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
                     <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">
@@ -625,10 +683,16 @@ const Configuracoes = (() => {
             document.getElementById('btn-salvar-whatsapp').addEventListener('click', salvarWhatsapp);
             document.getElementById('f-ifood-ativo').addEventListener('change', (e) => alternarIfoodAtivo(e.target.checked));
             document.getElementById('btn-salvar-ifood').addEventListener('click', salvarIfood);
+            document.getElementById('f-instagram-ativo').addEventListener('change', (e) => alternarInstagramAtivo(e.target.checked));
+            document.getElementById('btn-salvar-instagram').addEventListener('click', salvarInstagram);
+            document.getElementById('f-facebook-ativo').addEventListener('change', (e) => alternarFacebookAtivo(e.target.checked));
+            document.getElementById('btn-salvar-facebook').addEventListener('click', salvarFacebook);
             bindAccordionIntegracoes();
             carregarPagamentoStatus();
             carregarWhatsappStatus();
             carregarIfoodStatus();
+            carregarInstagramStatus();
+            carregarFacebookStatus();
             const btnWhatsSuporte = document.getElementById('btn-whatsapp-suporte-api');
             if (btnWhatsSuporte) btnWhatsSuporte.addEventListener('click', abrirWhatsappSuporte);
         }
@@ -822,7 +886,7 @@ const Configuracoes = (() => {
     function atualizarIntegracoesVazio() {
         const vazio = document.getElementById('integracoes-vazio');
         if (!vazio) return;
-        const algumVisivel = ['integracao-mp-card', 'integracao-whatsapp-card', 'integracao-ifood-card']
+        const algumVisivel = ['integracao-mp-card', 'integracao-whatsapp-card', 'integracao-ifood-card', 'integracao-instagram-card', 'integracao-facebook-card']
             .some(id => document.getElementById(id) && document.getElementById(id).style.display !== 'none');
         vazio.style.display = algumVisivel ? 'none' : 'block';
     }
@@ -928,6 +992,131 @@ const Configuracoes = (() => {
             await Loja.ref().update({ integracaoIfoodAtiva: ativo });
             Utils.toast(ativo ? 'Entrega iFood ativada.' : 'Entrega iFood desativada.', 'success');
             await carregarIfoodStatus();
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+            input.checked = !ativo;
+        } finally {
+            input.disabled = false;
+        }
+    }
+
+    // Além de gravar na própria loja, mantém metaContas/{id} apontando pra
+    // essa loja — é como o webhook (que só recebe o id da conta/página, sem
+    // saber de qual loja é) acha rapidinho o dono da mensagem que chegou.
+    async function espelharMetaConta(idAntigo, idNovo) {
+        if (idAntigo && idAntigo !== idNovo) {
+            await window.db.collection('metaContas').doc(idAntigo).delete().catch(() => {});
+        }
+        if (idNovo) {
+            await window.db.collection('metaContas').doc(idNovo).set({ lojaId: Loja.id, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+    }
+
+    async function carregarInstagramStatus() {
+        const card = document.getElementById('integracao-instagram-card');
+        try {
+            const snap = await Loja.col('config').doc('instagram').get();
+            const s = snap.exists ? snap.data() : {};
+            const liberado = !!s.liberado;
+            if (card) card.style.display = liberado ? '' : 'none';
+            const igInput = document.getElementById('f-instagram-iguserid');
+            const tokenInput = document.getElementById('f-instagram-token');
+            const ativoInput = document.getElementById('f-instagram-ativo');
+            if (igInput) igInput.value = s.igUserId || '';
+            if (tokenInput) tokenInput.value = s.accessToken || '';
+            if (ativoInput) ativoInput.checked = !!s.ativo;
+            atualizarChipIntegracao('instagram-status-chip', liberado, s.ativo);
+        } catch (err) {
+            if (card) card.style.display = 'none';
+        }
+        atualizarIntegracoesVazio();
+    }
+
+    async function salvarInstagram() {
+        const igUserId = document.getElementById('f-instagram-iguserid').value.trim();
+        const accessToken = document.getElementById('f-instagram-token').value.trim();
+        const btn = document.getElementById('btn-salvar-instagram');
+        btn.disabled = true;
+        try {
+            const atualRef = Loja.col('config').doc('instagram');
+            const atualSnap = await atualRef.get();
+            const idAntigo = atualSnap.exists ? atualSnap.data().igUserId : null;
+            await atualRef.update({ igUserId, accessToken, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            await espelharMetaConta(idAntigo, igUserId);
+            Utils.toast('Instagram atualizado.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function alternarInstagramAtivo(ativo) {
+        const input = document.getElementById('f-instagram-ativo');
+        input.disabled = true;
+        try {
+            await Loja.col('config').doc('instagram').update({ ativo, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            await Loja.ref().update({ integracaoInstagramAtiva: ativo });
+            Utils.toast(ativo ? 'Instagram ativado.' : 'Instagram desativado.', 'success');
+            await carregarInstagramStatus();
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+            input.checked = !ativo;
+        } finally {
+            input.disabled = false;
+        }
+    }
+
+    async function carregarFacebookStatus() {
+        const card = document.getElementById('integracao-facebook-card');
+        try {
+            const snap = await Loja.col('config').doc('facebook').get();
+            const s = snap.exists ? snap.data() : {};
+            const liberado = !!s.liberado;
+            if (card) card.style.display = liberado ? '' : 'none';
+            const pageInput = document.getElementById('f-facebook-pageid');
+            const adAccountInput = document.getElementById('f-facebook-adaccountid');
+            const tokenInput = document.getElementById('f-facebook-token');
+            const ativoInput = document.getElementById('f-facebook-ativo');
+            if (pageInput) pageInput.value = s.pageId || '';
+            if (adAccountInput) adAccountInput.value = s.adAccountId || '';
+            if (tokenInput) tokenInput.value = s.accessToken || '';
+            if (ativoInput) ativoInput.checked = !!s.ativo;
+            atualizarChipIntegracao('facebook-status-chip', liberado, s.ativo);
+        } catch (err) {
+            if (card) card.style.display = 'none';
+        }
+        atualizarIntegracoesVazio();
+    }
+
+    async function salvarFacebook() {
+        const pageId = document.getElementById('f-facebook-pageid').value.trim();
+        const adAccountId = document.getElementById('f-facebook-adaccountid').value.trim();
+        const accessToken = document.getElementById('f-facebook-token').value.trim();
+        const btn = document.getElementById('btn-salvar-facebook');
+        btn.disabled = true;
+        try {
+            const atualRef = Loja.col('config').doc('facebook');
+            const atualSnap = await atualRef.get();
+            const idAntigo = atualSnap.exists ? atualSnap.data().pageId : null;
+            await atualRef.update({ pageId, adAccountId, accessToken, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            await espelharMetaConta(idAntigo, pageId);
+            Utils.toast('Facebook atualizado.', 'success');
+        } catch (err) {
+            Utils.toast('Erro: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function alternarFacebookAtivo(ativo) {
+        const input = document.getElementById('f-facebook-ativo');
+        input.disabled = true;
+        try {
+            await Loja.col('config').doc('facebook').update({ ativo, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+            await Loja.ref().update({ integracaoFacebookAtiva: ativo });
+            Utils.toast(ativo ? 'Facebook ativado.' : 'Facebook desativado.', 'success');
+            await carregarFacebookStatus();
         } catch (err) {
             Utils.toast('Erro: ' + err.message, 'error');
             input.checked = !ativo;
@@ -1044,28 +1233,34 @@ const Configuracoes = (() => {
         let mp = { liberado: false, publicKey: '', accessToken: '', webhookSecret: '' };
         let wa = { liberado: false };
         let ifood = { liberado: false };
+        let insta = { liberado: false };
+        let face = { liberado: false };
         try {
             const lojaRef = window.db.collection('lojas').doc(lojaId);
-            const [lojaSnap, mpSnap, waSnap, ifoodSnap] = await Promise.all([
+            const [lojaSnap, mpSnap, waSnap, ifoodSnap, instaSnap, faceSnap] = await Promise.all([
                 lojaRef.get(),
                 lojaRef.collection('config').doc('pagamento').get(),
                 lojaRef.collection('config').doc('whatsapp').get(),
-                lojaRef.collection('config').doc('ifood').get()
+                lojaRef.collection('config').doc('ifood').get(),
+                lojaRef.collection('config').doc('instagram').get(),
+                lojaRef.collection('config').doc('facebook').get()
             ]);
             integracoesLiberadas = lojaSnap.exists && !!lojaSnap.data().integracoesLiberadas;
             if (mpSnap.exists) mp = { ...mp, ...mpSnap.data() };
             if (waSnap.exists) wa = { ...wa, ...waSnap.data() };
             if (ifoodSnap.exists) ifood = { ...ifood, ...ifoodSnap.data() };
+            if (instaSnap.exists) insta = { ...insta, ...instaSnap.data() };
+            if (faceSnap.exists) face = { ...face, ...faceSnap.data() };
         } catch (err) {
             document.getElementById('apis-loja-body').innerHTML = `<span style="color:var(--danger);font-size:0.85rem;">Erro ao carregar: ${Utils.escapeHtml(err.message)}</span>`;
             return;
         }
 
         document.getElementById('f-integracoes-liberadas').checked = integracoesLiberadas;
-        renderApisLojaBody(lojaId, mp, wa, ifood);
+        renderApisLojaBody(lojaId, mp, wa, ifood, insta, face);
     }
 
-    function renderApisLojaBody(lojaId, mp, wa, ifood) {
+    function renderApisLojaBody(lojaId, mp, wa, ifood, insta, face) {
         const body = document.getElementById('apis-loja-body');
         if (!body) return;
         const webhookUrl = `${location.origin}/api/webhook-mercadopago?loja=${encodeURIComponent(lojaId)}`;
@@ -1114,6 +1309,28 @@ const Configuracoes = (() => {
                 <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Só pra usar o entregador do iFood. A loja cadastra as credenciais dela mesma.</p>
             </div>
 
+            <div class="panel" style="margin:14px 0;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <strong style="font-size:0.9rem;"><i class="fa-brands fa-instagram"></i> Instagram</strong>
+                    <label class="pgto-toggle-row" style="margin:0;">
+                        <input type="checkbox" id="f-instagram-liberado" ${insta.liberado ? 'checked' : ''}>
+                        <span>Liberado pra essa loja</span>
+                    </label>
+                </div>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Direct, publicações automáticas e métricas. A loja cadastra a conta e o token dela mesma.</p>
+            </div>
+
+            <div class="panel" style="margin:0;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <strong style="font-size:0.9rem;"><i class="fa-brands fa-facebook-f"></i> Facebook</strong>
+                    <label class="pgto-toggle-row" style="margin:0;">
+                        <input type="checkbox" id="f-facebook-liberado" ${face.liberado ? 'checked' : ''}>
+                        <span>Liberado pra essa loja</span>
+                    </label>
+                </div>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Messenger, métricas da página e campanhas de anúncios. A loja cadastra a página/conta e o token dela mesma.</p>
+            </div>
+
             <div class="form-actions" style="margin-top:16px;">
                 <button type="button" class="btn btn-outline" onclick="Utils.closeModal()">Cancelar</button>
                 <button type="button" class="btn btn-primary" id="btn-salvar-api-loja"><i class="fa-solid fa-check"></i> Salvar</button>
@@ -1142,6 +1359,8 @@ const Configuracoes = (() => {
         const integracoesLiberadas = document.getElementById('f-integracoes-liberadas').checked;
         const whatsappLiberado = document.getElementById('f-whatsapp-liberado').checked;
         const ifoodLiberado = document.getElementById('f-ifood-liberado').checked;
+        const instagramLiberado = document.getElementById('f-instagram-liberado').checked;
+        const facebookLiberado = document.getElementById('f-facebook-liberado').checked;
         if (liberado && (!publicKey || !accessToken)) {
             Utils.toast('Preencha a Public Key e o Access Token antes de liberar.', 'error');
             return;
@@ -1150,14 +1369,18 @@ const Configuracoes = (() => {
         btn.disabled = true;
         try {
             const lojaRef = window.db.collection('lojas').doc(lojaId);
-            const [statusSnap, waSnap, ifoodSnap] = await Promise.all([
+            const [statusSnap, waSnap, ifoodSnap, instaSnap, faceSnap] = await Promise.all([
                 lojaRef.collection('config').doc('pagamentoStatus').get(),
                 lojaRef.collection('config').doc('whatsapp').get(),
-                lojaRef.collection('config').doc('ifood').get()
+                lojaRef.collection('config').doc('ifood').get(),
+                lojaRef.collection('config').doc('instagram').get(),
+                lojaRef.collection('config').doc('facebook').get()
             ]);
             const ativoEscolhidoPelaLoja = statusSnap.exists ? !!statusSnap.data().ativo : false;
             const whatsappAtivoEscolhido = waSnap.exists ? !!waSnap.data().ativo : false;
             const ifoodAtivoEscolhido = ifoodSnap.exists ? !!ifoodSnap.data().ativo : false;
+            const instagramAtivoEscolhido = instaSnap.exists ? !!instaSnap.data().ativo : false;
+            const facebookAtivoEscolhido = faceSnap.exists ? !!faceSnap.data().ativo : false;
 
             const batch = window.db.batch();
             batch.set(lojaRef.collection('config').doc('pagamento'), {
@@ -1173,6 +1396,12 @@ const Configuracoes = (() => {
             batch.set(lojaRef.collection('config').doc('ifood'), {
                 liberado: ifoodLiberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
+            batch.set(lojaRef.collection('config').doc('instagram'), {
+                liberado: instagramLiberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            batch.set(lojaRef.collection('config').doc('facebook'), {
+                liberado: facebookLiberado, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
             // a Public Key não é secreta (é usada no navegador do cliente), então fica
             // espelhada sempre que liberado — independe do interruptor "ativo" da loja,
             // que ela liga/desliga sozinha sem precisar reenviar a chave. O mesmo vale
@@ -1182,7 +1411,9 @@ const Configuracoes = (() => {
                 integracoesLiberadas,
                 pagamentoOnline: { ativo: liberado && ativoEscolhidoPelaLoja, publicKey: liberado ? publicKey : '' },
                 integracaoWhatsappAtiva: whatsappLiberado && whatsappAtivoEscolhido,
-                integracaoIfoodAtiva: ifoodLiberado && ifoodAtivoEscolhido
+                integracaoIfoodAtiva: ifoodLiberado && ifoodAtivoEscolhido,
+                integracaoInstagramAtiva: instagramLiberado && instagramAtivoEscolhido,
+                integracaoFacebookAtiva: facebookLiberado && facebookAtivoEscolhido
             }, { merge: true });
             await batch.commit();
 

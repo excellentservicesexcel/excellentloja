@@ -346,6 +346,36 @@ const Utils = (() => {
         return padrao + resto;
     }
 
+    // Gráfico de linha "moderno" (glow) reutilizado pelas Métricas do
+    // Instagram e do Facebook: sem legenda, curva suave, área com degradê
+    // e o efeito de brilho saindo da linha via CSS (filter: drop-shadow no
+    // próprio canvas) em vez de duplicar a linha via plugin do Chart.js.
+    const _glowCharts = {};
+    function criarGraficoGlow(canvasId, labels, valores, cor) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        if (_glowCharts[canvasId]) { _glowCharts[canvasId].destroy(); delete _glowCharts[canvasId]; }
+        canvas.style.filter = `drop-shadow(0 0 6px ${hexToRgba(cor, 0.65)})`;
+        const ctx = canvas.getContext('2d');
+        const gradiente = ctx.createLinearGradient(0, 0, 0, canvas.clientHeight || 160);
+        gradiente.addColorStop(0, hexToRgba(cor, 0.35));
+        gradiente.addColorStop(1, hexToRgba(cor, 0));
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets: [{ data: valores, borderColor: cor, backgroundColor: gradiente, borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: cor }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { intersect: false, mode: 'index' } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } },
+                    y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+                }
+            }
+        });
+        _glowCharts[canvasId] = chart;
+        return chart;
+    }
+
     return {
         formatBRL, formatDateBR, formatDateShort, formatDateTimeBR, todayKey, toDate,
         escapeHtml, debounce, uid, toast, openModal, closeModal, confirmDialog,
@@ -354,6 +384,7 @@ const Utils = (() => {
         compressImageToBase64,
         imageHasTransparency,
         mixColor, lightenColor, darkenColor, hexToRgba,
-        FONT_OPTIONS, fontFamilyById, fontSelectOptionsHtml
+        FONT_OPTIONS, fontFamilyById, fontSelectOptionsHtml,
+        criarGraficoGlow
     };
 })();

@@ -149,7 +149,7 @@ window.nextPedidoNumero = nextPedidoNumero;
 /* ---------------------------------------------------------------------- */
 /* Navegação                                                               */
 /* ---------------------------------------------------------------------- */
-const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'calendario', 'whatsapp', 'configuracoes', 'compras', 'leads'];
+const VIEWS = ['dashboard', 'pedidos', 'clientes', 'produtos', 'cardapio', 'producao', 'estoque', 'financeiro', 'precificacao', 'relatorios', 'calendario', 'whatsapp', 'instagram', 'facebook', 'configuracoes', 'compras', 'leads'];
 
 const TITLES = {
     dashboard: ['Olá, {nome}! 👋', 'Confira o resumo do seu negócio hoje.'],
@@ -164,6 +164,8 @@ const TITLES = {
     relatorios: ['Relatórios', 'Indicadores e desempenho de vendas.'],
     calendario: ['Calendário', 'Organize compromissos e tarefas com data e horário.'],
     whatsapp: ['WhatsApp', 'Receba e responda mensagens dos seus clientes direto por aqui.'],
+    instagram: ['Instagram', 'Mensagens do Direct e métricas da sua conta.'],
+    facebook: ['Facebook', 'Mensagens do Messenger, métricas e campanhas de anúncios.'],
     configuracoes: ['Configurações', 'Dados da loja, categorias e preferências.'],
     compras: ['Compras', 'Assinaturas dos planos da plataforma — pagamentos, renovações e comprovantes.'],
     leads: ['Leads', 'Quem demonstrou interesse num plano — faça o follow-up antes que esfrie.']
@@ -244,21 +246,18 @@ function updateTopbarDate() {
 /* Boot                                                                    */
 /* ---------------------------------------------------------------------- */
 function mountAllModules() {
-    Dashboard.mount();
-    Pedidos.mount();
-    Clientes.mount();
-    Produtos.mount();
-    Cardapio.mount();
-    Producao.mount();
-    Estoque.mount();
-    Financeiro.mount();
-    Precificacao.mount();
-    Relatorios.mount();
-    Calendario.mount();
-    Whatsapp.mount();
-    Configuracoes.mount();
-    Compras.mount();
-    Leads.mount();
+    // Cada módulo é isolado por nome (via window[nome], nunca a variável
+    // direta): se um arquivo .js faltar (ex.: esquecido no upload) ou tiver
+    // um erro ao montar, os outros continuam funcionando normalmente em vez
+    // de travar a página inteira por causa de um só.
+    ['Dashboard', 'Pedidos', 'Clientes', 'Produtos', 'Cardapio', 'Producao', 'Estoque',
+     'Financeiro', 'Precificacao', 'Relatorios', 'Calendario', 'Whatsapp', 'Instagram', 'Facebook',
+     'Configuracoes', 'Compras', 'Leads'].forEach(nome => {
+        try {
+            if (!window[nome]) { console.error('módulo ausente (arquivo não carregou): ' + nome); return; }
+            window[nome].mount();
+        } catch (err) { console.error('falha ao montar módulo ' + nome, err); }
+    });
 }
 
 function bindStoreSubscriptions() {
@@ -271,7 +270,7 @@ function bindStoreSubscriptions() {
     Store.on('producao', () => Producao.render());
     Store.on('calendario', () => Calendario.render());
     Store.on('receitas', () => Precificacao.render());
-    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); Producao.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); applyLoginTema(); applyWhatsappNavVisibility(); });
+    Store.on('config', () => { Configuracoes.render(); Pedidos.render(); Producao.render(); updateGreeting(); refreshSidebarUser(); applyPainelBackground(); applyPainelBranding(); applyPainelTema(); applyPainelTagline(); applyLoginTema(); applyWhatsappNavVisibility(); applyInstagramNavVisibility(); applyFacebookNavVisibility(); });
     Store.on('capas', () => Configuracoes.render());
     Store.on('instaCards', () => Configuracoes.render());
     Store.on('beneficios', () => Configuracoes.render());
@@ -425,7 +424,7 @@ function applyNavMode(plataforma) {
     document.querySelectorAll('#nav-links .nav-item').forEach(el => {
         const view = el.dataset.view;
         if (view === 'compras' || view === 'leads') { el.style.display = plataforma ? '' : 'none'; return; }
-        if (view === 'whatsapp') return; // controlado à parte por applyWhatsappNavVisibility()
+        if (view === 'whatsapp' || view === 'instagram' || view === 'facebook') return; // controlados à parte
         el.style.display = (!plataforma || view === 'configuracoes') ? '' : 'none';
     });
     // Barra inferior do celular: no modo plataforma só existem 3 abas
@@ -438,15 +437,29 @@ function applyNavMode(plataforma) {
     });
     document.getElementById('btn-view-store').style.display = plataforma ? 'none' : '';
     applyWhatsappNavVisibility();
+    applyInstagramNavVisibility();
+    applyFacebookNavVisibility();
 }
 
-// A aba WhatsApp só existe pra quem administra uma loja de verdade (nunca na
-// página raiz) e só depois que a própria loja ativou a integração — ver
-// "Integrações" em Configurações.
+// A aba WhatsApp/Instagram/Facebook só existe pra quem administra uma loja
+// de verdade (nunca na página raiz) e só depois que a própria loja ativou
+// aquela integração — ver "Integrações" em Configurações.
 function applyWhatsappNavVisibility() {
     const ativa = !Loja.isRoot && !!Store.config.integracaoWhatsappAtiva;
     document.querySelectorAll('.nav-item[data-view="whatsapp"]').forEach(el => { el.style.display = ativa ? '' : 'none'; });
     if (!ativa && _currentView === 'whatsapp') goToView('dashboard');
+}
+
+function applyInstagramNavVisibility() {
+    const ativa = !Loja.isRoot && !!Store.config.integracaoInstagramAtiva;
+    document.querySelectorAll('.nav-item[data-view="instagram"]').forEach(el => { el.style.display = ativa ? '' : 'none'; });
+    if (!ativa && _currentView === 'instagram') goToView('dashboard');
+}
+
+function applyFacebookNavVisibility() {
+    const ativa = !Loja.isRoot && !!Store.config.integracaoFacebookAtiva;
+    document.querySelectorAll('.nav-item[data-view="facebook"]').forEach(el => { el.style.display = ativa ? '' : 'none'; });
+    if (!ativa && _currentView === 'facebook') goToView('dashboard');
 }
 
 function showLogin() {
