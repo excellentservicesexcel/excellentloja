@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Regras de segurança — Storage — Vallê Doces
+//
+// Atualmente o app NÃO usa o Firebase Storage: todas as fotos (perfil,
+// produtos, capa da loja) são comprimidas no navegador e salvas como
+// base64 direto no Firestore, para funcionar mesmo em projetos no plano
+// gratuito (Storage exige o plano Blaze). Estas regras ficam aqui só
+// como referência caso o Storage volte a ser usado no futuro.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /produtos/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    match /usuarios/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    match /capas/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 6 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
