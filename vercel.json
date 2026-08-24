@@ -3,6 +3,7 @@
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/cron-cobranca-planos", "schedule": "0 9 * * *" }
+    { "path": "/api/cron-cobranca-planos", "schedule": "0 9 * * *" },
+    { "path": "/api/cron-coletar-metricas", "schedule": "15 9 * * *" }
   ]
 }

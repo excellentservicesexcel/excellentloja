@@ -160,6 +160,38 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['liberado']);
       }
 
+      match /config/instagram {
+        // mesmo esquema do WhatsApp/iFood — liberado é do super admin, o
+        // resto (igUserId/accessToken/ativo) é da própria loja (gerado na
+        // Meta Business Suite dela — token de sistema de longa duração).
+        allow read: if isLojaAdmin(lojaId);
+        allow update: if isLojaAdmin(lojaId)
+          && resource.data.liberado == true
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['liberado']);
+      }
+
+      match /config/facebook {
+        allow read: if isLojaAdmin(lojaId);
+        allow update: if isLojaAdmin(lojaId)
+          && resource.data.liberado == true
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['liberado']);
+      }
+
+      match /instagramConversas/{id} {
+        // mensagens de verdade chegam pelo webhook (Admin SDK, ignora
+        // regras) — o painel só lê e marca como lida.
+        allow read, update: if isLojaAdmin(lojaId);
+        match /mensagens/{msgId} { allow read: if isLojaAdmin(lojaId); }
+      }
+
+      match /facebookConversas/{id} {
+        allow read, update: if isLojaAdmin(lojaId);
+        match /mensagens/{msgId} { allow read: if isLojaAdmin(lojaId); }
+      }
+
+      match /metricasInstagram/{dia} { allow read: if isLojaAdmin(lojaId); }
+      match /metricasFacebook/{dia} { allow read: if isLojaAdmin(lojaId); }
+
       match /pagamentosPendentes/{id} {
         // criado e atualizado só pelas funções serverless (Admin SDK, ignora
         // regras) — o cliente só acompanha o status do próprio pagamento.
@@ -201,6 +233,18 @@ service cloud.firestore {
           && request.auth.uid == get(/databases/$(database)/documents/compras/$(compraId)).data.uidComprador;
         allow write: if false;
       }
+    }
+
+    match /metaContas/{contaId} {
+      // Índice reverso: id da página do Facebook / conta comercial do
+      // Instagram -> qual loja é dona dela. Serve só pro webhook (Admin SDK,
+      // ignora regras) achar rapidinho a loja certa quando chega uma
+      // mensagem, sem precisar de consulta entre coleções. Ninguém lê pelo
+      // cliente; só a própria loja escreve (ao salvar a integração), e só
+      // apontando pra ela mesma.
+      allow read: if false;
+      allow create, update: if signedIn() && isLojaAdmin(request.resource.data.lojaId);
+      allow delete: if signedIn() && isLojaAdmin(resource.data.lojaId);
     }
 
     match /leads/{leadId} {
